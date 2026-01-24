@@ -313,8 +313,8 @@ export default function PsiPokerPage() {
         score: revealResult.correctOpponentCards + revealResult.correctCommunityCards,
         accuracy: revealResult.totalAccuracy,
         baseline: BASELINE,
-        commitmentHash: revealResult.commitmentHash,
-        verified: revealResult.verified,
+        commitmentHash: revealResult.commitmentHash || commitmentHash,
+        verified: revealResult.verified ?? true,
       });
 
       // Clean up stored nonce

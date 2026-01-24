@@ -1349,26 +1349,16 @@ class APIService {
     verified: boolean;
   }): Promise<{
     success: boolean;
-    actualHands: Array<{
-      playerId: string;
-      hand: Array<{ suit: string; rank: string }>;
-      handRank: string;
-    }>;
-    actualCommunityCards: Array<{ suit: string; rank: string }>;
-    handPredictionAccuracy: number;
-    communityCardAccuracy: number;
-    overallAccuracy: number;
     totalAccuracy: number;
     opponentAccuracy: number;
     communityAccuracy: number;
     correctOpponentCards: number;
     totalOpponentCards: number;
     correctCommunityCards: number;
-    baseline: number;
     pValue: number;
-    performance: string;
-    commitmentHash: string;
-    verified: boolean;
+    zScore?: number;
+    commitmentHash?: string;
+    verified?: boolean;
   }> {
     try {
       const response = await axios.post(`${this.baseURL}/api/experiments/psi-poker/reveal`, data);
