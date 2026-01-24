@@ -1,0 +1,793 @@
+// Cognosis Database Schema
+// Prisma ORM for PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - tracks participants
+model User {
+  id                String   @id @default(uuid())
+  walletAddress     String   @unique
+  walletType        String   @default("cardano")
+  username          String?  @unique
+  role              String   @default("user") // "user", "admin"
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  lastLoginAt       DateTime?
+
+  // Relationships
+  experiments       ExperimentSession[]
+  responses         Response[]
+  commitments       Commitment[]
+  profile           UserProfile?
+  achievements      UserAchievement[]
+  streak            UserStreak?
+  performanceHistory PerformanceHistory[]
+  bayesianPriors    BayesianPrior[]
+  agentInteractions AgentInteraction[]
+  experimentTemplates ExperimentTemplate[]
+  experimentInstances ExperimentInstance[]
+  baselineProfile   BaselineProfile?
+  telepathyMatches  TelepathyMatch[]
+
+  @@index([walletAddress])
+}
+
+// User profile with stats and preferences
+model UserProfile {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  displayName       String?
+  bio               String?
+  avatarUrl         String?
+
+  // Stats
+  totalExperiments  Int      @default(0)
+  totalScore        Float    @default(0)
+  averageScore      Float    @default(0)
+  rank              Int?
+
+  // Preferences
+  notifications     Boolean  @default(true)
+  publicProfile     Boolean  @default(false)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// Experiment session - tracks when a user starts an experiment
+model ExperimentSession {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  experimentType    String   // "remote-viewing", "premonition", etc.
+  experimentId      String   // Specific experiment within type
+
+  startedAt         DateTime @default(now())
+  completedAt       DateTime?
+  status            String   @default("in_progress") // "in_progress", "completed", "abandoned"
+
+  // Target information (encrypted hash)
+  targetHash        String?
+  targetMetadata    Json?
+
+  // Results
+  responses         Response[]
+  finalScore        Float?
+
+  // Agent interactions
+  agentInteractions AgentInteraction[]
+
+  @@index([userId])
+  @@index([experimentType])
+  @@index([status])
+}
+
+// User response to experiment
+model Response {
+  id                String   @id @default(uuid())
+  sessionId         String
+  session           ExperimentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Response data
+  responseType      String   // "text", "drawing", "selection", "voice"
+  responseData      Json     // Flexible JSON storage for different response types
+
+  // Encrypted storage
+  encryptedBlob     String?  // Base64 encoded encrypted data
+  ipfsCid           String?  // IPFS Content ID
+
+  // Timestamps
+  submittedAt       DateTime @default(now())
+
+  // AI Scoring
+  aiScore           Float?
+  aiScoreBreakdown  Json?    // Semantic, visual, symbolic, emotional scores
+  scoredAt          DateTime?
+
+  // Commitment
+  commitment        Commitment?
+
+  @@index([sessionId])
+  @@index([userId])
+  @@index([ipfsCid])
+}
+
+// Blockchain commitment tracking
+model Commitment {
+  id                String   @id @default(uuid())
+  responseId        String?  @unique
+  response          Response? @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Experiment info
+  experimentType    String?
+  data              Json?    // Stores target data for guest mode (not on-chain)
+
+  // Commitment details
+  commitmentHash    String   @unique
+  nonce             String
+  metadataHash      String
+
+  // Blockchain transaction info
+  commitTxId        String?
+  commitBlockHeight Int?
+  commitTimestamp   DateTime?
+
+  // Reveal info
+  revealed          Boolean  @default(false)
+  revealTxId        String?
+  revealBlockHeight Int?
+  revealTimestamp   DateTime?
+
+  // IPFS
+  cid               String?
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([commitmentHash])
+  @@index([userId])
+  @@index([revealed])
+}
+
+// Analytics - track system metrics
+model AnalyticsEvent {
+  id                String   @id @default(uuid())
+  eventType         String   // "experiment_start", "experiment_complete", "commit", "reveal"
+  userId            String?
+
+  // Event data
+  eventData         Json
+  metadata          Json?
+
+  // Metrics
+  responseTime      Int?     // milliseconds
+  success           Boolean  @default(true)
+  errorMessage      String?
+
+  timestamp         DateTime @default(now())
+
+  @@index([eventType])
+  @@index([timestamp])
+  @@index([userId])
+}
+
+// Leaderboard - pre-computed rankings
+model Leaderboard {
+  id                String   @id @default(uuid())
+  userId            String
+  walletAddress     String
+  username          String?
+
+  // Rankings by category
+  overallRank       Int
+  overallScore      Float
+
+  experimentType    String?  // Null for overall, specific for category
+
+  // Stats
+  totalExperiments  Int
+  averageScore      Float
+  bestScore         Float
+
+  // Time period
+  period            String   @default("all_time") // "daily", "weekly", "monthly", "all_time"
+  periodStart       DateTime?
+  periodEnd         DateTime?
+
+  updatedAt         DateTime @updatedAt
+
+  @@unique([userId, experimentType, period])
+  @@index([overallRank])
+  @@index([experimentType])
+}
+
+// System metrics - for monitoring
+model SystemMetrics {
+  id                String   @id @default(uuid())
+
+  // Metrics
+  totalUsers        Int      @default(0)
+  activeUsers       Int      @default(0)
+  totalExperiments  Int      @default(0)
+  totalCommits      Int      @default(0)
+  totalReveals      Int      @default(0)
+
+  // Performance
+  avgResponseTime   Float?
+  errorRate         Float?
+
+  // Blockchain
+  gasUsed           String?
+  dustBalance       String?
+
+  timestamp         DateTime @default(now())
+
+  @@index([timestamp])
+}
+
+// Achievements - unlockable milestones
+model Achievement {
+  id                String   @id @default(uuid())
+
+  // Achievement details
+  key               String   @unique  // "first_experiment", "streak_7", "score_above_75"
+  name              String
+  description       String
+  category          String              // "milestone", "streak", "performance", "social"
+  tier              String   @default("bronze") // "bronze", "silver", "gold", "platinum"
+
+  // Requirements
+  requirement       Json                // Flexible criteria for unlocking
+  points            Int      @default(10) // Points awarded
+  icon              String?             // Icon identifier
+
+  // Stats
+  totalUnlocked     Int      @default(0)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relationships
+  userAchievements  UserAchievement[]
+
+  @@index([category])
+  @@index([tier])
+}
+
+// User achievements - tracks which users have unlocked which achievements
+model UserAchievement {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  achievementId     String
+  achievement       Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  // Unlock details
+  unlockedAt        DateTime @default(now())
+  progress          Float    @default(100) // Percentage complete
+  notified          Boolean  @default(false)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@index([achievementId])
+  @@index([unlockedAt])
+}
+
+// User streaks - tracks consecutive days of activity
+model UserStreak {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Current streak
+  currentStreak     Int      @default(0)
+  longestStreak     Int      @default(0)
+
+  // Dates
+  lastActivityDate  DateTime?
+  streakStartDate   DateTime?
+
+  // Stats
+  totalDaysActive   Int      @default(0)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([currentStreak])
+  @@index([longestStreak])
+}
+
+// Performance history - time-series data for charts
+model PerformanceHistory {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Performance data
+  experimentType    String
+  score             Float
+  accuracy          Float?
+
+  // Comparison to baseline
+  baselineScore     Float?
+  delta             Float?   // Difference from baseline
+
+  // Statistical measures
+  pValue            Float?   // Statistical significance
+  zScore            Float?   // Standard deviations from mean
+
+  // Metadata
+  experimentId      String?
+  metadata          Json?
+
+  recordedAt        DateTime @default(now())
+
+  @@index([userId, experimentType])
+  @@index([userId, recordedAt])
+  @@index([experimentType])
+}
+
+// Bayesian priors - track user's evolving probability estimates
+model BayesianPrior {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Prior information
+  experimentType    String
+  priorMean         Float    @default(0.5) // Expected performance
+  priorVariance     Float    @default(0.1) // Uncertainty
+
+  // Posterior (updated with data)
+  posteriorMean     Float    @default(0.5)
+  posteriorVariance Float    @default(0.1)
+
+  // Update tracking
+  sampleSize        Int      @default(0)
+  lastUpdated       DateTime @updatedAt
+
+  @@unique([userId, experimentType])
+  @@index([userId])
+}
+
+// ============================================
+// AGENTKIT INTEGRATION MODELS
+// ============================================
+
+// AI Agent - tracks autonomous agents in the system
+model Agent {
+  id                String   @id @default(uuid())
+
+  // Agent identity
+  name              String   @unique // "ExperimentConductor", "DataAnalyst", etc.
+  displayName       String
+  description       String?
+
+  // Configuration
+  model             String   // "gpt-4-turbo", "gpt-4o", "python_module"
+  systemPrompt      String   @db.Text
+  config            Json?    // Agent-specific configuration
+  guardrails        Json?    // Safety rules for this agent
+
+  // Status
+  status            String   @default("active") // "active" | "paused" | "disabled"
+  version           String   @default("1.0.0")
+
+  // Usage tracking
+  totalInteractions Int      @default(0)
+  totalTokens       Int      @default(0)
+  averageLatency    Float?   // milliseconds
+  successRate       Float?   // percentage
+
+  // Metadata
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  createdBy         String?  // userId of creator
+
+  // Relationships
+  interactions      AgentInteraction[]
+  evaluations       AgentEvaluation[]
+  workflows         WorkflowStep[]
+
+  @@index([name])
+  @@index([status])
+}
+
+// Agent Interaction - tracks every agent-user or agent-agent communication
+model AgentInteraction {
+  id                String   @id @default(uuid())
+
+  // Context
+  sessionId         String?
+  session           ExperimentSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  agentId           String
+  agent             Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  userId            String?
+  user              User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Interaction data
+  messageType       String   // "guidance" | "analysis" | "report" | "coordination" | "user_query"
+  role              String   // "system" | "user" | "assistant"
+  content           String   @db.Text
+  metadata          Json?    // Additional context
+
+  // Tracking
+  promptTokens      Int?
+  completionTokens  Int?
+  latencyMs         Int?
+
+  // Evaluation
+  successful        Boolean  @default(true)
+  guardrailsPassed  Boolean  @default(true)
+  guardrailFlags    Json?    // Any violations detected
+
+  timestamp         DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([agentId])
+  @@index([userId])
+  @@index([timestamp])
+}
+
+// Agent Evaluation - stores automated evals for agent performance
+model AgentEvaluation {
+  id                String   @id @default(uuid())
+
+  agentId           String
+  agent             Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  // Eval details
+  evalType          String   // "accuracy" | "relevance" | "safety" | "latency"
+  dataset           String?  // Reference to eval dataset
+
+  // Metrics
+  score             Float    // 0-100
+  passed            Boolean  // Did it meet threshold?
+  threshold         Float    // Required score
+
+  // Details
+  testCases         Int      // Number of test cases
+  passedCases       Int      // Number passed
+  details           Json?    // Detailed results
+
+  // Improvement suggestions
+  suggestions       Json?    // Auto-generated improvement recommendations
+
+  evaluatedAt       DateTime @default(now())
+
+  @@index([agentId])
+  @@index([evalType])
+  @@index([passed])
+}
+
+// Experiment Template - stores AgentBuilder workflow templates
+model ExperimentTemplate {
+  id                String   @id @default(uuid())
+
+  // Template identity
+  name              String
+  slug              String   @unique
+  description       String   @db.Text
+  category          String   // "remote-viewing", "telepathy", etc.
+  difficulty        String   @default("beginner") // "beginner" | "intermediate" | "advanced" | "expert"
+
+  // Workflow definition
+  workflowSteps     WorkflowStep[]
+  estimatedDuration Int?     // minutes
+
+  // Guardrails
+  guardrails        Json?    // Safety rules for this template
+  requiresConsent   Boolean  @default(true)
+  minAge            Int      @default(18)
+
+  // Publishing
+  isPublic          Boolean  @default(false)
+  isPremium         Boolean  @default(false)
+  requiredRole      String   @default("participant") // "participant" | "researcher" | "admin"
+
+  // Stats
+  usageCount        Int      @default(0)
+  averageRating     Float?
+  averageCompletion Float?   // completion rate
+
+  // Metadata
+  createdBy         String   // userId
+  creator           User     @relation(fields: [createdBy], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relationships
+  instances         ExperimentInstance[]
+
+  @@index([slug])
+  @@index([category])
+  @@index([isPublic])
+  @@index([createdBy])
+}
+
+// Workflow Step - individual steps in experiment workflow
+model WorkflowStep {
+  id                String   @id @default(uuid())
+
+  templateId        String
+  template          ExperimentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  // Step details
+  order             Int      // Execution order
+  stepType          String   // "target_generation" | "participant_guidance" | "data_capture" | "ai_scoring" | "blockchain_commit"
+  name              String
+  description       String?
+
+  // Agent assignment
+  agentId           String?
+  agent             Agent?   @relation(fields: [agentId], references: [id])
+
+  // Configuration
+  config            Json?    // Step-specific configuration
+  requiredData      Json?    // What data this step needs
+  outputData        Json?    // What data this step produces
+
+  // Validation
+  validationRules   Json?    // Rules for step completion
+  canSkip           Boolean  @default(false)
+  requiresReview    Boolean  @default(false)
+
+  @@index([templateId])
+  @@index([agentId])
+  @@unique([templateId, order])
+}
+
+// Experiment Instance - tracks execution of a template
+model ExperimentInstance {
+  id                String   @id @default(uuid())
+
+  templateId        String
+  template          ExperimentTemplate @relation(fields: [templateId], references: [id])
+
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Execution tracking
+  status            String   @default("started") // "started" | "in_progress" | "completed" | "abandoned" | "failed"
+  currentStep       Int      @default(0)
+
+  // Data
+  collectedData     Json?    // Data collected during execution
+  results           Json?    // Final results
+
+  // Timing
+  startedAt         DateTime @default(now())
+  completedAt       DateTime?
+  duration          Int?     // seconds
+
+  // Quality
+  completionRate    Float?   // percentage of steps completed
+  userRating        Int?     // 1-5 stars
+  userFeedback      String?
+
+  @@index([templateId])
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================
+// TELEPATHY / GHOST SIGNAL MODELS
+// ============================================
+
+// Telepathy Session - tracks 2-player async telepathy game ("Ghost Signal")
+model TelepathySession {
+  id                String   @id @default(uuid())
+
+  // Participants
+  senderId          String
+  receiverId        String?  // Null until matched
+  status            String   @default("awaiting_receiver") // awaiting_receiver, sending, delay, receiving, revealed, scored, expired
+
+  // Target & Distractors
+  targetCID         String?  // IPFS CID of target image
+  targetImageUrl    String?  // Direct URL to target image
+  targetDescription String?  // AI-generated description
+  distractorCIDs    String[] // IPFS CIDs of distractor images
+  distractorUrls    String[] // Direct URLs to distractor images
+
+  // Sender Phase
+  senderTags        String[] // 3 descriptive tags from sender
+  senderTagsHash    String?  // On-chain hash of sender tags + salt
+  senderSalt        String?  // Salt for sender commitment
+  senderViewedAt    DateTime? // When sender viewed the target
+  senderSubmittedAt DateTime? // When sender submitted tags
+
+  // Delay Phase
+  delayMinutes      Int      @default(30) // Mandatory delay (blockchain-enforced)
+  delayStartedAt    DateTime? // When delay period began
+  delayEndsAt       DateTime? // When receiver can start
+
+  // Receiver Phase
+  receiverTags      String[] // 3 "sensed" tags from receiver
+  receiverChoice    Int?     // Index of chosen image (0-3)
+  receiverChoiceCID String?  // CID of chosen image
+  receiverSubmittedAt DateTime? // When receiver submitted
+
+  // Blockchain
+  commitmentHash    String?  // On-chain commitment hash
+  commitTxId        String?  // Commit transaction ID
+  revealTxId        String?  // Reveal transaction ID
+  blockchainMode    String   @default("guest") // guest, verified
+
+  // Scoring
+  clipSimilarity    Float?   // CLIP similarity score (target vs choice)
+  psiCoefficient    Float?   // Ψ-coefficient
+  tagOverlapScore   Float?   // Semantic overlap of sender/receiver tags
+  overallScore      Float?   // Composite score
+  scoringDetails    Json?    // Full scoring breakdown
+
+  // Metadata
+  experimentType    String   @default("telepathy-ghost")
+  inviteCode        String?  @unique // For direct invitations
+  matchId           String?  // Reference to TelepathyMatch if auto-matched
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  expiresAt         DateTime? // Session expiry
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([status])
+  @@index([inviteCode])
+  @@index([createdAt])
+}
+
+// Telepathy Matchmaking Queue
+model TelepathyMatch {
+  id                String   @id @default(uuid())
+
+  // Player info
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role              String   // "sender" or "receiver" or "any"
+  status            String   @default("waiting") // waiting, matched, expired, cancelled
+
+  // Matching criteria
+  preferredDelay    Int      @default(30) // Preferred delay in minutes
+  matchedWith       String?  // userId of matched partner
+  sessionId         String?  // Resulting TelepathySession ID
+
+  // Timestamps
+  queuedAt          DateTime @default(now())
+  matchedAt         DateTime?
+  expiresAt         DateTime // Auto-expire from queue
+
+  @@index([status])
+  @@index([role])
+  @@index([userId])
+  @@index([queuedAt])
+}
+
+// ============================================
+// SURVEY SYSTEM MODELS
+// ============================================
+
+// Baseline Profile - stable demographic/background data (90-day cache)
+model BaselineProfile {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Demographics
+  ageRange          String   // "18-24", "25-34", "35-44", "45-54", "55+"
+  gender            String?  // Optional
+  handedness        String   // "Right", "Left", "Ambidextrous"
+  timezone          String?  // Auto-detected timezone
+
+  // Experience & Beliefs
+  meditationExperience Int   @default(0) // 0-10 scale
+  beliefScale       Int      @default(5)  // 0-10: Skeptic ↔ Believer
+  psiTraining       String   @default("None") // "None", "Books/videos", "Workshops", "Formal training"
+
+  // Auto-detected environment data
+  geomagneticIndex  Float?   // NOAA geomagnetic field index at creation
+  lunarPhase        String?  // "New", "Waxing Crescent", "First Quarter", etc.
+
+  // Metadata
+  dataVersion       String   @default("1.0")
+  encryptedData     String?  @db.Text // AES-256 encrypted blob
+  commitmentHash    String?  // Midnight blockchain commitment
+
+  createdAt         DateTime @default(now())
+  expiresAt         DateTime // 90 days from creation
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// Session Calibration - captures current state before each experiment
+model SessionCalibration {
+  id                String   @id @default(uuid())
+  userId            String   // No foreign key - allows test users
+
+  sessionId         String?  // Link to ExperimentSession if applicable
+  experimentType    String   // "remote_viewing", "telepathy", etc.
+
+  // Physiological state
+  sleepHours        Float?   // 0-12
+  caffeineIntake    String?  // "None", "1 cup", "2+", "Energy drink"
+  substancesUsed    String?  // Encrypted, optional: "None", "Alcohol (last 24h)", etc.
+
+  // Psychological state
+  moodState         Int      @default(5) // 0-10: 😞 → 😐 → 🙂
+  stressLevel       Int      @default(5) // 0-10
+  focusLevel        Int      @default(5) // 0-10
+  timePressure      Boolean  @default(false) // Are they rushed?
+  outcomeExpectation Int?    @default(5) // 0-10: sheep-goat effect
+
+  // Auto-detected environment
+  localTime         DateTime @default(now())
+  deviceLight       Float?   // Ambient light sensor (if available)
+  heartRate         Int?     // If wearable connected
+  geomagneticIndex  Float?   // NOAA API
+  lunarPhase        String?  // Current lunar phase
+
+  // Attention check
+  attentionCheckPassed Boolean @default(true)
+
+  // Metadata
+  dataVersion       String   @default("1.0")
+  encryptedData     String?  @db.Text
+  commitmentHash    String?  // Midnight commitment
+  skipped           Boolean  @default(false)
+
+  createdAt         DateTime @default(now())
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([experimentType])
+  @@index([createdAt])
+}
+
+// Post-Experiment Feedback - collects quick debrief
+model PostExperimentFeedback {
+  id                String   @id @default(uuid())
+  userId            String   // No foreign key - allows test users
+
+  sessionId         String?  // Link to ExperimentSession
+  experimentType    String
+
+  // Feedback data
+  difficulty        Int      @default(5) // 0-10: How challenging
+  confidence        Int      @default(5) // 0-10: Confidence in responses
+  phenomenology     String[] // ["Visual imagery", "Bodily sensations", etc.]
+  comments          String?  @db.Text
+
+  // Token rewards (not XP)
+  tokensEarned      Int      @default(0)
+  bonusTokens       Int      @default(0)
+  tokenReason       String?  // "Survey completion", "High accuracy", etc.
+
+  // Gamification
+  achievementsUnlocked String[] // Achievement IDs unlocked
+
+  createdAt         DateTime @default(now())
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([experimentType])
+}
