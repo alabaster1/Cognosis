@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Header from '@/components/layout/Header';
@@ -10,6 +10,18 @@ import { Send, Eye, Clock, CheckCircle2, Loader2 } from 'lucide-react';
 type Phase = 'loading' | 'viewing' | 'tagging' | 'submitted' | 'waiting' | 'results';
 
 export default function SenderPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-gray-950 via-purple-950/20 to-gray-950 text-white flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
+      </div>
+    }>
+      <SenderContent />
+    </Suspense>
+  );
+}
+
+function SenderContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('sessionId') || '';
   const userId = searchParams.get('userId') || '';
