@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Header from '@/components/layout/Header';
@@ -11,6 +11,18 @@ import { Radio, Clock, Brain, Loader2, CheckCircle2 } from 'lucide-react';
 type Phase = 'loading' | 'waiting_delay' | 'sensing' | 'selecting' | 'submitted' | 'results';
 
 export default function ReceiverPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-gray-950 via-indigo-950/20 to-gray-950 text-white flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
+      </div>
+    }>
+      <ReceiverContent />
+    </Suspense>
+  );
+}
+
+function ReceiverContent() {
   const searchParams = useSearchParams();
   const sessionId = searchParams.get('sessionId') || '';
   const userId = searchParams.get('userId') || '';
