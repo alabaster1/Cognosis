@@ -1,45 +1,31 @@
 /**
- * IPFS Service - Pinata integration for decentralized storage
+ * IPFS Service - Routes through backend proxy (Pinata secrets stay server-side)
  */
 
 import axios from 'axios';
 
-class IPFSService {
-  private apiKey: string;
-  private apiSecret: string;
-  private gatewayUrl: string;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const IPFS_GATEWAY = process.env.NEXT_PUBLIC_IPFS_GATEWAY || 'https://gateway.pinata.cloud';
 
-  constructor() {
-    this.apiKey = process.env.NEXT_PUBLIC_PINATA_API_KEY || '';
-    this.apiSecret = process.env.NEXT_PUBLIC_PINATA_API_SECRET || '';
-    this.gatewayUrl = process.env.NEXT_PUBLIC_IPFS_GATEWAY || 'https://gateway.pinata.cloud';
+class IPFSService {
+  private getAuthHeader(): Record<string, string> {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
   /**
-   * Upload JSON data to IPFS via Pinata
+   * Upload JSON data to IPFS via backend proxy
    */
   async uploadJSON(data: unknown, metadata?: { name?: string; keyvalues?: Record<string, string> }): Promise<string> {
     try {
-      const url = 'https://api.pinata.cloud/pinning/pinJSONToIPFS';
+      const response = await axios.post(
+        `${API_URL}/api/ipfs/pin`,
+        { content: data, metadata },
+        { headers: { ...this.getAuthHeader(), 'Content-Type': 'application/json' } }
+      );
 
-      const body = {
-        pinataContent: data,
-        pinataMetadata: {
-          name: metadata?.name || `Cognosis_${Date.now()}`,
-          keyvalues: metadata?.keyvalues || {},
-        },
-      };
-
-      const response = await axios.post(url, body, {
-        headers: {
-          pinata_api_key: this.apiKey,
-          pinata_secret_api_key: this.apiSecret,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      console.log('[IPFSService] Upload successful:', response.data.IpfsHash);
-      return response.data.IpfsHash;
+      console.log('[IPFSService] Upload successful:', response.data.ipfsHash);
+      return response.data.ipfsHash;
     } catch (error: unknown) {
       const err = error as { response?: { data?: { error?: string } }; message?: string };
       console.error('[IPFSService] Upload error:', err.response?.data || err.message);
@@ -48,11 +34,11 @@ class IPFSService {
   }
 
   /**
-   * Retrieve data from IPFS by CID
+   * Retrieve data from IPFS by CID (direct gateway fetch, no secrets needed)
    */
   async retrieve(cid: string): Promise<unknown> {
     try {
-      const url = `${this.gatewayUrl}/ipfs/${cid}`;
+      const url = `${IPFS_GATEWAY}/ipfs/${cid}`;
       const response = await axios.get(url);
       return response.data;
     } catch (error: unknown) {
@@ -66,20 +52,16 @@ class IPFSService {
    * Get IPFS gateway URL for a CID
    */
   getGatewayUrl(cid: string): string {
-    return `${this.gatewayUrl}/ipfs/${cid}`;
+    return `${IPFS_GATEWAY}/ipfs/${cid}`;
   }
 
   /**
-   * Unpin data from Pinata (optional cleanup)
+   * Unpin data from IPFS via backend proxy
    */
   async unpin(cid: string): Promise<void> {
     try {
-      const url = `https://api.pinata.cloud/pinning/unpin/${cid}`;
-      await axios.delete(url, {
-        headers: {
-          pinata_api_key: this.apiKey,
-          pinata_secret_api_key: this.apiSecret,
-        },
+      await axios.delete(`${API_URL}/api/ipfs/unpin/${cid}`, {
+        headers: this.getAuthHeader(),
       });
       console.log('[IPFSService] Unpinned:', cid);
     } catch (error: unknown) {

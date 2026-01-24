@@ -1,9 +1,13 @@
 /**
- * Wallet Service - Cardano Version
+ * Wallet Service - Cardano Only (CIP-30 + CIP-8 Auth)
  * Supports CIP-30 wallet connection (Nami, Eternl, Lace, Flint)
+ * Authenticates via backend challenge-response (CIP-8 signature)
  */
 
 import type { WalletInfo, WalletType } from '@/types';
+import axios from 'axios';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 class WalletService {
   private walletAddress: string | null = null;
@@ -64,10 +68,13 @@ class WalletService {
         throw new Error('No address found in wallet');
       }
 
-      // Save wallet
+      // Authenticate with backend (challenge-response)
+      await this.authenticateWithBackend(address);
+
+      // Save wallet locally
       await this.saveWallet(address, 'cardano');
 
-      console.log('[WalletService] Connected:', this.getShortenedAddress(address));
+      console.log('[WalletService] Connected and authenticated:', this.getShortenedAddress(address));
 
       return {
         address,
@@ -88,27 +95,44 @@ class WalletService {
     return this.connectCardanoWallet('lace');
   }
 
-  async continueAsGuest(): Promise<{ address: string; type: WalletType; network: string }> {
-    try {
-      console.log('[WalletService] Continuing as guest...');
-
-      const guestId = `guest_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-
-      localStorage.setItem('walletAddress', guestId);
-      localStorage.setItem('walletType', 'guest');
-
-      this.walletAddress = guestId;
-      this.walletType = 'guest';
-
-      return {
-        address: guestId,
-        type: 'guest',
-        network: 'local',
-      };
-    } catch (error) {
-      console.error('[WalletService] Guest mode error:', error);
-      throw error;
+  /**
+   * Authenticate with backend using CIP-8 challenge-response
+   * 1. Request challenge from backend
+   * 2. Sign challenge with wallet (CIP-30 signData)
+   * 3. Submit signature to backend for JWT
+   */
+  async authenticateWithBackend(walletAddress: string): Promise<void> {
+    if (!this.walletApi) {
+      throw new Error('Wallet not connected');
     }
+
+    // Step 1: Request challenge
+    const challengeRes = await axios.post(`${API_URL}/api/auth/wallet/challenge`, {
+      walletAddress,
+    });
+    const { message } = challengeRes.data;
+
+    // Step 2: Sign challenge with CIP-30 signData
+    const encoder = new TextEncoder();
+    const messageHex = Array.from(encoder.encode(message))
+      .map((b: number) => b.toString(16).padStart(2, '0'))
+      .join('');
+
+    const dataSignature = await this.walletApi.signData(walletAddress, messageHex);
+
+    // Step 3: Submit signature to backend
+    const authRes = await axios.post(`${API_URL}/api/auth/wallet`, {
+      walletAddress,
+      signature: dataSignature, // { signature: hex, key: hex }
+    });
+
+    if (!authRes.data.success) {
+      throw new Error(authRes.data.error || 'Authentication failed');
+    }
+
+    // Store JWT
+    localStorage.setItem('authToken', authRes.data.token);
+    console.log('[WalletService] Backend authentication successful');
   }
 
   private async saveWallet(address: string, type: WalletType): Promise<void> {
@@ -120,7 +144,7 @@ class WalletService {
 
   private loadWallet(): void {
     const address = localStorage.getItem('walletAddress');
-    const type = (localStorage.getItem('walletType') as WalletType) || 'guest';
+    const type = (localStorage.getItem('walletType') as WalletType) || null;
     this.walletAddress = address;
     this.walletType = type;
   }
@@ -136,19 +160,12 @@ class WalletService {
     const address = await this.getWallet();
     if (!address) return null;
 
-    const type = this.walletType || 'guest';
-
     return {
       address,
-      type,
-      network: type === 'guest' ? 'local' : 'preprod',
-      isVerified: type !== 'guest',
+      type: this.walletType || 'cardano',
+      network: 'preprod',
+      isVerified: true,
     };
-  }
-
-  async isVerified(): Promise<boolean> {
-    const info = await this.getWalletInfo();
-    return info ? info.type !== 'guest' : false;
   }
 
   async isConnected(): Promise<boolean> {
@@ -156,26 +173,16 @@ class WalletService {
     return !!address;
   }
 
-  async signMessage(message: string): Promise<string> {
-    if (this.walletType === 'guest') {
-      // Guest mode: mock signature
-      const encoder = new TextEncoder();
-      const data = encoder.encode(`${message}:${this.walletAddress}:${Date.now()}`);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', data as unknown as Uint8Array<ArrayBuffer>);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return '0x' + hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  async signMessage(message: string): Promise<{ signature: string; key: string }> {
+    if (!this.walletApi) {
+      throw new Error('No wallet available for signing');
     }
 
-    if (this.walletApi) {
-      // Use CIP-30 signData
-      const encoder = new TextEncoder();
-      const messageHex = Array.from(encoder.encode(message))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-      return await this.walletApi.signData(this.walletAddress, messageHex);
-    }
-
-    throw new Error('No wallet available for signing');
+    const encoder = new TextEncoder();
+    const messageHex = Array.from(encoder.encode(message))
+      .map((b: number) => b.toString(16).padStart(2, '0'))
+      .join('');
+    return await this.walletApi.signData(this.walletAddress, messageHex);
   }
 
   async getBalance(): Promise<{ lovelace: string; formatted: string }> {
@@ -185,7 +192,6 @@ class WalletService {
 
     try {
       const balanceHex = await this.walletApi.getBalance();
-      // Parse CBOR-encoded balance (simplified)
       const lovelace = parseInt(balanceHex, 16).toString();
       const ada = (parseInt(lovelace) / 1_000_000).toFixed(2);
       return { lovelace, formatted: ada };
@@ -205,19 +211,15 @@ class WalletService {
     }
 
     try {
-      // Build metadata with score data
       const encoder = new TextEncoder();
       const metadataHex = Array.from(encoder.encode(JSON.stringify(transactionData)))
-        .map(b => b.toString(16).padStart(2, '0'))
+        .map((b: number) => b.toString(16).padStart(2, '0'))
         .join('');
 
-      // For now, log the transaction intent
-      // Full Cardano tx building requires Lucid or cardano-serialization-lib
       console.log('[WalletService] Transaction data:', transactionData);
       console.log('[WalletService] Metadata hex:', metadataHex.substring(0, 64));
 
       // TODO: Build proper Cardano transaction with Lucid
-      // For MVP, return a mock success
       return {
         success: true,
         txHash: `tx_${Date.now().toString(16)}`,
@@ -231,6 +233,7 @@ class WalletService {
   async logout(): Promise<void> {
     localStorage.removeItem('walletAddress');
     localStorage.removeItem('walletType');
+    localStorage.removeItem('authToken');
     this.walletAddress = null;
     this.walletType = null;
     this.walletApi = null;
@@ -239,7 +242,6 @@ class WalletService {
   getShortenedAddress(address?: string): string {
     const addr = address || this.walletAddress;
     if (!addr) return '';
-    if (addr.startsWith('guest_')) return 'Guest';
     return `${addr.substring(0, 12)}...${addr.substring(addr.length - 6)}`;
   }
 }

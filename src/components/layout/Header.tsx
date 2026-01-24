@@ -209,96 +209,94 @@ export default function Header() {
         <div className="flex items-center gap-4">
           {wallet ? (
             <div className="flex items-center gap-3">
-              {wallet.type !== 'guest' && (
-                <div className="relative" ref={userDropdownRef}>
-                  <button
-                    onClick={() => setShowUserDropdown(!showUserDropdown)}
-                    className="p-2 hover:bg-[#1a2535] rounded-full transition-colors"
+              <div className="relative" ref={userDropdownRef}>
+                <button
+                  onClick={() => setShowUserDropdown(!showUserDropdown)}
+                  className="p-2 hover:bg-[#1a2535] rounded-full transition-colors"
+                >
+                  <User className="w-5 h-5" />
+                </button>
+
+                {showUserDropdown && (
+                  <div
+                    className="absolute top-full right-0 mt-2 w-56 bg-[#0f1520] border border-[#1a2535] rounded-lg shadow-xl shadow-black/50 overflow-hidden"
+                    onClick={(e) => {
+                      if ((e.target as HTMLElement).closest('a')) {
+                        setShowUserDropdown(false);
+                      }
+                    }}
                   >
-                    <User className="w-5 h-5" />
-                  </button>
-
-                  {showUserDropdown && (
-                    <div
-                      className="absolute top-full right-0 mt-2 w-56 bg-[#0f1520] border border-[#1a2535] rounded-lg shadow-xl shadow-black/50 overflow-hidden"
-                      onClick={(e) => {
-                        if ((e.target as HTMLElement).closest('a')) {
-                          setShowUserDropdown(false);
-                        }
-                      }}
-                    >
-                      {/* Profile Section */}
-                      <div className="px-4 py-3 border-b border-[#1a2535] bg-[#0a1018]">
-                        <div className="text-xs text-slate-500">Signed in as</div>
-                        <div className="font-mono text-sm text-[#e0e8f0] mt-1">
-                          {walletService.getShortenedAddress(wallet.address)}
-                        </div>
-                      </div>
-
-                      {/* Profile & Stats */}
-                      <div className="py-2">
-                        <Link
-                          href="/profile"
-                          className="flex items-center gap-3 px-4 py-2 hover:bg-[#1a2535] transition-colors"
-                        >
-                          <UserCircle className="w-4 h-4 text-cyan-400" />
-                          <span>My Profile</span>
-                        </Link>
-                        <Link
-                          href="/history"
-                          className="flex items-center gap-3 px-4 py-2 hover:bg-[#1a2535] transition-colors"
-                        >
-                          <History className="w-4 h-4 text-violet-400" />
-                          <span>Session History</span>
-                        </Link>
-                        <Link
-                          href="/baseline"
-                          className="flex items-center gap-3 px-4 py-2 hover:bg-[#1a2535] transition-colors"
-                        >
-                          <FileText className="w-4 h-4 text-emerald-400" />
-                          <span>Baseline Profile</span>
-                        </Link>
-                      </div>
-
-                      {/* Rewards & Achievements */}
-                      <div className="py-2 border-t border-[#1a2535]">
-                        <Link
-                          href="/tokens"
-                          className="flex items-center gap-3 px-4 py-2 hover:bg-[#1a2535] transition-colors"
-                        >
-                          <Coins className="w-4 h-4 text-amber-400" />
-                          <span>My Tokens</span>
-                        </Link>
-                        <Link
-                          href="/achievements"
-                          className="flex items-center gap-3 px-4 py-2 hover:bg-[#1a2535] transition-colors"
-                        >
-                          <Award className="w-4 h-4 text-orange-400" />
-                          <span>Achievements</span>
-                        </Link>
-                      </div>
-
-                      {/* Settings & Help */}
-                      <div className="py-2 border-t border-[#1a2535]">
-                        <Link
-                          href="/settings"
-                          className="flex items-center gap-3 px-4 py-2 hover:bg-[#1a2535] transition-colors"
-                        >
-                          <Settings className="w-4 h-4 text-slate-400" />
-                          <span>Settings</span>
-                        </Link>
-                        <Link
-                          href="/help"
-                          className="flex items-center gap-3 px-4 py-2 hover:bg-[#1a2535] transition-colors"
-                        >
-                          <HelpCircle className="w-4 h-4 text-teal-400" />
-                          <span>Help & Tutorials</span>
-                        </Link>
+                    {/* Profile Section */}
+                    <div className="px-4 py-3 border-b border-[#1a2535] bg-[#0a1018]">
+                      <div className="text-xs text-slate-500">Signed in as</div>
+                      <div className="font-mono text-sm text-[#e0e8f0] mt-1">
+                        {walletService.getShortenedAddress(wallet.address)}
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
+
+                    {/* Profile & Stats */}
+                    <div className="py-2">
+                      <Link
+                        href="/profile"
+                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#1a2535] transition-colors"
+                      >
+                        <UserCircle className="w-4 h-4 text-cyan-400" />
+                        <span>My Profile</span>
+                      </Link>
+                      <Link
+                        href="/history"
+                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#1a2535] transition-colors"
+                      >
+                        <History className="w-4 h-4 text-violet-400" />
+                        <span>Session History</span>
+                      </Link>
+                      <Link
+                        href="/baseline"
+                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#1a2535] transition-colors"
+                      >
+                        <FileText className="w-4 h-4 text-emerald-400" />
+                        <span>Baseline Profile</span>
+                      </Link>
+                    </div>
+
+                    {/* Rewards & Achievements */}
+                    <div className="py-2 border-t border-[#1a2535]">
+                      <Link
+                        href="/tokens"
+                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#1a2535] transition-colors"
+                      >
+                        <Coins className="w-4 h-4 text-amber-400" />
+                        <span>My Tokens</span>
+                      </Link>
+                      <Link
+                        href="/achievements"
+                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#1a2535] transition-colors"
+                      >
+                        <Award className="w-4 h-4 text-orange-400" />
+                        <span>Achievements</span>
+                      </Link>
+                    </div>
+
+                    {/* Settings & Help */}
+                    <div className="py-2 border-t border-[#1a2535]">
+                      <Link
+                        href="/settings"
+                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#1a2535] transition-colors"
+                      >
+                        <Settings className="w-4 h-4 text-slate-400" />
+                        <span>Settings</span>
+                      </Link>
+                      <Link
+                        href="/help"
+                        className="flex items-center gap-3 px-4 py-2 hover:bg-[#1a2535] transition-colors"
+                      >
+                        <HelpCircle className="w-4 h-4 text-teal-400" />
+                        <span>Help & Tutorials</span>
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
               <button
                 onClick={handleLogout}
                 className="p-2 hover:bg-[#1a2535] rounded-full transition-colors"

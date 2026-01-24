@@ -1,5 +1,5 @@
 /**
- * Wallet Store - Zustand state management for wallet
+ * Wallet Store - Zustand state management for wallet (Cardano only)
  */
 
 import { create } from 'zustand';
@@ -13,7 +13,7 @@ interface WalletState {
 
   // Actions
   connectLace: () => Promise<void>;
-  continueAsGuest: () => Promise<void>;
+  connectCardano: (walletName: string) => Promise<void>;
   loadWallet: () => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
@@ -31,30 +31,30 @@ export const useWalletStore = create<WalletState>((set) => ({
       const wallet: WalletInfo = {
         address: result.address,
         type: result.type,
-        network: result.network as 'testnet' | 'mainnet' | 'local',
+        network: result.network as 'testnet' | 'mainnet' | 'preprod',
         isVerified: true,
       };
       set({ wallet, isLoading: false });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to connect Lace wallet';
+      const message = error instanceof Error ? error.message : 'Failed to connect wallet';
       set({ error: message, isLoading: false });
       throw error;
     }
   },
 
-  continueAsGuest: async () => {
+  connectCardano: async (walletName: string) => {
     set({ isLoading: true, error: null });
     try {
-      const result = await walletService.continueAsGuest();
+      const result = await walletService.connectCardanoWallet(walletName);
       const wallet: WalletInfo = {
         address: result.address,
         type: result.type,
-        network: 'local',
-        isVerified: false,
+        network: result.network as 'testnet' | 'mainnet' | 'preprod',
+        isVerified: true,
       };
       set({ wallet, isLoading: false });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to continue as guest';
+      const message = error instanceof Error ? error.message : 'Failed to connect wallet';
       set({ error: message, isLoading: false });
       throw error;
     }
@@ -85,8 +85,3 @@ export const useWalletStore = create<WalletState>((set) => ({
 
   clearError: () => set({ error: null }),
 }));
-
-// Auto-load wallet on initialization (client-side only)
-if (typeof window !== 'undefined') {
-  useWalletStore.getState().loadWallet();
-}

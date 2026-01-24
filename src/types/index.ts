@@ -2,7 +2,7 @@
  * Cognosis Web - TypeScript Type Definitions
  */
 
-export type WalletType = 'guest' | 'midnight' | 'lace' | 'cardano';
+export type WalletType = 'cardano';
 export type ExperimentType =
   | 'remote-viewing'
   | 'precognition'
@@ -23,14 +23,25 @@ export type ExperimentType =
   | 'remote-viewing-objects'
   | 'telepathy-emotions'
   | 'telepathy-live'
-  | 'time-loop';
+  | 'time-loop'
+  | 'pattern-oracle'
+  | 'timeline-racer'
+  | 'retro-roulette'
+  | 'emotion-echo'
+  | 'quantum-coin-arena'
+  | 'psi-poker'
+  | 'mind-pulse'
+  | 'synchronicity-bingo'
+  | 'telepathy-ghost'
+  | 'dice-influence'
+  | 'precog-explorer';
 
 export type ExperimentStatus = 'draft' | 'committed' | 'revealed' | 'verified';
 
 export interface WalletInfo {
   address: string;
   type: WalletType;
-  network: 'testnet' | 'mainnet' | 'local' | 'preprod';
+  network: 'testnet' | 'mainnet' | 'preprod';
   isVerified: boolean;
 }
 

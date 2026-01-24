@@ -273,11 +273,11 @@ export default function DashboardPage() {
         </div>
 
         {/* Wallet Info - Show connected wallet address */}
-        {wallet && wallet.type !== 'guest' && (
+        {wallet && (
           <div className="mb-8 bg-[#0f1520]/80 border border-[#1a2535] rounded-xl p-6">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <h3 className="text-lg font-semibold">Lace Wallet Connected</h3>
+              <h3 className="text-lg font-semibold">Wallet Connected</h3>
             </div>
             <p className="text-sm text-slate-400 font-mono break-all">{wallet.address}</p>
           </div>
