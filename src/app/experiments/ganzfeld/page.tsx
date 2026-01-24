@@ -217,94 +217,147 @@ export default function GanzfeldPage() {
 
   if (phase === 'intro') {
     return (
-      <div className="min-h-screen bg-[#060a0f]">
+      <div className="min-h-screen bg-[#060a0f] overflow-hidden relative">
         <Header />
-        <div className="container mx-auto px-4 py-20">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-3xl mx-auto"
-          >
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-teal-500 flex items-center justify-center">
-                <Eye className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold">Ganzfeld Protocol</h1>
-                <p className="text-slate-400">Sensory deprivation for psi reception</p>
-              </div>
-            </div>
+        {/* Red/amber ganzfeld glow */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(220,38,38,0.04)_0%,_transparent_60%)] pointer-events-none" />
 
-            <div className="bg-[#0f1520]/80 border border-[#1a2535] rounded-2xl p-8 mb-8">
-              <h2 className="text-2xl font-bold mb-4">The Ganzfeld Method</h2>
-              <p className="text-slate-300 mb-4">
-                The Ganzfeld protocol uses mild sensory deprivation to create an optimal state for psi reception.
-                By reducing external stimuli through uniform visual fields (red light + eye covering) and white/pink
-                noise, participants enter a relaxed, receptive state that may enhance psychic perception.
-              </p>
-              <ol className="space-y-4">
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold">
-                    1
-                  </span>
-                  <div>
-                    <strong>Setup Environment</strong>
-                    <p className="text-slate-400 text-sm">
-                      Quiet space, eye covering (ping pong balls or cotton pads), headphones, red/amber light
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold">
-                    2
-                  </span>
-                  <div>
-                    <strong>Adaptation Phase (5 min)</strong>
-                    <p className="text-slate-400 text-sm">
-                      Pink noise playing, visual field uniform, body relaxed
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold">
-                    3
-                  </span>
-                  <div>
-                    <strong>Reception Phase (15 min)</strong>
-                    <p className="text-slate-400 text-sm">
-                      Log impressions, images, thoughts as they arise
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold">
-                    4
-                  </span>
-                  <div>
-                    <strong>Review & Judge</strong>
-                    <p className="text-slate-400 text-sm">
-                      Review mentation log and rank target images by match quality
-                    </p>
-                  </div>
-                </li>
-              </ol>
-            </div>
+        {/* Static noise overlay */}
+        <motion.div
+          className="absolute inset-0 opacity-[0.02] pointer-events-none"
+          style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")' }}
+        />
 
-            <div className="bg-cyan-900/20 border border-cyan-500/30 rounded-lg p-4 mb-8">
-              <p className="text-sm text-cyan-300">
-                <strong>Note:</strong> This experiment works best in a quiet, comfortable environment.
-                You&apos;ll need headphones and some form of eye covering (halved ping pong balls, cotton pads,
-                or sleep mask). A red or amber light creates the ideal visual field.
-              </p>
-            </div>
-
-            <button
-              onClick={handleStartExperiment}
-              className="w-full px-8 py-4 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-lg font-semibold text-lg hover:shadow-lg hover:shadow-cyan-500/30 transition-all flex items-center justify-center gap-2"
+        <div className="container mx-auto px-4 py-16 relative z-10">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto text-center">
+            {/* Eye closing animation */}
+            <motion.div
+              className="inline-flex items-center justify-center w-28 h-28 mb-6 relative"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', delay: 0.2 }}
             >
-              Start Experiment
-              <ArrowRight className="w-5 h-5" />
-            </button>
+              <motion.div
+                className="absolute inset-0 rounded-full bg-red-900/20 border border-red-500/20"
+                animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.2, 0.5] }}
+                transition={{ duration: 4, repeat: Infinity }}
+              />
+              <motion.div
+                className="w-20 h-20 rounded-full bg-gradient-to-b from-red-950/40 to-amber-950/40 border border-red-400/20 flex items-center justify-center shadow-[0_0_40px_rgba(220,38,38,0.15)]"
+                animate={{ boxShadow: ['0 0 20px rgba(220,38,38,0.1)', '0 0 50px rgba(220,38,38,0.2)', '0 0 20px rgba(220,38,38,0.1)'] }}
+                transition={{ duration: 4, repeat: Infinity }}
+              >
+                <motion.div
+                  animate={{ scaleY: [1, 0.2, 1] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  <Eye className="w-10 h-10 text-red-400/80" />
+                </motion.div>
+              </motion.div>
+            </motion.div>
+
+            <motion.h1
+              className="text-5xl md:text-7xl font-black mb-2"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <span className="bg-gradient-to-r from-red-300/80 via-amber-200/80 to-red-300/80 bg-clip-text text-transparent">
+                GANZFELD
+              </span>
+            </motion.h1>
+            <motion.p
+              className="text-xl text-white/40 font-light tracking-[0.2em]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              PROTOCOL
+            </motion.p>
+
+            <motion.p
+              className="text-red-300/50 text-sm mt-4 uppercase tracking-widest"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              Sensory Deprivation &middot; Psi Reception
+            </motion.p>
+
+            <motion.p
+              className="text-slate-400 max-w-md mx-auto text-sm mt-4 mb-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+            >
+              Enter the void. Reduce all sensory input until only pure
+              psychic impressions remain.
+            </motion.p>
+
+            {/* Setup requirements */}
+            <motion.div
+              className="grid grid-cols-3 gap-3 mb-8 max-w-sm mx-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+            >
+              {[
+                { icon: Volume2, label: 'Headphones' },
+                { icon: Eye, label: 'Eye Cover' },
+                { icon: Lightbulb, label: 'Red Light' },
+              ].map((item, i) => (
+                <motion.div
+                  key={i}
+                  className="p-3 rounded-xl bg-red-950/20 border border-red-500/15 text-center"
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.8 + i * 0.1 }}
+                >
+                  <item.icon className="w-5 h-5 text-red-400/70 mx-auto mb-1" />
+                  <div className="text-[10px] text-slate-400">{item.label}</div>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* Phase timeline */}
+            <motion.div
+              className="flex items-center justify-center gap-1 mb-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+            >
+              {[
+                { label: 'Setup', time: '2m' },
+                { label: 'Adapt', time: '5m' },
+                { label: 'Receive', time: '15m' },
+                { label: 'Judge', time: '5m' },
+              ].map((phase, i) => (
+                <motion.div key={i} className="flex items-center gap-1">
+                  <div className="px-3 py-1.5 rounded-lg bg-[#0a0e14] border border-red-500/10 text-center">
+                    <div className="text-[10px] text-red-400/60">{phase.time}</div>
+                    <div className="text-[10px] text-slate-400">{phase.label}</div>
+                  </div>
+                  {i < 3 && <div className="w-4 h-[1px] bg-red-500/20" />}
+                </motion.div>
+              ))}
+            </motion.div>
+
+            <motion.button
+              onClick={handleStartExperiment}
+              className="w-full max-w-md mx-auto relative group block"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.1 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-red-700 to-amber-700 rounded-2xl blur-lg opacity-20 group-hover:opacity-50 transition-opacity" />
+              <div className="relative px-8 py-5 bg-gradient-to-r from-red-800/80 to-amber-800/80 border border-red-500/30 rounded-2xl font-bold text-lg flex items-center justify-center gap-3">
+                <Eye className="w-5 h-5 text-red-300" />
+                <span className="text-red-100">Enter the Ganzfeld</span>
+                <ArrowRight className="w-5 h-5 text-red-300" />
+              </div>
+            </motion.button>
           </motion.div>
         </div>
       </div>

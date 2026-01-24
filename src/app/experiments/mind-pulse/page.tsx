@@ -77,6 +77,9 @@ export default function MindPulsePage() {
   const [nonce, setNonce] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [drandRound, setDrandRound] = useState<number | null>(null);
+  const [randomnessSource, setRandomnessSource] = useState<string | null>(null);
+  const [dynamicConcepts, setDynamicConcepts] = useState<PulseTarget[]>([]);
 
   // Pulse state
   const [nextPulse, setNextPulse] = useState<PulseEvent | null>(null);
@@ -224,9 +227,26 @@ export default function MindPulsePage() {
       setNonce(result.participantId);
       localStorage.setItem(`mind_pulse_participant_${result.pulseId}`, result.participantId);
 
+      // Store drand info if available
+      if (result.drandRound) setDrandRound(result.drandRound);
+      if (result.randomnessSource) setRandomnessSource(result.randomnessSource);
+
+      // Build dynamic concept targets if provided by backend
+      let availableTargets = PULSE_TARGETS;
+      if (result.pulseConcepts && result.pulseConcepts.length > 0) {
+        const conceptTargets: PulseTarget[] = result.pulseConcepts.map((c: string) => ({
+          id: c,
+          type: 'concept' as const,
+          value: c,
+          displayValue: c.toUpperCase(),
+        }));
+        setDynamicConcepts(conceptTargets);
+        availableTargets = [...PULSE_TARGETS.filter(t => t.type !== 'concept'), ...conceptTargets];
+      }
+
       // Use backend-provided pulse data
       const targetIndex = result.targetIndex;
-      const target = PULSE_TARGETS[targetIndex % PULSE_TARGETS.length];
+      const target = availableTargets[targetIndex % availableTargets.length];
 
       const pulse: PulseEvent = {
         id: result.pulseId,
@@ -297,93 +317,152 @@ export default function MindPulsePage() {
           {phase === 'intro' && (
             <motion.div
               key="intro"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              className="relative"
             >
-              <div className="bg-gradient-to-br from-cyan-900/20 to-fuchsia-900/30 rounded-2xl border border-cyan-500/20 p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-3 bg-cyan-500/20 rounded-xl">
-                    <Radio className="w-8 h-8 text-cyan-400" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-white">Mind Pulse</h1>
-                    <p className="text-cyan-300">Global Consciousness Experiment</p>
-                  </div>
-                </div>
-
-                <div className="space-y-4 text-slate-300 mb-8">
-                  <p>
-                    Join researchers worldwide in synchronized global intention experiments.
-                    Together, we focus on a single target to test collective consciousness effects.
-                  </p>
-
-                  <div className="bg-[#060a0f]/30 rounded-xl p-4 border border-cyan-500/20">
-                    <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <Globe className="w-5 h-5 text-cyan-400" />
-                      How It Works
-                    </h3>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-start gap-2">
-                        <span className="text-cyan-400">1.</span>
-                        <span>Pulse events occur at scheduled times (hourly)</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-cyan-400">2.</span>
-                        <span>All participants focus on the same target (color, number, or concept)</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-cyan-400">3.</span>
-                        <span>Live dashboard shows global convergence in real-time</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-cyan-400">4.</span>
-                        <span>Effect sizes measured against random baseline</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4">
-                    <h3 className="font-semibold text-cyan-300 mb-2">The Global Consciousness Project</h3>
-                    <p className="text-sm text-slate-400">
-                      Inspired by the Princeton GCP, Mind Pulse tests whether collective human
-                      intention can influence random number generators worldwide. Join thousands
-                      of researchers in this ongoing experiment.
-                    </p>
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
-                    <p className="text-red-400">{error}</p>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={initializePulse}
-                    disabled={isLoading}
-                    className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white py-4 rounded-xl font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <>
-                        <Zap className="w-5 h-5" />
-                        Join Next Pulse
-                      </>
-                    )}
-                  </button>
-                  <button
-                    onClick={viewHistory}
-                    className="bg-[#142030] hover:bg-[#1a2535] text-white py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
-                  >
-                    <Clock className="w-5 h-5" />
-                    View History
-                  </button>
-                </div>
+              {/* Global pulse waves */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">
+                {[...Array(5)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute rounded-full border border-fuchsia-500/15"
+                    style={{ width: 80 + i * 60, height: 80 + i * 60 }}
+                    animate={{ scale: [1, 1.5], opacity: [0.3, 0] }}
+                    transition={{ duration: 3, delay: i * 0.6, repeat: Infinity }}
+                  />
+                ))}
               </div>
+
+              <div className="relative z-10 text-center pt-6">
+                {/* Pulsing globe */}
+                <motion.div
+                  className="inline-flex items-center justify-center w-24 h-24 mb-6 relative"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', delay: 0.2 }}
+                >
+                  <motion.div
+                    className="absolute inset-0 rounded-full bg-fuchsia-500/10"
+                    animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0, 0.3] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                  <div className="w-18 h-18 rounded-full bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-fuchsia-400/30 flex items-center justify-center p-4 shadow-[0_0_30px_rgba(192,38,211,0.2)]">
+                    <Globe className="w-10 h-10 text-fuchsia-400" />
+                  </div>
+                </motion.div>
+
+                <motion.h1
+                  className="text-5xl md:text-7xl font-black mb-1"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-cyan-400 bg-clip-text text-transparent">
+                    MIND
+                  </span>
+                </motion.h1>
+                <motion.h2
+                  className="text-2xl md:text-3xl font-light tracking-[0.4em] text-white/50"
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  PULSE
+                </motion.h2>
+
+                <motion.p
+                  className="text-fuchsia-300/50 text-sm mt-4 uppercase tracking-widest"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  Global Consciousness
+                </motion.p>
+
+                <motion.p
+                  className="text-slate-400 max-w-sm mx-auto text-sm mt-3"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  Synchronized worldwide intention experiments.
+                  Can collective focus shift random systems?
+                </motion.p>
+              </div>
+
+              {/* Live indicator */}
+              <motion.div
+                className="flex justify-center my-6"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7 }}
+              >
+                <div className="flex items-center gap-2 px-4 py-2 bg-fuchsia-950/30 border border-fuchsia-500/20 rounded-full">
+                  <motion.div
+                    className="w-2 h-2 rounded-full bg-fuchsia-400"
+                    animate={{ opacity: [1, 0.3, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  />
+                  <span className="text-xs text-fuchsia-300/80 font-mono">PULSES EVERY HOUR</span>
+                </div>
+              </motion.div>
+
+              {/* Stats */}
+              <motion.div
+                className="grid grid-cols-3 gap-3 mb-8 max-w-sm mx-auto"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}
+              >
+                <div className="text-center p-3 rounded-xl bg-violet-950/20 border border-violet-500/15">
+                  <Users className="w-5 h-5 text-violet-400 mx-auto mb-1" />
+                  <div className="text-[10px] text-slate-400">Global</div>
+                </div>
+                <div className="text-center p-3 rounded-xl bg-fuchsia-950/20 border border-fuchsia-500/15">
+                  <Activity className="w-5 h-5 text-fuchsia-400 mx-auto mb-1" />
+                  <div className="text-[10px] text-slate-400">Real-time</div>
+                </div>
+                <div className="text-center p-3 rounded-xl bg-cyan-950/20 border border-cyan-500/15">
+                  <TrendingUp className="w-5 h-5 text-cyan-400 mx-auto mb-1" />
+                  <div className="text-[10px] text-slate-400">Effect Size</div>
+                </div>
+              </motion.div>
+
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
+                  <p className="text-red-400">{error}</p>
+                </div>
+              )}
+
+              {/* CTAs */}
+              <motion.div
+                className="grid grid-cols-2 gap-3"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 }}
+              >
+                <motion.button
+                  onClick={initializePulse}
+                  disabled={isLoading}
+                  className="relative group"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-2xl blur-md opacity-30 group-hover:opacity-60 transition-opacity" />
+                  <div className="relative px-6 py-4 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Zap className="w-5 h-5" />Join Pulse</>}
+                  </div>
+                </motion.button>
+                <button
+                  onClick={viewHistory}
+                  className="px-6 py-4 bg-[#0a0e14] border border-[#1a2535] hover:border-fuchsia-500/40 rounded-2xl font-bold flex items-center justify-center gap-2 transition-colors"
+                >
+                  <Clock className="w-5 h-5 text-slate-400" />
+                  <span className="text-slate-300">History</span>
+                </button>
+              </motion.div>
             </motion.div>
           )}
 
@@ -617,6 +696,26 @@ export default function MindPulsePage() {
                       : 'Marginal effects observed. More participants needed for stronger statistical power.'}
                   </p>
                 </div>
+
+                {/* drand Verification Badge */}
+                {drandRound && (
+                  <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 mb-6 flex items-center gap-3">
+                    <div className="w-7 h-7 bg-green-500/20 rounded-full flex items-center justify-center">
+                      <span className="text-green-400 text-sm">&#10003;</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-green-300">Verifiable Randomness</p>
+                      <p className="text-xs text-green-500">drand round #{drandRound} | {randomnessSource || 'drand_quicknet'}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Dynamic concepts indicator */}
+                {dynamicConcepts.length > 0 && (
+                  <div className="text-xs text-slate-500 text-center mb-4">
+                    AI-generated focus concepts: {dynamicConcepts.map(c => c.displayValue).join(', ')}
+                  </div>
+                )}
 
                 <div className="flex justify-center gap-4">
                   <button

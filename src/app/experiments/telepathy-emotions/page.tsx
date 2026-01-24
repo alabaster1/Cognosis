@@ -85,7 +85,7 @@ export default function TelepathyEmotionsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-red-50">
+    <div className="min-h-screen bg-[#060a0f]">
       <Header />
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
@@ -93,66 +93,143 @@ export default function TelepathyEmotionsPage() {
           {phase === 'intro' && (
             <motion.div
               key="intro"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-6"
+              className="relative"
             >
-              <div className="bg-white rounded-2xl shadow-xl p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-3 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl">
-                    <Heart className="w-8 h-8 text-white" />
-                  </div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
-                    Emotion Telepathy
-                  </h1>
-                </div>
-
-                <div className="space-y-4 text-slate-600">
-                  <p className="text-lg">
-                    Sense and identify emotions being transmitted by a distant sender through a structured protocol.
-                  </p>
-
-                  <div className="bg-pink-50 border border-pink-200 rounded-lg p-4">
-                    <h3 className="font-semibold text-pink-900 mb-2">4-Phase Protocol:</h3>
-                    <ul className="space-y-2">
-                      <li className="flex items-start gap-2">
-                        <span className="text-pink-600 mt-1">1.</span>
-                        <span>Meditation: Deep relaxation and receptivity (2 minutes)</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-pink-600 mt-1">2.</span>
-                        <span>Emotion Sensing: Identify the emotion using the wheel</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-pink-600 mt-1">3.</span>
-                        <span>Valence &amp; Arousal: Rate the emotional intensity</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-pink-600 mt-1">4.</span>
-                        <span>Body Mapping: Where do you feel this emotion?</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="bg-rose-50 border border-rose-200 rounded-lg p-4">
-                    <h3 className="font-semibold text-rose-900 mb-2">What You&apos;ll Do:</h3>
-                    <ul className="space-y-1 text-sm">
-                      <li>- Select primary and secondary emotions from the wheel</li>
-                      <li>- Rate emotional valence (positive/negative) and arousal (calm/intense)</li>
-                      <li>- Map where you feel the sensation in your body</li>
-                      <li>- Add any intuitive notes or impressions</li>
-                    </ul>
-                  </div>
-                </div>
-
-                <button
-                  onClick={startMeditation}
-                  className="mt-6 w-full bg-gradient-to-r from-pink-500 to-rose-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-pink-600 hover:to-rose-700 transition-all"
-                >
-                  Begin Protocol
-                </button>
+              {/* Heartbeat wave background */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none flex items-center justify-center opacity-10">
+                <svg width="100%" height="120" viewBox="0 0 600 120">
+                  <motion.path
+                    d="M0,60 L100,60 L120,20 L140,100 L160,40 L180,80 L200,60 L300,60 L320,20 L340,100 L360,40 L380,80 L400,60 L500,60 L520,20 L540,100 L560,40 L580,80 L600,60"
+                    stroke="#ec4899"
+                    strokeWidth="2"
+                    fill="none"
+                    animate={{ pathLength: [0, 1] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                  />
+                </svg>
               </div>
+
+              <div className="relative z-10 text-center pt-6">
+                {/* Body silhouette with heart */}
+                <motion.div
+                  className="inline-flex items-center justify-center w-24 h-24 mb-6 relative"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', delay: 0.2 }}
+                >
+                  <motion.div
+                    className="absolute inset-0 rounded-full bg-pink-500/10"
+                    animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0.1, 0.3] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  />
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-600/30 to-rose-600/30 border border-pink-400/40 flex items-center justify-center shadow-[0_0_25px_rgba(236,72,153,0.3)]">
+                    <motion.div
+                      animate={{ scale: [1, 1.15, 1] }}
+                      transition={{ duration: 1, repeat: Infinity }}
+                    >
+                      <Heart className="w-8 h-8 text-pink-400" fill="currentColor" />
+                    </motion.div>
+                  </div>
+                </motion.div>
+
+                <motion.h1
+                  className="text-4xl md:text-6xl font-black mb-2"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <span className="text-2xl md:text-3xl text-white/60 block font-light tracking-wider">EMOTION</span>
+                  <span className="bg-gradient-to-r from-pink-300 via-rose-300 to-red-400 bg-clip-text text-transparent">
+                    TELEPATHY
+                  </span>
+                </motion.h1>
+
+                <motion.p
+                  className="text-pink-300/60 text-sm mt-3 uppercase tracking-widest"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  Empathic Sensing Protocol
+                </motion.p>
+
+                <motion.p
+                  className="text-slate-400 max-w-sm mx-auto text-sm mt-3"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  Sense emotions transmitted by a distant sender.
+                  Feel it in your body, name it, and map its location.
+                </motion.p>
+              </div>
+
+              {/* 4-phase visual */}
+              <motion.div
+                className="grid grid-cols-4 gap-2 my-8 max-w-sm mx-auto"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+              >
+                {[
+                  { label: 'Meditate', icon: '🧘' },
+                  { label: 'Sense', icon: '💫' },
+                  { label: 'Rate', icon: '📊' },
+                  { label: 'Map', icon: '🫁' },
+                ].map((step, i) => (
+                  <motion.div
+                    key={i}
+                    className="text-center p-3 rounded-xl bg-pink-950/20 border border-pink-500/15"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.8 + i * 0.1, type: 'spring' }}
+                  >
+                    <div className="text-xl mb-1">{step.icon}</div>
+                    <div className="text-[10px] text-pink-300/80">{step.label}</div>
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              {/* Valence scale */}
+              <motion.div
+                className="max-w-xs mx-auto mb-8"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1 }}
+              >
+                <div className="flex justify-between text-[9px] text-slate-500 mb-1">
+                  <span>Negative</span>
+                  <span>Valence</span>
+                  <span>Positive</span>
+                </div>
+                <div className="h-2 rounded-full bg-gradient-to-r from-blue-500 via-slate-500 to-pink-500" />
+                <div className="flex justify-between text-[9px] text-slate-500 mt-2">
+                  <span>Calm</span>
+                  <span>Arousal</span>
+                  <span>Intense</span>
+                </div>
+                <div className="h-2 rounded-full bg-gradient-to-r from-slate-600 via-yellow-500 to-red-500 mt-1" />
+              </motion.div>
+
+              {/* CTA */}
+              <motion.button
+                onClick={startMeditation}
+                className="w-full relative group"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.1 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-pink-600 to-rose-600 rounded-2xl blur-lg opacity-30 group-hover:opacity-60 transition-opacity" />
+                <div className="relative px-8 py-5 bg-gradient-to-r from-pink-600 to-rose-600 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+                  <Heart className="w-5 h-5" />
+                  Begin Protocol
+                </div>
+              </motion.button>
             </motion.div>
           )}
 

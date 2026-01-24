@@ -245,85 +245,246 @@ export default function RetroRoulettePage() {
           {phase === 'intro' && (
             <motion.div
               key="intro"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, rotate: -5 }}
+              className="relative"
             >
-              <div className="bg-gradient-to-br from-violet-900/30 to-fuchsia-900/30 rounded-2xl border border-violet-500/30 p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-3 bg-violet-500/20 rounded-xl">
-                    <RotateCcw className="w-8 h-8 text-violet-400" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-white">Retro Roulette</h1>
-                    <p className="text-violet-300">Retrocausality Experiment</p>
-                  </div>
-                </div>
+              {/* Backward-flowing time particles */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                {[...Array(15)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-0.5 rounded-full"
+                    style={{
+                      height: `${10 + Math.random() * 30}px`,
+                      left: `${Math.random() * 100}%`,
+                      background: `linear-gradient(to top, transparent, ${i % 2 === 0 ? 'rgba(167,139,250,0.4)' : 'rgba(232,121,249,0.3)'})`,
+                    }}
+                    animate={{
+                      y: ['100%', '-100%'],
+                      opacity: [0, 0.6, 0],
+                    }}
+                    transition={{
+                      duration: 2 + Math.random() * 2,
+                      repeat: Infinity,
+                      delay: Math.random() * 3,
+                      ease: 'linear',
+                    }}
+                  />
+                ))}
+              </div>
 
-                <div className="space-y-4 text-slate-300 mb-8">
-                  <p>
-                    Explore the mysterious concept of retrocausality - can your intention affect
-                    outcomes that have already been determined on the blockchain?
-                  </p>
-
-                  <div className="bg-[#060a0f]/30 rounded-xl p-4 border border-violet-500/20">
-                    <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-violet-400" />
-                      The Experiment
-                    </h3>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-start gap-2">
-                        <span className="text-violet-400">1.</span>
-                        <span>50 random outcomes (Red/Black) are generated on the blockchain</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-violet-400">2.</span>
-                        <span>You choose which color you want BEFORE seeing the result</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-violet-400">3.</span>
-                        <span>Only AFTER your choice is the blockchain outcome revealed</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-violet-400">4.</span>
-                        <span>Can your intention correlate with what was already committed?</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="bg-violet-500/10 border border-violet-500/30 rounded-xl p-4">
-                    <h3 className="font-semibold text-violet-300 mb-2">The Paradox</h3>
-                    <p className="text-sm text-slate-400">
-                      In standard physics, causes precede effects. Retrocausality explores whether
-                      your present intention could correlate with past random events - suggesting
-                      either backward causation or a deeper connection in time. The outcomes are
-                      cryptographically committed before you make your choices.
-                    </p>
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
-                    <p className="text-red-400">{error}</p>
-                  </div>
-                )}
-
-                <button
-                  onClick={startMeditation}
-                  disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white py-4 rounded-xl font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              <div className="relative z-10 text-center pt-6">
+                {/* Counter-rotating roulette symbol */}
+                <motion.div
+                  className="inline-flex items-center justify-center w-28 h-28 mb-6 relative"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', delay: 0.2 }}
                 >
+                  {/* Outer ring - spins backward */}
+                  <motion.div
+                    className="absolute inset-0 rounded-full border-2 border-dashed border-violet-500/40"
+                    animate={{ rotate: -360 }}
+                    transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+                  />
+                  {/* Inner ring - spins forward */}
+                  <motion.div
+                    className="absolute inset-3 rounded-full border border-fuchsia-500/30"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+                  />
+                  {/* Center */}
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 border border-violet-400/40 flex items-center justify-center shadow-[0_0_30px_rgba(139,92,246,0.3)]">
+                    <motion.div
+                      animate={{ rotate: -360 }}
+                      transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
+                    >
+                      <RotateCcw className="w-8 h-8 text-violet-400" />
+                    </motion.div>
+                  </div>
+                </motion.div>
+
+                <motion.h1
+                  className="text-5xl md:text-6xl font-black mb-1"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-purple-400 bg-clip-text text-transparent">
+                    RETRO
+                  </span>
+                </motion.h1>
+                <motion.h2
+                  className="text-2xl md:text-3xl font-light tracking-[0.3em] text-white/60"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  ROULETTE
+                </motion.h2>
+
+                <motion.div
+                  className="mt-4 inline-flex items-center gap-2 px-3 py-1 bg-violet-500/10 border border-violet-500/30 rounded-full"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <Clock className="w-3.5 h-3.5 text-violet-400" />
+                  <span className="text-violet-300 text-xs font-medium">Retrocausality Research</span>
+                </motion.div>
+              </div>
+
+              {/* Time paradox visualization */}
+              <motion.div
+                className="relative my-10 mx-auto max-w-xs"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}
+              >
+                {/* Timeline arrow (reversed) */}
+                <div className="flex items-center justify-between relative py-8">
+                  {/* Past (blockchain) */}
+                  <motion.div
+                    className="flex flex-col items-center gap-2 relative z-10"
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.9 }}
+                  >
+                    <div className="w-14 h-14 rounded-xl bg-violet-950/60 border border-violet-500/40 flex items-center justify-center">
+                      <Lock className="w-6 h-6 text-violet-400" />
+                    </div>
+                    <span className="text-[10px] text-violet-400 font-mono uppercase">Past</span>
+                    <span className="text-[9px] text-slate-600">Committed</span>
+                  </motion.div>
+
+                  {/* Arrow pointing backward */}
+                  <div className="flex-1 relative mx-3">
+                    <motion.div
+                      className="h-[2px] bg-gradient-to-l from-fuchsia-500/60 to-violet-500/60 w-full"
+                      initial={{ scaleX: 0 }}
+                      animate={{ scaleX: 1 }}
+                      transition={{ delay: 1, duration: 0.5 }}
+                    />
+                    <motion.div
+                      className="absolute top-1/2 left-0 -translate-y-1/2 w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-r-[8px] border-r-violet-500/60"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 1.3 }}
+                    />
+                    <motion.span
+                      className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] text-fuchsia-400/60 font-mono whitespace-nowrap"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: [0, 1, 0.5, 1] }}
+                      transition={{ delay: 1.2, duration: 2, repeat: Infinity }}
+                    >
+                      INFLUENCE?
+                    </motion.span>
+                  </div>
+
+                  {/* Present (your choice) */}
+                  <motion.div
+                    className="flex flex-col items-center gap-2 relative z-10"
+                    initial={{ x: 20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 1.1 }}
+                  >
+                    <div className="w-14 h-14 rounded-xl bg-fuchsia-950/60 border border-fuchsia-500/40 flex items-center justify-center">
+                      <Eye className="w-6 h-6 text-fuchsia-400" />
+                    </div>
+                    <span className="text-[10px] text-fuchsia-400 font-mono uppercase">Now</span>
+                    <span className="text-[9px] text-slate-600">Your Choice</span>
+                  </motion.div>
+                </div>
+
+                {/* Red/Black chips */}
+                <motion.div
+                  className="flex justify-center gap-4 mt-4"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.3 }}
+                >
+                  <motion.div
+                    className="w-12 h-12 rounded-full bg-red-600/80 border-2 border-red-400/50 flex items-center justify-center shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+                    whileHover={{ scale: 1.1, boxShadow: '0 0 25px rgba(239,68,68,0.5)' }}
+                  >
+                    <span className="text-white font-bold text-xs">RED</span>
+                  </motion.div>
+                  <div className="flex items-center text-slate-600 text-sm font-mono">or</div>
+                  <motion.div
+                    className="w-12 h-12 rounded-full bg-slate-800 border-2 border-slate-500/50 flex items-center justify-center shadow-[0_0_15px_rgba(100,116,139,0.2)]"
+                    whileHover={{ scale: 1.1, boxShadow: '0 0 25px rgba(100,116,139,0.4)' }}
+                  >
+                    <span className="text-white font-bold text-xs">BLK</span>
+                  </motion.div>
+                </motion.div>
+              </motion.div>
+
+              {/* Stats */}
+              <motion.div
+                className="flex justify-center gap-6 mb-8 text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.4 }}
+              >
+                <div>
+                  <div className="text-2xl font-bold text-violet-400">50</div>
+                  <div className="text-[10px] text-slate-500 uppercase">Rounds</div>
+                </div>
+                <div className="w-px bg-[#1a2535]" />
+                <div>
+                  <div className="text-2xl font-bold text-fuchsia-400">50%</div>
+                  <div className="text-[10px] text-slate-500 uppercase">Baseline</div>
+                </div>
+                <div className="w-px bg-[#1a2535]" />
+                <div>
+                  <div className="text-2xl font-bold text-purple-400">
+                    <Lock className="w-5 h-5 inline" />
+                  </div>
+                  <div className="text-[10px] text-slate-500 uppercase">Pre-set</div>
+                </div>
+              </motion.div>
+
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
+                  <p className="text-red-400">{error}</p>
+                </div>
+              )}
+
+              {/* CTA */}
+              <motion.button
+                onClick={startMeditation}
+                disabled={isLoading}
+                className="w-full relative group"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.5 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-2xl blur-lg opacity-30 group-hover:opacity-60 transition-opacity" />
+                <div className="relative px-8 py-5 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
-                      <Sparkles className="w-5 h-5" />
-                      Begin Retro Roulette
+                      <RotateCcw className="w-5 h-5" />
+                      Challenge Causality
+                      <ArrowRight className="w-5 h-5" />
                     </>
                   )}
-                </button>
-              </div>
+                </div>
+              </motion.button>
+
+              <motion.p
+                className="text-center text-slate-600 text-xs mt-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.6 }}
+              >
+                Outcomes cryptographically pre-committed on blockchain
+              </motion.p>
             </motion.div>
           )}
 

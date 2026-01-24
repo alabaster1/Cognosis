@@ -25,6 +25,17 @@ interface ScoringResult {
   feedback: string;
   strengths?: string[];
   areasForImprovement?: string[];
+  statistics?: {
+    zScore: number;
+    pValue: number;
+    significance: string;
+    observedMean: number;
+    baselineMean: number;
+    effectSize: number;
+  };
+  scoringMethod?: string;
+  drandRound?: number;
+  randomnessSource?: string;
 }
 
 export default function RemoteViewingPage() {
@@ -424,6 +435,51 @@ export default function RemoteViewingPage() {
               <h3 className="text-2xl font-bold mb-4">AI Feedback</h3>
               <p className="text-slate-300 leading-relaxed">{results.feedback}</p>
             </div>
+
+            {/* Statistics */}
+            {results.statistics && (
+              <div className="bg-purple-900/20 border border-purple-500/50 rounded-2xl p-8 mb-8">
+                <h3 className="text-2xl font-bold mb-4">Statistical Analysis</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-sm text-slate-400">Z-Score</span>
+                    <p className="font-bold text-xl">{results.statistics.zScore}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-slate-400">P-Value</span>
+                    <p className="font-bold text-xl">{results.statistics.pValue < 0.001 ? '< 0.001' : results.statistics.pValue.toFixed(4)}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-slate-400">Effect Size</span>
+                    <p className="font-bold text-xl">{results.statistics.effectSize}</p>
+                  </div>
+                  <div>
+                    <span className="text-sm text-slate-400">Significance</span>
+                    <p className={`font-bold text-xl ${
+                      results.statistics.significance.includes('significant') && !results.statistics.significance.includes('not') ? 'text-green-400' : 'text-slate-400'
+                    }`}>
+                      {results.statistics.significance.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500 mt-3">
+                  Scoring: {results.scoringMethod === 'embedding' ? 'Semantic Embedding' : 'LLM-based'}
+                </p>
+              </div>
+            )}
+
+            {/* drand Verification Badge */}
+            {results.drandRound && (
+              <div className="bg-green-900/20 border border-green-500/50 rounded-xl p-4 mb-8 flex items-center gap-3">
+                <div className="w-8 h-8 bg-green-500/20 rounded-full flex items-center justify-center">
+                  <span className="text-green-400 text-lg">&#10003;</span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-green-300">Verifiable Randomness</p>
+                  <p className="text-xs text-green-500">drand round #{results.drandRound} | {results.randomnessSource || 'drand_quicknet'}</p>
+                </div>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex gap-4">

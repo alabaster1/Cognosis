@@ -256,90 +256,186 @@ export default function TimelineRacerPage() {
           {phase === 'intro' && (
             <motion.div
               key="intro"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, x: -50 }}
+              className="relative"
             >
-              <div className="bg-gradient-to-br from-amber-900/30 to-orange-900/30 rounded-2xl border border-amber-500/30 p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-3 bg-amber-500/20 rounded-xl">
-                    <Zap className="w-8 h-8 text-amber-400" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-white">Timeline Racer</h1>
-                    <p className="text-amber-300">Speed Precognition Experiment</p>
-                  </div>
-                </div>
+              {/* Speed lines background */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-2xl">
+                {[...Array(8)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute h-[1px] bg-gradient-to-r from-transparent via-amber-400/40 to-transparent"
+                    style={{
+                      top: `${15 + i * 10}%`,
+                      width: '120%',
+                      left: '-10%',
+                    }}
+                    animate={{ x: ['-100%', '100%'] }}
+                    transition={{
+                      duration: 1.5 + i * 0.3,
+                      repeat: Infinity,
+                      ease: 'linear',
+                      delay: i * 0.2,
+                    }}
+                  />
+                ))}
+              </div>
 
-                <div className="space-y-4 text-slate-300 mb-8">
-                  <p>
-                    Test your precognitive speed! Predict which symbol will appear next before the
-                    2-second timer runs out. Can you see into the immediate future?
-                  </p>
-
-                  <div className="bg-[#060a0f]/30 rounded-xl p-4 border border-amber-500/20">
-                    <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <Timer className="w-5 h-5 text-amber-400" />
-                      How It Works
-                    </h3>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-start gap-2">
-                        <span className="text-amber-400">1.</span>
-                        <span>30 symbols are generated on the blockchain and committed</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-amber-400">2.</span>
-                        <span>You have 2 seconds to predict which symbol comes NEXT</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-amber-400">3.</span>
-                        <span>After all rounds, blockchain reveals the true sequence</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-amber-400">4.</span>
-                        <span>Baseline: 25% (1 in 4). Speed AND accuracy matter!</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Symbol Preview */}
-                  <div className="bg-[#060a0f]/30 rounded-xl p-4 border border-[#1a2535]">
-                    <h3 className="font-semibold text-white mb-3">The Symbols</h3>
-                    <div className="flex justify-center gap-4">
-                      {SYMBOLS.map((symbol) => (
-                        <div
-                          key={symbol.id}
-                          className={`p-4 rounded-xl ${symbol.bg} border ${symbol.border}`}
-                        >
-                          <symbol.icon className={`w-8 h-8 ${symbol.color}`} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
-                    <p className="text-red-400">{error}</p>
-                  </div>
-                )}
-
-                <button
-                  onClick={startMeditation}
-                  disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white py-4 rounded-xl font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              <div className="relative z-10 text-center pt-6 pb-4">
+                {/* Countdown ring */}
+                <motion.div
+                  className="inline-flex items-center justify-center w-28 h-28 mb-6 relative"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 300, delay: 0.2 }}
                 >
+                  <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(245,158,11,0.15)" strokeWidth="3" />
+                    <motion.circle
+                      cx="50" cy="50" r="44" fill="none" stroke="url(#timerGrad)" strokeWidth="3"
+                      strokeDasharray="276.5"
+                      animate={{ strokeDashoffset: [276.5, 0, 276.5] }}
+                      transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                      strokeLinecap="round"
+                    />
+                    <defs>
+                      <linearGradient id="timerGrad">
+                        <stop offset="0%" stopColor="#f59e0b" />
+                        <stop offset="100%" stopColor="#ef4444" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="flex flex-col items-center">
+                    <Zap className="w-8 h-8 text-amber-400" />
+                    <span className="text-[10px] text-amber-400/60 font-mono mt-1">2.0s</span>
+                  </div>
+                </motion.div>
+
+                <motion.h1
+                  className="text-5xl md:text-7xl font-black tracking-tighter mb-2"
+                  initial={{ x: -50, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.3, type: 'spring' }}
+                >
+                  <span className="bg-gradient-to-r from-amber-300 via-yellow-200 to-orange-400 bg-clip-text text-transparent">
+                    TIMELINE
+                  </span>
+                </motion.h1>
+                <motion.h2
+                  className="text-2xl md:text-3xl font-black tracking-[0.4em] text-white/60 uppercase"
+                  initial={{ x: 50, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.4, type: 'spring' }}
+                >
+                  RACER
+                </motion.h2>
+
+                <motion.div
+                  className="mt-4 inline-flex items-center gap-2 px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-amber-300 text-xs font-medium">Speed Precognition</span>
+                </motion.div>
+              </div>
+
+              {/* Symbol race track */}
+              <motion.div
+                className="my-8 relative"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+              >
+                <div className="flex justify-center items-center gap-2 py-6 px-4 rounded-xl bg-[#080c12] border border-amber-500/10 relative overflow-hidden">
+                  {/* Track lines */}
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-amber-500/20 to-transparent" />
+                  </div>
+
+                  {SYMBOLS.map((symbol, i) => (
+                    <motion.div
+                      key={symbol.id}
+                      className={`relative z-10 p-4 md:p-5 rounded-2xl ${symbol.bg} border-2 ${symbol.border} cursor-default`}
+                      initial={{ y: 30, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.8 + i * 0.1, type: 'spring' }}
+                      whileHover={{
+                        scale: 1.15,
+                        y: -5,
+                        boxShadow: `0 10px 30px ${symbol.id === 0 ? 'rgba(59,130,246,0.3)' : symbol.id === 1 ? 'rgba(34,197,94,0.3)' : symbol.id === 2 ? 'rgba(234,179,8,0.3)' : 'rgba(236,72,153,0.3)'}`,
+                      }}
+                    >
+                      <symbol.icon className={`w-8 h-8 md:w-10 md:h-10 ${symbol.color}`} />
+                      <motion.div
+                        className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white/60"
+                        animate={{ opacity: [0, 1, 0] }}
+                        transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.3 }}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Race stats */}
+                <div className="flex justify-between mt-3 px-1">
+                  <span className="text-[10px] text-slate-600 font-mono">{TOTAL_ROUNDS} ROUNDS</span>
+                  <span className="text-[10px] text-slate-600 font-mono">BASELINE 25%</span>
+                </div>
+              </motion.div>
+
+              {/* Quick rules */}
+              <motion.div
+                className="grid grid-cols-3 gap-2 mb-8 text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.9 }}
+              >
+                <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/10">
+                  <Timer className="w-5 h-5 text-amber-400 mx-auto mb-1" />
+                  <div className="text-[11px] text-slate-400">2s per round</div>
+                </div>
+                <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/10">
+                  <TrendingUp className="w-5 h-5 text-amber-400 mx-auto mb-1" />
+                  <div className="text-[11px] text-slate-400">Speed matters</div>
+                </div>
+                <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/10">
+                  <Trophy className="w-5 h-5 text-amber-400 mx-auto mb-1" />
+                  <div className="text-[11px] text-slate-400">Beat 25%</div>
+                </div>
+              </motion.div>
+
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
+                  <p className="text-red-400">{error}</p>
+                </div>
+              )}
+
+              {/* CTA */}
+              <motion.button
+                onClick={startMeditation}
+                disabled={isLoading}
+                className="w-full relative group"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-red-500 rounded-2xl blur-lg opacity-30 group-hover:opacity-60 transition-opacity" />
+                <div className="relative px-8 py-5 bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
-                      <Zap className="w-5 h-5" />
-                      Start Timeline Racer
+                      <Zap className="w-6 h-6" />
+                      Race the Timeline
                     </>
                   )}
-                </button>
-              </div>
+                </div>
+              </motion.button>
             </motion.div>
           )}
 

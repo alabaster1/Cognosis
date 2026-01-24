@@ -266,96 +266,191 @@ export default function PatternOraclePage() {
           {phase === 'intro' && (
             <motion.div
               key="intro"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-6"
+              className="space-y-6 relative"
             >
-              <div className="bg-gradient-to-br from-cyan-900/20 to-violet-900/20 rounded-2xl border border-indigo-500/30 p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-3 bg-indigo-500/20 rounded-xl">
-                    <Grid3X3 className="w-8 h-8 text-indigo-400" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-white">Pattern Oracle</h1>
-                    <p className="text-indigo-300">ESP / Intuition Experiment</p>
-                  </div>
+              {/* Animated 5x5 grid background */}
+              <div className="absolute -top-8 -right-8 w-64 h-64 opacity-20 pointer-events-none">
+                <div className="grid grid-cols-5 gap-1 w-full h-full">
+                  {[...Array(25)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="rounded-sm bg-indigo-500"
+                      animate={{
+                        opacity: [0.1, 0.6, 0.1],
+                        scale: [0.8, 1, 0.8],
+                      }}
+                      transition={{
+                        duration: 2 + Math.random() * 3,
+                        repeat: Infinity,
+                        delay: Math.random() * 2,
+                      }}
+                    />
+                  ))}
                 </div>
+              </div>
 
-                <div className="space-y-4 text-slate-300 mb-8">
-                  <p>
-                    Test your intuitive pattern detection abilities. A 5x5 grid contains 5 hidden
-                    &quot;target&quot; tiles. Can you sense which tiles hold the hidden pattern?
-                  </p>
-
-                  <div className="bg-[#060a0f]/30 rounded-xl p-4 border border-indigo-500/20">
-                    <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <Target className="w-5 h-5 text-indigo-400" />
-                      How It Works
-                    </h3>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-start gap-2">
-                        <span className="text-indigo-400">1.</span>
-                        <span>Targets are generated on the blockchain and cryptographically committed</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-indigo-400">2.</span>
-                        <span>Select exactly 5 tiles you intuit contain the pattern</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-indigo-400">3.</span>
-                        <span>After all rounds, targets are revealed from the blockchain</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-indigo-400">4.</span>
-                        <span>Baseline: 20% (1 hit by chance). Can you exceed it?</span>
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Difficulty Selection */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-white mb-4">Select Difficulty</h3>
-                  <div className="grid grid-cols-3 gap-4">
-                    {(Object.keys(difficultyConfig) as Difficulty[]).map((d) => (
-                      <button
-                        key={d}
-                        onClick={() => setDifficulty(d)}
-                        className={`p-4 rounded-xl border transition-all ${
-                          difficulty === d
-                            ? 'border-indigo-500 bg-indigo-500/20 text-white'
-                            : 'border-[#1a2535] bg-[#0a1018] text-slate-400 hover:border-indigo-500/50'
-                        }`}
-                      >
-                        <div className="font-semibold">{difficultyConfig[d].label}</div>
-                        <div className="text-xs opacity-70">{difficultyConfig[d].description}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
-                    <p className="text-red-400">{error}</p>
-                  </div>
-                )}
-
-                <button
-                  onClick={startMeditation}
-                  disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white py-4 rounded-xl font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              {/* Title area */}
+              <div className="text-center pt-4">
+                <motion.div
+                  className="inline-flex mb-5"
+                  initial={{ scale: 0, rotate: -90 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
                 >
+                  <div className="relative w-20 h-20">
+                    <div className="absolute inset-0 grid grid-cols-3 gap-0.5 p-2 bg-[#0a0e14] rounded-2xl border border-indigo-500/40 shadow-[0_0_30px_rgba(99,102,241,0.2)]">
+                      {[...Array(9)].map((_, i) => (
+                        <motion.div
+                          key={i}
+                          className="rounded-[2px] bg-indigo-500/60"
+                          animate={{ opacity: i === 4 ? [0.3, 1, 0.3] : [0.2, 0.5, 0.2] }}
+                          transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
+                        />
+                      ))}
+                    </div>
+                    <motion.div
+                      className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-cyan-400 flex items-center justify-center"
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      <Eye className="w-3 h-3 text-[#0a0e14]" />
+                    </motion.div>
+                  </div>
+                </motion.div>
+
+                <motion.h1
+                  className="text-4xl md:text-6xl font-black mb-2"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <span className="bg-gradient-to-r from-indigo-300 via-cyan-300 to-violet-400 bg-clip-text text-transparent">
+                    PATTERN
+                  </span>
+                  <br />
+                  <span className="text-2xl md:text-3xl font-light tracking-[0.3em] text-white/70">
+                    ORACLE
+                  </span>
+                </motion.h1>
+
+                <motion.p
+                  className="text-indigo-300/70 text-sm uppercase tracking-[0.25em] mt-3"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  Extrasensory Perception
+                </motion.p>
+              </div>
+
+              {/* Interactive grid demo */}
+              <motion.div
+                className="flex justify-center my-8"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.6 }}
+              >
+                <div className="grid grid-cols-5 gap-1.5 p-4 rounded-2xl bg-[#080c12] border border-indigo-500/20">
+                  {[...Array(GRID_SIZE)].map((_, i) => {
+                    const isHighlighted = [2, 7, 12, 17, 22].includes(i);
+                    return (
+                      <motion.div
+                        key={i}
+                        className={`w-8 h-8 md:w-10 md:h-10 rounded-lg border ${
+                          isHighlighted
+                            ? 'border-cyan-400/60 bg-cyan-500/20'
+                            : 'border-[#1a2535] bg-[#0f1520]'
+                        }`}
+                        animate={
+                          isHighlighted
+                            ? { boxShadow: ['0 0 0 rgba(34,211,238,0)', '0 0 12px rgba(34,211,238,0.3)', '0 0 0 rgba(34,211,238,0)'] }
+                            : {}
+                        }
+                        transition={{ duration: 2, repeat: Infinity, delay: i * 0.15 }}
+                      />
+                    );
+                  })}
+                </div>
+              </motion.div>
+
+              <motion.p
+                className="text-center text-slate-400 max-w-md mx-auto text-sm"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7 }}
+              >
+                5 hidden targets in a 25-tile grid. Trust your intuition to sense
+                the pattern beyond chance.
+              </motion.p>
+
+              {/* Difficulty Selection - redesigned as pills */}
+              <motion.div
+                className="pt-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}
+              >
+                <div className="text-center text-xs text-slate-500 uppercase tracking-widest mb-3">Difficulty</div>
+                <div className="flex gap-2 justify-center">
+                  {(Object.keys(difficultyConfig) as Difficulty[]).map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => setDifficulty(d)}
+                      className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
+                        difficulty === d
+                          ? 'bg-indigo-500 text-white shadow-[0_0_20px_rgba(99,102,241,0.4)]'
+                          : 'bg-[#0a0e14] text-slate-400 border border-[#1a2535] hover:border-indigo-500/50 hover:text-white'
+                      }`}
+                    >
+                      {difficultyConfig[d].label}
+                      <span className="text-[10px] ml-1.5 opacity-60">
+                        {d === 'easy' ? '3R' : d === 'medium' ? '5R' : '7R'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <div className="text-center text-xs text-slate-600 mt-2">
+                  {difficultyConfig[difficulty].description}
+                </div>
+              </motion.div>
+
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4">
+                  <p className="text-red-400">{error}</p>
+                </div>
+              )}
+
+              {/* CTA */}
+              <motion.button
+                onClick={startMeditation}
+                disabled={isLoading}
+                className="w-full relative group mt-4"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-cyan-600 rounded-2xl blur-lg opacity-30 group-hover:opacity-60 transition-opacity" />
+                <div className="relative px-8 py-5 bg-gradient-to-r from-indigo-600 to-cyan-600 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] disabled:opacity-50">
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
-                      <Sparkles className="w-5 h-5" />
-                      Begin Pattern Oracle
+                      <Grid3X3 className="w-5 h-5" />
+                      Open Your Third Eye
+                      <Sparkles className="w-5 h-5 group-hover:rotate-12 transition-transform" />
                     </>
                   )}
-                </button>
-              </div>
+                </div>
+              </motion.button>
+
+              <p className="text-center text-slate-600 text-xs mt-3">
+                Baseline: 20% by chance alone
+              </p>
             </motion.div>
           )}
 

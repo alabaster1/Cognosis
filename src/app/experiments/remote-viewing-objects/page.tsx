@@ -863,6 +863,30 @@ export default function RemoteViewingObjectsPage() {
                 </ul>
               </ResultCard>
             )}
+
+            {/* Statistics */}
+            {(results as any).statistics && (
+              <div className="bg-purple-950/30 rounded-xl border border-purple-500/20 p-4">
+                <h4 className="text-sm font-semibold text-purple-400 mb-3">Statistical Analysis</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div><span className="text-slate-500">z-score:</span> <span className="text-white font-mono">{(results as any).statistics.zScore?.toFixed(2)}</span></div>
+                  <div><span className="text-slate-500">p-value:</span> <span className="text-white font-mono">{(results as any).statistics.pValue?.toFixed(4)}</span></div>
+                  <div><span className="text-slate-500">Effect:</span> <span className="text-white font-mono">{(results as any).statistics.effectSize?.toFixed(3)}</span></div>
+                  <div><span className="text-slate-500">Significance:</span> <span className={`font-mono ${(results as any).statistics.significance === 'significant' || (results as any).statistics.significance === 'highly_significant' ? 'text-green-400' : 'text-slate-400'}`}>{(results as any).statistics.significance}</span></div>
+                </div>
+              </div>
+            )}
+
+            {/* drand Verification */}
+            {(results as any).drandRound && (
+              <div className="bg-green-950/30 rounded-lg border border-green-500/20 px-4 py-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-400" />
+                  <span className="text-xs text-green-400">Verified via drand #{(results as any).drandRound}</span>
+                  {(results as any).scoringMethod && <span className="text-xs text-green-300/60 ml-2">({(results as any).scoringMethod})</span>}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </RevealModal>

@@ -154,53 +154,100 @@ export default function RemoteViewingImagesPage() {
           {phase === 'intro' && (
             <motion.div
               key="intro"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0, y: -20 }}
-              className="max-w-3xl mx-auto"
+              className="max-w-3xl mx-auto text-center"
             >
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center">
-                  <Image className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-4xl font-bold">Image Viewing</h1>
-                  <p className="text-slate-400">Perceive visual composition, colors, and artistic elements</p>
-                </div>
-              </div>
-
-              <div className="bg-[#0f1520]/80 border border-[#1a2535] rounded-2xl p-8 mb-8">
-                <h2 className="text-2xl font-bold mb-4">Visual Protocol</h2>
-                <p className="text-slate-400 mb-4">
-                  Focus on visual and artistic elements of the hidden image target.
-                </p>
-                <ol className="space-y-3">
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center font-bold">1</span>
-                    <span>Meditation: AI commits random image target</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center font-bold">2</span>
-                    <span>Composition: Identify the visual layout and structure</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center font-bold">3</span>
-                    <span>Colors: Select dominant colors and lighting mood</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center font-bold">4</span>
-                    <span>Details: Describe subject, style, movement, emotions</span>
-                  </li>
-                </ol>
-              </div>
-
-              <button
-                onClick={startExperiment}
-                className="w-full px-8 py-4 bg-gradient-to-r from-pink-600 to-rose-600 rounded-lg font-semibold text-lg hover:shadow-lg hover:shadow-pink-500/50 transition-all flex items-center justify-center gap-2"
+              {/* Abstract image frame */}
+              <motion.div
+                className="inline-flex items-center justify-center w-28 h-28 mb-6 relative"
+                initial={{ scale: 0, rotate: -10 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: 'spring', delay: 0.2 }}
               >
-                Begin Experiment
-                <ArrowRight className="w-5 h-5" />
-              </button>
+                <div className="absolute inset-0 rounded-2xl border-2 border-pink-500/30 rotate-3" />
+                <div className="absolute inset-1 rounded-xl bg-gradient-to-br from-pink-950/50 to-rose-950/50 border border-pink-400/20 flex items-center justify-center shadow-[0_0_30px_rgba(236,72,153,0.15)]">
+                  <Image className="w-10 h-10 text-pink-400" />
+                </div>
+                {/* Color dots */}
+                {['bg-red-400', 'bg-blue-400', 'bg-yellow-400', 'bg-green-400'].map((c, i) => (
+                  <motion.div
+                    key={i}
+                    className={`absolute w-3 h-3 rounded-full ${c}`}
+                    style={{ top: i < 2 ? '-4px' : undefined, bottom: i >= 2 ? '-4px' : undefined, left: i % 2 === 0 ? '-4px' : undefined, right: i % 2 !== 0 ? '-4px' : undefined }}
+                    animate={{ scale: [1, 1.3, 1] }}
+                    transition={{ duration: 2, delay: i * 0.3, repeat: Infinity }}
+                  />
+                ))}
+              </motion.div>
+
+              <motion.h1
+                className="text-4xl md:text-6xl font-black mb-1"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                <span className="text-2xl md:text-3xl text-white/50 block font-light tracking-wider">REMOTE VIEWING</span>
+                <span className="bg-gradient-to-r from-pink-300 via-rose-300 to-red-400 bg-clip-text text-transparent">
+                  IMAGES
+                </span>
+              </motion.h1>
+
+              <motion.p
+                className="text-pink-300/50 text-sm mt-3 uppercase tracking-widest"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                Visual Perception Protocol
+              </motion.p>
+
+              <motion.p
+                className="text-slate-400 max-w-sm mx-auto text-sm mt-3 mb-8"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+              >
+                Perceive the composition, colors, and essence of a hidden image through psychic impression alone.
+              </motion.p>
+
+              {/* Phase steps */}
+              <motion.div
+                className="grid grid-cols-4 gap-2 mb-8 max-w-md mx-auto"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7 }}
+              >
+                {[
+                  { label: 'Meditate', color: 'border-pink-500/20' },
+                  { label: 'Compose', color: 'border-rose-500/20' },
+                  { label: 'Color', color: 'border-red-500/20' },
+                  { label: 'Detail', color: 'border-pink-500/20' },
+                ].map((s, i) => (
+                  <div key={i} className={`p-3 rounded-xl bg-[#0a0e14] border ${s.color} text-center`}>
+                    <div className="text-[9px] text-pink-500/50 font-mono">{i + 1}</div>
+                    <div className="text-[11px] text-white/70">{s.label}</div>
+                  </div>
+                ))}
+              </motion.div>
+
+              <motion.button
+                onClick={startExperiment}
+                className="w-full max-w-md mx-auto relative group block"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-pink-600 to-rose-600 rounded-2xl blur-lg opacity-30 group-hover:opacity-60 transition-opacity" />
+                <div className="relative px-8 py-5 bg-gradient-to-r from-pink-600 to-rose-600 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+                  <Image className="w-5 h-5" />
+                  View the Unseen
+                  <ArrowRight className="w-5 h-5" />
+                </div>
+              </motion.button>
             </motion.div>
           )}
 
@@ -565,6 +612,30 @@ export default function RemoteViewingImagesPage() {
                 <h3 className="text-2xl font-bold mb-4">AI Feedback</h3>
                 <p className="text-slate-300 leading-relaxed">{results.feedback}</p>
               </div>
+
+              {/* Statistics */}
+              {(results as any).statistics && (
+                <div className="bg-purple-950/30 rounded-xl border border-purple-500/20 p-4 mb-4">
+                  <h4 className="text-sm font-semibold text-purple-400 mb-3">Statistical Analysis</h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div><span className="text-slate-500">z-score:</span> <span className="text-white font-mono">{(results as any).statistics.zScore?.toFixed(2)}</span></div>
+                    <div><span className="text-slate-500">p-value:</span> <span className="text-white font-mono">{(results as any).statistics.pValue?.toFixed(4)}</span></div>
+                    <div><span className="text-slate-500">Effect:</span> <span className="text-white font-mono">{(results as any).statistics.effectSize?.toFixed(3)}</span></div>
+                    <div><span className="text-slate-500">Significance:</span> <span className={`font-mono ${(results as any).statistics.significance === 'significant' || (results as any).statistics.significance === 'highly_significant' ? 'text-green-400' : 'text-slate-400'}`}>{(results as any).statistics.significance}</span></div>
+                  </div>
+                </div>
+              )}
+
+              {/* drand Verification */}
+              {(results as any).drandRound && (
+                <div className="bg-green-950/30 rounded-lg border border-green-500/20 px-4 py-2 mb-8">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-400" />
+                    <span className="text-xs text-green-400">Verified via drand #{(results as any).drandRound}</span>
+                    {(results as any).scoringMethod && <span className="text-xs text-green-300/60 ml-2">({(results as any).scoringMethod})</span>}
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-4">
                 <button

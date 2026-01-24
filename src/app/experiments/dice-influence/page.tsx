@@ -223,111 +223,192 @@ export default function DiceInfluencePage() {
 
   if (phase === 'intro') {
     return (
-      <div className="min-h-screen bg-[#060a0f]">
+      <div className="min-h-screen bg-[#060a0f] overflow-hidden relative">
         <Header />
-        <div className="container mx-auto px-4 py-20">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-3xl mx-auto"
-          >
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-600 to-amber-600 flex items-center justify-center">
-                <Dices className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold">Dice Influence (PK)</h1>
-                <p className="text-slate-400">Test your psychokinetic influence on dice rolls</p>
-              </div>
-            </div>
-
-            <div className="bg-[#0f1520]/80 border border-[#1a2535] rounded-2xl p-8 mb-8">
-              <h2 className="text-2xl font-bold mb-4">How It Works</h2>
-              <p className="text-slate-400 mb-6">
-                Psychokinesis (PK) is the hypothetical ability to influence physical systems through mental intention alone.
-                In this experiment, you&apos;ll attempt to influence the outcome of virtual dice rolls by focusing your intention
-                on a specific target face.
-              </p>
-
-              <div className="bg-orange-900/20 border border-orange-500/50 rounded-lg p-4 mb-6">
-                <div className="flex items-start gap-3">
-                  <TrendingUp className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm">
-                    <strong className="text-orange-400">Statistical Baseline</strong>
-                    <p className="text-slate-400 mt-1">
-                      Random chance would produce each face ~16.67% of the time (1 in 6). We&apos;ll use chi-square analysis
-                      to determine if your results differ significantly from random chance.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <ol className="space-y-4">
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold">
-                    1
-                  </span>
-                  <div>
-                    <strong>Meditation Preparation</strong>
-                    <p className="text-slate-400 text-sm">
-                      Clear your mind and enter a focused, receptive state
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold">
-                    2
-                  </span>
-                  <div>
-                    <strong>Select Target Face</strong>
-                    <p className="text-slate-400 text-sm">
-                      Choose which dice face you&apos;ll attempt to influence (1-6)
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold">
-                    3
-                  </span>
-                  <div>
-                    <strong>Focus Your Intention</strong>
-                    <p className="text-slate-400 text-sm">
-                      Roll the virtual dice {TOTAL_ROLLS} times while maintaining focus on your target face
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold">
-                    4
-                  </span>
-                  <div>
-                    <strong>Statistical Analysis</strong>
-                    <p className="text-slate-400 text-sm">
-                      Review your hit rate, compare to baseline, and analyze statistical significance
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold">
-                    5
-                  </span>
-                  <div>
-                    <strong>Blockchain Commitment</strong>
-                    <p className="text-slate-400 text-sm">
-                      Results are encrypted and permanently timestamped for future analysis
-                    </p>
-                  </div>
-                </li>
-              </ol>
-            </div>
-
-            <button
-              onClick={handleStartExperiment}
-              className="w-full px-8 py-4 bg-gradient-to-r from-orange-600 to-amber-600 rounded-lg font-semibold text-lg hover:shadow-lg hover:shadow-orange-500/50 transition-all flex items-center justify-center gap-2"
+        {/* Animated floating dice background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(12)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute text-orange-500/10 text-6xl select-none"
+              initial={{
+                x: `${Math.random() * 100}%`,
+                y: `${Math.random() * 100}%`,
+                rotate: Math.random() * 360,
+                scale: 0.5 + Math.random() * 1.5,
+              }}
+              animate={{
+                y: [`${Math.random() * 100}%`, `${Math.random() * 100}%`],
+                rotate: [Math.random() * 360, Math.random() * 360 + 180],
+                scale: [0.5 + Math.random(), 1 + Math.random()],
+              }}
+              transition={{
+                duration: 8 + Math.random() * 12,
+                repeat: Infinity,
+                repeatType: 'reverse',
+                ease: 'easeInOut',
+              }}
             >
-              Start Experiment
-              <ArrowRight className="w-5 h-5" />
-            </button>
+              {DICE_FACES[i % 6]}
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Radial energy gradient */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(251,146,60,0.08)_0%,_transparent_70%)] pointer-events-none" />
+
+        <div className="container mx-auto px-4 py-16 relative z-10">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8 }}
+            className="max-w-4xl mx-auto"
+          >
+            {/* Hero section with large animated dice */}
+            <div className="text-center mb-12">
+              <motion.div
+                className="inline-flex items-center justify-center w-32 h-32 mb-6 relative"
+                animate={{ rotateY: [0, 360] }}
+                transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl shadow-[0_0_60px_rgba(251,146,60,0.4)]" />
+                <div className="absolute inset-[3px] bg-[#0a0e14] rounded-2xl flex items-center justify-center">
+                  <Dices className="w-16 h-16 text-orange-400" />
+                </div>
+              </motion.div>
+
+              <motion.h1
+                className="text-5xl md:text-7xl font-black tracking-tight mb-3"
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <span className="bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 bg-clip-text text-transparent">
+                  DICE
+                </span>
+                <br />
+                <span className="text-white/90 text-3xl md:text-4xl font-light tracking-widest">
+                  INFLUENCE
+                </span>
+              </motion.h1>
+
+              <motion.div
+                className="inline-block px-4 py-1.5 rounded-full border border-orange-500/40 bg-orange-500/10 mb-6"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.4, type: 'spring' }}
+              >
+                <span className="text-orange-300 text-sm font-medium tracking-wider uppercase">
+                  Psychokinesis Research
+                </span>
+              </motion.div>
+
+              <motion.p
+                className="text-slate-400 text-lg max-w-xl mx-auto"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                Can your mind influence matter? Focus your intention on a dice face
+                and test the boundaries of psychokinetic ability.
+              </motion.p>
+            </div>
+
+            {/* Stats strip */}
+            <motion.div
+              className="grid grid-cols-3 gap-4 mb-10"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.6 }}
+            >
+              <div className="text-center p-4 rounded-xl bg-gradient-to-b from-orange-950/40 to-transparent border border-orange-500/20">
+                <div className="text-3xl font-bold text-orange-400">{TOTAL_ROLLS}</div>
+                <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">Rolls</div>
+              </div>
+              <div className="text-center p-4 rounded-xl bg-gradient-to-b from-amber-950/40 to-transparent border border-amber-500/20">
+                <div className="text-3xl font-bold text-amber-400">16.7%</div>
+                <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">Baseline</div>
+              </div>
+              <div className="text-center p-4 rounded-xl bg-gradient-to-b from-red-950/40 to-transparent border border-red-500/20">
+                <div className="text-3xl font-bold text-red-400">p&lt;0.05</div>
+                <div className="text-xs text-slate-500 uppercase tracking-wider mt-1">Significance</div>
+              </div>
+            </motion.div>
+
+            {/* Visual dice faces preview */}
+            <motion.div
+              className="flex justify-center gap-3 mb-10"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.7 }}
+            >
+              {DICE_FACES.map((face, i) => (
+                <motion.div
+                  key={i}
+                  className="w-14 h-14 rounded-xl bg-[#0f1520] border border-orange-500/30 flex items-center justify-center text-3xl cursor-default"
+                  whileHover={{
+                    scale: 1.2,
+                    borderColor: 'rgba(251,146,60,0.8)',
+                    boxShadow: '0 0 20px rgba(251,146,60,0.3)',
+                  }}
+                  transition={{ type: 'spring', stiffness: 400 }}
+                >
+                  {face}
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* How it works - compact horizontal */}
+            <motion.div
+              className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
+            >
+              {[
+                { step: '01', label: 'Meditate', desc: 'Clear your mind' },
+                { step: '02', label: 'Choose', desc: 'Pick a target face' },
+                { step: '03', label: 'Focus', desc: 'Roll with intention' },
+                { step: '04', label: 'Analyze', desc: 'Chi-square results' },
+              ].map((item, i) => (
+                <motion.div
+                  key={i}
+                  className="relative p-4 rounded-xl bg-[#0a0e14] border border-[#1a2535] group hover:border-orange-500/40 transition-colors"
+                  whileHover={{ y: -2 }}
+                >
+                  <div className="text-[10px] text-orange-500/60 font-mono mb-2">{item.step}</div>
+                  <div className="text-white font-semibold text-sm">{item.label}</div>
+                  <div className="text-slate-500 text-xs mt-0.5">{item.desc}</div>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* CTA Button */}
+            <motion.button
+              onClick={handleStartExperiment}
+              className="w-full relative group"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-orange-600 to-red-600 rounded-2xl blur-lg opacity-40 group-hover:opacity-70 transition-opacity" />
+              <div className="relative px-8 py-5 bg-gradient-to-r from-orange-600 to-red-600 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+                <Dices className="w-6 h-6" />
+                Begin Experiment
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </motion.button>
+
+            <motion.p
+              className="text-center text-slate-600 text-xs mt-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.1 }}
+            >
+              Results verified on Midnight blockchain
+            </motion.p>
           </motion.div>
         </div>
       </div>

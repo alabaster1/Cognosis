@@ -155,52 +155,133 @@ export default function RemoteViewingLocationsPage() {
               exit={{ opacity: 0, y: -20 }}
               className="max-w-3xl mx-auto"
             >
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
-                  <MapPin className="w-8 h-8 text-white" />
+              {/* Topographic background lines */}
+              <div className="relative mb-10">
+                <div className="absolute inset-0 overflow-hidden rounded-2xl opacity-20">
+                  {[...Array(8)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute border border-teal-500/40 rounded-full"
+                      style={{
+                        width: `${200 + i * 60}px`,
+                        height: `${120 + i * 40}px`,
+                        left: '50%',
+                        top: '50%',
+                        transform: 'translate(-50%, -50%)',
+                      }}
+                      animate={{ opacity: [0.2, 0.5, 0.2] }}
+                      transition={{ duration: 3, delay: i * 0.3, repeat: Infinity }}
+                    />
+                  ))}
                 </div>
-                <div>
-                  <h1 className="text-4xl font-bold">Location Viewing</h1>
-                  <p className="text-slate-400">Identify terrain, climate, and features of hidden locations</p>
+
+                {/* Globe icon with rotating coordinate ring */}
+                <div className="relative w-28 h-28 mx-auto mb-6">
+                  <motion.div
+                    className="absolute inset-0 rounded-full border-2 border-dashed border-teal-500/30"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                  />
+                  <motion.div
+                    className="absolute inset-2 rounded-full border border-emerald-400/40"
+                    animate={{ rotate: -360 }}
+                    transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+                  />
+                  <div className="absolute inset-4 rounded-full bg-gradient-to-br from-teal-600 to-emerald-700 flex items-center justify-center shadow-lg shadow-teal-500/30">
+                    <MapPin className="w-8 h-8 text-white" />
+                  </div>
+                  {/* Cardinal markers */}
+                  {['N', 'E', 'S', 'W'].map((dir, i) => (
+                    <motion.span
+                      key={dir}
+                      className="absolute text-[10px] font-bold text-teal-400/70"
+                      style={{
+                        top: i === 0 ? '-4px' : i === 2 ? 'auto' : '50%',
+                        bottom: i === 2 ? '-4px' : 'auto',
+                        left: i === 3 ? '-4px' : i === 1 ? 'auto' : '50%',
+                        right: i === 1 ? '-4px' : 'auto',
+                        transform: (i === 0 || i === 2) ? 'translateX(-50%)' : 'translateY(-50%)',
+                      }}
+                      animate={{ opacity: [0.4, 1, 0.4] }}
+                      transition={{ duration: 2, delay: i * 0.5, repeat: Infinity }}
+                    >
+                      {dir}
+                    </motion.span>
+                  ))}
+                </div>
+
+                {/* Title */}
+                <div className="text-center">
+                  <h1 className="text-5xl md:text-6xl font-black tracking-tight leading-none">
+                    <span className="text-teal-400">LOCATION</span>
+                    <br />
+                    <span className="text-emerald-300/80 text-3xl md:text-4xl font-light tracking-widest">VIEWING</span>
+                  </h1>
+                  <p className="text-slate-500 text-sm mt-3 tracking-wide uppercase">Structured Remote Perception Protocol</p>
                 </div>
               </div>
 
-              <div className="bg-[#0f1520]/80 border border-[#1a2535] rounded-2xl p-8 mb-8">
-                <h2 className="text-2xl font-bold mb-4">Structured Protocol</h2>
-                <p className="text-slate-400 mb-4">
-                  This experiment uses a structured approach to remote viewing, breaking down the location into specific attributes.
-                </p>
-                <ol className="space-y-3">
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center font-bold">1</span>
-                    <span>Meditation: AI commits random location target</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center font-bold">2</span>
-                    <span>Terrain: Identify the primary terrain type</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center font-bold">3</span>
-                    <span>Environment: Sense climate, population, time period</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center font-bold">4</span>
-                    <span>Features: Identify specific elements present</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center font-bold">5</span>
-                    <span>Description: Write detailed impressions</span>
-                  </li>
-                </ol>
+              {/* Terrain preview strip */}
+              <div className="flex justify-center gap-3 mb-8 flex-wrap">
+                {TERRAIN_TYPES.slice(0, 6).map((t, i) => (
+                  <motion.div
+                    key={t.id}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-900/30 border border-teal-500/20"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 + i * 0.08 }}
+                    whileHover={{ scale: 1.05, borderColor: 'rgba(20,184,166,0.5)' }}
+                  >
+                    <span className="text-sm">{t.icon}</span>
+                    <span className="text-xs text-teal-300/80">{t.label}</span>
+                  </motion.div>
+                ))}
               </div>
 
-              <button
+              {/* Steps - compact horizontal */}
+              <div className="grid grid-cols-5 gap-2 mb-8">
+                {[
+                  { n: '1', label: 'Meditate' },
+                  { n: '2', label: 'Terrain' },
+                  { n: '3', label: 'Climate' },
+                  { n: '4', label: 'Features' },
+                  { n: '5', label: 'Describe' },
+                ].map((step, i) => (
+                  <motion.div
+                    key={step.n}
+                    className="text-center p-3 rounded-xl bg-[#0a1a1a]/60 border border-teal-900/40"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 + i * 0.1 }}
+                  >
+                    <div className="w-6 h-6 mx-auto mb-1 rounded-full bg-teal-500/20 text-teal-400 text-xs flex items-center justify-center font-bold">
+                      {step.n}
+                    </div>
+                    <span className="text-[11px] text-slate-400">{step.label}</span>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Stats strip */}
+              <div className="flex justify-center gap-6 mb-8 text-xs text-slate-500">
+                <span>5 PHASES</span>
+                <span className="text-teal-600">|</span>
+                <span>AI TARGET LOCK</span>
+                <span className="text-teal-600">|</span>
+                <span>BLOCKCHAIN VERIFIED</span>
+              </div>
+
+              {/* CTA */}
+              <motion.button
                 onClick={startExperiment}
-                className="w-full px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg font-semibold text-lg hover:shadow-lg hover:shadow-green-500/50 transition-all flex items-center justify-center gap-2"
+                className="w-full px-8 py-4 bg-gradient-to-r from-teal-600 to-emerald-600 rounded-xl font-semibold text-lg hover:shadow-lg hover:shadow-teal-500/40 transition-all flex items-center justify-center gap-2 relative overflow-hidden group"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                Begin Experiment
-                <ArrowRight className="w-5 h-5" />
-              </button>
+                <span className="absolute inset-0 bg-gradient-to-r from-teal-400/20 to-emerald-400/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <span className="relative">Locate the Unknown</span>
+                <ArrowRight className="w-5 h-5 relative" />
+              </motion.button>
             </motion.div>
           )}
 
@@ -602,6 +683,30 @@ export default function RemoteViewingLocationsPage() {
             <ResultCard title="AI Feedback" variant="info">
               <p className="text-slate-300 leading-relaxed">{results.feedback}</p>
             </ResultCard>
+
+            {/* Statistics */}
+            {results.statistics && (
+              <div className="bg-purple-950/30 rounded-xl border border-purple-500/20 p-4">
+                <h4 className="text-sm font-semibold text-purple-400 mb-3">Statistical Analysis</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div><span className="text-slate-500">z-score:</span> <span className="text-white font-mono">{results.statistics.zScore?.toFixed(2)}</span></div>
+                  <div><span className="text-slate-500">p-value:</span> <span className="text-white font-mono">{results.statistics.pValue?.toFixed(4)}</span></div>
+                  <div><span className="text-slate-500">Effect:</span> <span className="text-white font-mono">{results.statistics.effectSize?.toFixed(3)}</span></div>
+                  <div><span className="text-slate-500">Significance:</span> <span className={`font-mono ${results.statistics.significance === 'significant' || results.statistics.significance === 'highly_significant' ? 'text-green-400' : 'text-slate-400'}`}>{results.statistics.significance}</span></div>
+                </div>
+              </div>
+            )}
+
+            {/* drand Verification */}
+            {results.drandRound && (
+              <div className="bg-green-950/30 rounded-lg border border-green-500/20 px-4 py-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-400" />
+                  <span className="text-xs text-green-400">Verified via drand #{results.drandRound}</span>
+                  {results.scoringMethod && <span className="text-xs text-green-300/60 ml-2">({results.scoringMethod})</span>}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </RevealModal>

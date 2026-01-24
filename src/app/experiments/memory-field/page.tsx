@@ -124,97 +124,129 @@ export default function MemoryFieldPage() {
 
   if (phase === 'intro') {
     return (
-      <div className="min-h-screen bg-[#060a0f]">
+      <div className="min-h-screen bg-[#060a0f] overflow-hidden relative">
         <Header />
-        <div className="container mx-auto px-4 py-20">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-3xl mx-auto"
-          >
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-600 to-cyan-600 flex items-center justify-center">
-                <Radio className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold">Memory Field Detection</h1>
-                <p className="text-slate-400">Detect collective viewing patterns through morphic resonance</p>
-              </div>
-            </div>
+        {/* Ripple waves */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+          {[...Array(4)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full border border-teal-500/20"
+              style={{ width: 150 + i * 80, height: 150 + i * 80, left: -(75 + i * 40), top: -(75 + i * 40) }}
+              animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.1, 0.3] }}
+              transition={{ duration: 3 + i, repeat: Infinity, delay: i * 0.8 }}
+            />
+          ))}
+        </div>
 
-            <div className="bg-[#0f1520]/80 border border-[#1a2535] rounded-2xl p-8 mb-8">
-              <h2 className="text-2xl font-bold mb-4">The Memory Field Concept</h2>
-              <div className="space-y-4 text-slate-300">
-                <p>
-                  Based on <strong className="text-teal-400">Rupert Sheldrake&apos;s morphic resonance theory</strong>,
-                  this experiment explores the idea that images and locations that have been viewed many times
-                  may develop a detectable &quot;memory field.&quot;
-                </p>
-                <p>
-                  When thousands of people view the same image, their collective attention may create
-                  a subtle resonance pattern that can be sensed by others. This experiment tests your
-                  ability to detect which of four targets has been viewed most frequently.
-                </p>
-              </div>
-
-              <div className="mt-6 bg-teal-900/20 border border-teal-500/50 rounded-lg p-4">
-                <h3 className="font-semibold text-teal-300 mb-2">How It Works</h3>
-                <ol className="space-y-3">
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-sm">
-                      1
-                    </span>
-                    <div>
-                      <strong>Meditation Preparation</strong>
-                      <p className="text-sm text-slate-400">
-                        Enter a receptive state to sense subtle energy fields
-                      </p>
-                    </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-sm">
-                      2
-                    </span>
-                    <div>
-                      <strong>Rate Each Target</strong>
-                      <p className="text-sm text-slate-400">
-                        For each target (A, B, C, D), sense the resonance strength, emotional tone, and visual impressions
-                      </p>
-                    </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-sm">
-                      3
-                    </span>
-                    <div>
-                      <strong>Compare & Select</strong>
-                      <p className="text-sm text-slate-400">
-                        Review your ratings side-by-side and select which target has the strongest memory field
-                      </p>
-                    </div>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="flex-shrink-0 w-8 h-8 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-sm">
-                      4
-                    </span>
-                    <div>
-                      <strong>Commit & Verify</strong>
-                      <p className="text-sm text-slate-400">
-                        Your response is encrypted and committed to the blockchain for later verification
-                      </p>
-                    </div>
-                  </li>
-                </ol>
-              </div>
-            </div>
-
-            <button
-              onClick={handleStartExperiment}
-              className="w-full px-8 py-4 bg-gradient-to-r from-teal-600 to-cyan-600 rounded-lg font-semibold text-lg hover:shadow-lg hover:shadow-teal-500/50 transition-all flex items-center justify-center gap-2"
+        <div className="container mx-auto px-4 py-16 relative z-10">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto text-center">
+            <motion.div
+              className="inline-flex items-center justify-center w-24 h-24 mb-6 relative"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', delay: 0.2 }}
             >
-              Start Experiment
-              <ArrowRight className="w-5 h-5" />
-            </button>
+              <motion.div
+                className="absolute inset-0 rounded-full border border-teal-400/20"
+                animate={{ scale: [1, 1.5], opacity: [0.4, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+              <div className="w-18 h-18 rounded-full bg-gradient-to-br from-teal-600/20 to-cyan-600/20 border border-teal-400/30 flex items-center justify-center p-4 shadow-[0_0_30px_rgba(20,184,166,0.2)]">
+                <Radio className="w-10 h-10 text-teal-400" />
+              </div>
+            </motion.div>
+
+            <motion.h1
+              className="text-4xl md:text-6xl font-black mb-1"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <span className="text-2xl md:text-3xl text-white/50 block font-light tracking-wider">MEMORY</span>
+              <span className="bg-gradient-to-r from-teal-300 via-cyan-200 to-teal-400 bg-clip-text text-transparent">
+                FIELD
+              </span>
+            </motion.h1>
+
+            <motion.p
+              className="text-teal-300/50 text-sm mt-3 uppercase tracking-widest"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              Morphic Resonance Detection
+            </motion.p>
+
+            <motion.p
+              className="text-slate-400 max-w-md mx-auto text-sm mt-4 mb-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+            >
+              Sense which target has been viewed by thousands.
+              Collective attention may leave a detectable resonance.
+            </motion.p>
+
+            {/* Four target squares */}
+            <motion.div
+              className="grid grid-cols-4 gap-3 max-w-xs mx-auto mb-8"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              {['A', 'B', 'C', 'D'].map((t, i) => (
+                <motion.div
+                  key={t}
+                  className="aspect-square rounded-xl bg-teal-950/30 border border-teal-500/20 flex items-center justify-center"
+                  animate={{ borderColor: i === 1 ? ['rgba(20,184,166,0.2)', 'rgba(20,184,166,0.6)', 'rgba(20,184,166,0.2)'] : undefined }}
+                  transition={{ duration: 2, repeat: Infinity, delay: i * 0.5 }}
+                  whileHover={{ scale: 1.05, borderColor: 'rgba(20,184,166,0.8)' }}
+                >
+                  <span className="text-teal-400/60 font-bold text-lg">{t}</span>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* Stats */}
+            <motion.div
+              className="flex justify-center gap-6 mb-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.9 }}
+            >
+              <div className="text-center">
+                <div className="text-2xl font-bold text-teal-400">4</div>
+                <div className="text-[10px] text-slate-500 uppercase">Targets</div>
+              </div>
+              <div className="w-px bg-[#1a2535]" />
+              <div className="text-center">
+                <div className="text-2xl font-bold text-cyan-400">25%</div>
+                <div className="text-[10px] text-slate-500 uppercase">Baseline</div>
+              </div>
+              <div className="w-px bg-[#1a2535]" />
+              <div className="text-center">
+                <div className="text-2xl font-bold text-teal-300">1</div>
+                <div className="text-[10px] text-slate-500 uppercase">Hot Target</div>
+              </div>
+            </motion.div>
+
+            <motion.button
+              onClick={handleStartExperiment}
+              className="w-full max-w-md mx-auto relative group block"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-teal-600 to-cyan-600 rounded-2xl blur-lg opacity-30 group-hover:opacity-60 transition-opacity" />
+              <div className="relative px-8 py-5 bg-gradient-to-r from-teal-600 to-cyan-600 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+                <Radio className="w-5 h-5" />
+                Sense the Field
+                <ArrowRight className="w-5 h-5" />
+              </div>
+            </motion.button>
           </motion.div>
         </div>
       </div>

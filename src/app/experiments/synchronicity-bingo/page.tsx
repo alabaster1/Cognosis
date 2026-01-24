@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from '@/components/layout/Header';
 import apiService from '@/services/apiService';
@@ -57,6 +57,14 @@ interface GlobalMatch {
   timestamp: Date;
 }
 
+interface BingoStatistics {
+  cellsToComplete: number;
+  expectedCells: number;
+  zScore: number;
+  pValue: number;
+  significance: string;
+}
+
 // 25 synchronicity types for the bingo card
 const SYNCHRONICITY_TYPES: SynchronicityType[] = [
   { id: 'think_call', label: 'Think & Call', description: 'Thought of someone, they called/texted', icon: Phone, color: 'text-blue-400' },
@@ -108,40 +116,14 @@ export default function SynchronicityBingoPage() {
   const [bingoLine, setBingoLine] = useState<number[]>([]);
   const [todayDate, setTodayDate] = useState('');
 
-  // Generate a randomized bingo card
-  const generateBingoCard = useCallback(() => {
-    const shuffled = [...SYNCHRONICITY_TYPES]
-      .filter((t) => t.id !== 'free')
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 24);
-
-    // Insert FREE space in the center
-    const freeType = SYNCHRONICITY_TYPES.find((t) => t.id === 'free')!;
-    const cells: BingoCell[] = shuffled.slice(0, 12).map((type) => ({
-      type,
-      logged: false,
-      loggedAt: null,
-      matchedWith: null,
-    }));
-
-    cells.push({
-      type: freeType,
-      logged: true, // Free space is always logged
-      loggedAt: new Date(),
-      matchedWith: null,
-    });
-
-    cells.push(
-      ...shuffled.slice(12).map((type) => ({
-        type,
-        logged: false,
-        loggedAt: null,
-        matchedWith: null,
-      }))
-    );
-
-    return cells;
-  }, []);
+  // drand and dynamic events state
+  const [drandRound, setDrandRound] = useState<number | null>(null);
+  const [randomnessSource, setRandomnessSource] = useState<string | null>(null);
+  const [eventSource, setEventSource] = useState<string | null>(null);
+  const [bingoStatistics, setBingoStatistics] = useState<BingoStatistics | null>(null);
+  const [eventDescription, setEventDescription] = useState('');
+  const [suggestedCellIndex, setSuggestedCellIndex] = useState<number | null>(null);
+  const [showDescriptionInput, setShowDescriptionInput] = useState<number | null>(null);
 
   // Check for bingo
   const checkBingo = useCallback((cells: BingoCell[]) => {
@@ -171,76 +153,88 @@ export default function SynchronicityBingoPage() {
     return null;
   }, []);
 
+  // Helper: map event text to SynchronicityType with icon/color
+  const FALLBACK_ICONS = [Sparkles, Star, Bell, Heart, Lightbulb, Compass, Feather, Gift, Key, Map, Moon, Sun, Cloud, Bird, Flower2, Trophy, Phone, Music, Book, Clock, MessageCircle, Users, Calendar, Check];
+  const FALLBACK_COLORS = ['text-rose-400', 'text-cyan-400', 'text-amber-400', 'text-emerald-400', 'text-violet-400', 'text-pink-400', 'text-sky-400', 'text-lime-400', 'text-orange-400', 'text-teal-400', 'text-indigo-400', 'text-yellow-400', 'text-green-400', 'text-red-400', 'text-blue-400', 'text-slate-400'];
+
+  const eventToType = (eventText: string, index: number): SynchronicityType => {
+    if (eventText === 'FREE') {
+      return SYNCHRONICITY_TYPES.find((t) => t.id === 'free')!;
+    }
+    // Try to match to existing static types by keyword
+    const lower = eventText.toLowerCase();
+    const matched = SYNCHRONICITY_TYPES.find((t) =>
+      t.id !== 'free' && (lower.includes(t.label.toLowerCase()) || t.description.toLowerCase().includes(lower.slice(0, 20)))
+    );
+    if (matched) return matched;
+    // Create dynamic type from event text
+    const label = eventText.length > 20 ? eventText.slice(0, 18) + '...' : eventText;
+    return {
+      id: `dynamic_${index}`,
+      label,
+      description: eventText,
+      icon: FALLBACK_ICONS[index % FALLBACK_ICONS.length],
+      color: FALLBACK_COLORS[index % FALLBACK_COLORS.length],
+    };
+  };
+
   // Initialize the game
   const startGame = async () => {
     setIsLoading(true);
     setError('');
 
     try {
-      // Call backend to get today's bingo card (seeded by date for consistency)
-      const result = await apiService.getSynchronicityBingoCard({
+      // Use the new generate-card endpoint with drand + AI events
+      const result = await apiService.generateSynchronicityBingoCard({
         verified: !!(wallet as { isVerified?: boolean })?.isVerified,
       });
 
-      setCommitmentId(result.cardId);
-      setNonce(result.sessionId);
-      localStorage.setItem(`sync_bingo_session_${result.cardId}`, result.sessionId);
+      setCommitmentId(result.commitmentId || result.cardId);
+      setNonce(result.nonce || '');
+      localStorage.setItem(`sync_bingo_session_${result.cardId}`, result.nonce || '');
 
-      // Generate bingo card using backend-provided seed for deterministic layout
-      const seed = result.cardSeed;
-      const seededRandom = (s: number) => {
-        let x = s;
-        return () => {
-          x = (x * 1103515245 + 12345) & 0x7fffffff;
-          return x / 0x7fffffff;
-        };
-      };
-      const random = seededRandom(seed);
+      // Store drand info
+      if (result.drandRound) setDrandRound(result.drandRound);
+      if (result.randomnessSource) setRandomnessSource(result.randomnessSource);
+      if (result.eventSource) setEventSource(result.eventSource);
 
-      // Shuffle using seeded random
-      const shuffled = [...SYNCHRONICITY_TYPES]
-        .filter((t) => t.id !== 'free')
-        .map((t) => ({ t, r: random() }))
-        .sort((a, b) => a.r - b.r)
-        .map((x) => x.t)
-        .slice(0, 24);
+      // Build bingo card from backend events or fallback to static types
+      let cells: BingoCell[];
 
-      const freeType = SYNCHRONICITY_TYPES.find((t) => t.id === 'free')!;
-      const cells: BingoCell[] = shuffled.slice(0, 12).map((type) => ({
-        type,
-        logged: false,
-        loggedAt: null,
-        matchedWith: null,
-      }));
-
-      cells.push({
-        type: freeType,
-        logged: true,
-        loggedAt: new Date(),
-        matchedWith: null,
-      });
-
-      cells.push(
-        ...shuffled.slice(12).map((type) => ({
-          type,
-          logged: false,
-          loggedAt: null,
-          matchedWith: null,
-        }))
-      );
+      if (result.events && result.events.length >= 25) {
+        // Use dynamic events from backend (already ordered with gridOrder applied, FREE at center)
+        cells = result.events.map((eventText, idx) => {
+          const type = eventToType(eventText, idx);
+          return {
+            type,
+            logged: type.id === 'free',
+            loggedAt: type.id === 'free' ? new Date() : null,
+            matchedWith: null,
+          };
+        });
+      } else {
+        // Fallback: use static types with gridOrder permutation
+        const order = result.gridOrder || Array.from({ length: 25 }, (_, i) => i);
+        const nonFreeTypes = SYNCHRONICITY_TYPES.filter((t) => t.id !== 'free');
+        const freeType = SYNCHRONICITY_TYPES.find((t) => t.id === 'free')!;
+        cells = order.map((permIdx) => {
+          if (permIdx === 12) {
+            return { type: freeType, logged: true, loggedAt: new Date(), matchedWith: null };
+          }
+          const typeIdx = permIdx > 12 ? permIdx - 1 : permIdx;
+          const type = nonFreeTypes[typeIdx % nonFreeTypes.length];
+          return { type, logged: false, loggedAt: null, matchedWith: null };
+        });
+      }
 
       setBingoCard(cells);
       setTodayDate(new Date().toLocaleDateString());
       setHasBingo(false);
       setBingoLine([]);
-
-      // Load any global matches from backend
-      if (result.globalMatches) {
-        setGlobalMatches(result.globalMatches.map((m: { id: string; type: string; users: string[]; timestamp: string }) => ({
-          ...m,
-          timestamp: new Date(m.timestamp),
-        })));
-      }
+      setBingoStatistics(null);
+      setSuggestedCellIndex(null);
+      setShowDescriptionInput(null);
+      setEventDescription('');
 
       setIsLoading(false);
       setPhase('playing');
@@ -250,21 +244,34 @@ export default function SynchronicityBingoPage() {
     }
   };
 
-  // Log a synchronicity
-  const logSynchronicity = async (index: number) => {
+  // Show description input for a cell
+  const handleCellClick = (index: number) => {
+    if (bingoCard[index].logged || hasBingo) return;
+    setShowDescriptionInput(index);
+    setEventDescription('');
+    setSuggestedCellIndex(null);
+  };
+
+  // Log a synchronicity (with optional description for embedding matching)
+  const logSynchronicity = async (index: number, description?: string) => {
     if (bingoCard[index].logged || hasBingo) return;
 
     const type = bingoCard[index].type;
+    setShowDescriptionInput(null);
 
     // Submit to backend
     try {
-      const sessionId = localStorage.getItem(`sync_bingo_session_${commitmentId}`) || nonce;
       const result = await apiService.logSynchronicity({
-        cardId: commitmentId,
-        sessionId,
+        commitmentId,
         synchronicityType: type.id,
         cellIndex: index,
+        description: description || undefined,
       });
+
+      // Show suggested cell if embedding matching found a better match
+      if (result.suggestedCell !== undefined && result.suggestedCell !== null && result.suggestedCell !== index) {
+        setSuggestedCellIndex(result.suggestedCell);
+      }
 
       setBingoCard((prev) => {
         const updated = [...prev];
@@ -281,11 +288,21 @@ export default function SynchronicityBingoPage() {
           setHasBingo(true);
           setBingoLine(line);
 
+          // Check bingo with backend for statistics
+          apiService.checkSynchronicityBingo({
+            commitmentId,
+            nonce,
+          }).then((checkResult) => {
+            if (checkResult.statistics) {
+              setBingoStatistics(checkResult.statistics);
+            }
+          }).catch(() => {});
+
           // Submit bingo completion to feed
           apiService.submitToFeed({
             experimentType: 'synchronicity-bingo',
             score: updated.filter((c) => c.logged).length,
-            accuracy: 100, // Completed bingo
+            accuracy: 100,
             baseline: 0,
             commitmentHash: commitmentId,
             verified: true,
@@ -303,7 +320,7 @@ export default function SynchronicityBingoPage() {
           {
             id: Date.now().toString(),
             type: type.id,
-            users: result.matchedWith ? ['You', result.matchedWith] : ['You'],
+            users: result.matchedWith ? ['You', result.matchedWith as string] : ['You'],
             timestamp: new Date(),
           },
           ...prev,
@@ -348,81 +365,146 @@ export default function SynchronicityBingoPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-6 max-w-2xl mx-auto"
+              className="max-w-3xl mx-auto"
             >
-              <div className="bg-gradient-to-br from-rose-900/30 to-pink-900/30 rounded-2xl border border-rose-500/30 p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-3 bg-rose-500/20 rounded-xl">
-                    <Sparkles className="w-8 h-8 text-rose-400" />
+              {/* Floating sparkle particles */}
+              <div className="relative">
+                {[...Array(12)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-1 h-1 rounded-full bg-rose-400/60"
+                    style={{
+                      left: `${10 + (i * 7) % 80}%`,
+                      top: `${5 + (i * 13) % 60}%`,
+                    }}
+                    animate={{
+                      opacity: [0, 1, 0],
+                      scale: [0.5, 1.5, 0.5],
+                      y: [0, -20, 0],
+                    }}
+                    transition={{ duration: 3 + i * 0.3, delay: i * 0.4, repeat: Infinity }}
+                  />
+                ))}
+
+                {/* Animated mini bingo grid */}
+                <div className="relative w-32 h-32 mx-auto mb-6">
+                  <div className="absolute inset-0 grid grid-cols-5 gap-0.5">
+                    {[...Array(25)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="rounded-sm"
+                        style={{ backgroundColor: i === 12 ? 'rgba(244,63,94,0.4)' : 'rgba(244,63,94,0.1)' }}
+                        animate={
+                          [3, 7, 12, 17, 21].includes(i)
+                            ? { backgroundColor: ['rgba(244,63,94,0.1)', 'rgba(244,63,94,0.5)', 'rgba(244,63,94,0.1)'] }
+                            : {}
+                        }
+                        transition={{ duration: 2, delay: i * 0.15, repeat: Infinity }}
+                      />
+                    ))}
                   </div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-white">Synchronicity Bingo</h1>
-                    <p className="text-rose-300">Meaningful Coincidence Tracker</p>
-                  </div>
+                  {/* Diagonal line flash */}
+                  <motion.div
+                    className="absolute inset-0"
+                    animate={{ opacity: [0, 0.6, 0] }}
+                    transition={{ duration: 3, delay: 2, repeat: Infinity }}
+                  >
+                    <div className="absolute top-0 left-0 w-full h-full"
+                      style={{
+                        background: 'linear-gradient(135deg, transparent 45%, rgba(244,63,94,0.3) 49%, rgba(244,63,94,0.3) 51%, transparent 55%)',
+                      }}
+                    />
+                  </motion.div>
                 </div>
 
-                <div className="space-y-4 text-slate-300 mb-8">
-                  <p>
-                    Track meaningful coincidences and discover when they align with other users
-                    around the world. When 5 synchronicities align - BINGO!
-                  </p>
-
-                  <div className="bg-[#060a0f]/30 rounded-xl p-4 border border-rose-500/20">
-                    <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-rose-400" />
-                      How It Works
-                    </h3>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-start gap-2">
-                        <span className="text-rose-400">1.</span>
-                        <span>Get a daily 5x5 bingo card of synchronicity types</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-rose-400">2.</span>
-                        <span>Log each synchronicity when you experience it</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-rose-400">3.</span>
-                        <span>See when others log the same type on the same day</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-rose-400">4.</span>
-                        <span>Get 5 in a row to complete a BINGO!</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-4">
-                    <h3 className="font-semibold text-rose-300 mb-2">Synchronicity Clusters</h3>
-                    <p className="text-sm text-slate-400">
-                      When multiple users log the same synchronicity type on the same day,
-                      it creates a &quot;cluster&quot; - a potential sign of global consciousness
-                      patterns or collective meaning.
-                    </p>
-                  </div>
+                {/* Title */}
+                <div className="text-center mb-8">
+                  <h1 className="text-5xl md:text-6xl font-black tracking-tight leading-none">
+                    <span className="text-rose-400">SYNCHRONICITY</span>
+                    <br />
+                    <span className="text-pink-300/80 text-3xl md:text-4xl font-light tracking-[0.3em]">BINGO</span>
+                  </h1>
+                  <p className="text-slate-500 text-sm mt-3 tracking-wide">Meaningful Coincidence Tracker</p>
                 </div>
-
-                {error && (
-                  <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
-                    <p className="text-red-400">{error}</p>
-                  </div>
-                )}
-
-                <button
-                  onClick={startGame}
-                  disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white py-4 rounded-xl font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <>
-                      <Sparkles className="w-5 h-5" />
-                      Get Today&apos;s Card
-                    </>
-                  )}
-                </button>
               </div>
+
+              {/* Sample synchronicity types */}
+              <div className="flex flex-wrap justify-center gap-2 mb-8">
+                {SYNCHRONICITY_TYPES.slice(0, 8).map((type, i) => {
+                  const Icon = type.icon;
+                  return (
+                    <motion.div
+                      key={type.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-950/40 border border-rose-500/20"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.4 + i * 0.08 }}
+                      whileHover={{ scale: 1.05, borderColor: 'rgba(244,63,94,0.5)' }}
+                    >
+                      <Icon className={`w-3 h-3 ${type.color}`} />
+                      <span className="text-xs text-rose-200/80">{type.label}</span>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {/* How it works - compact */}
+              <div className="grid grid-cols-4 gap-2 mb-8">
+                {[
+                  { n: '1', label: 'Get Card', desc: 'Daily 5x5' },
+                  { n: '2', label: 'Log Events', desc: 'As they happen' },
+                  { n: '3', label: 'Match', desc: 'Global sync' },
+                  { n: '4', label: 'BINGO!', desc: '5 in a row' },
+                ].map((step, i) => (
+                  <motion.div
+                    key={step.n}
+                    className="text-center p-3 rounded-xl bg-[#0f0a14]/60 border border-rose-900/40"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 + i * 0.1 }}
+                  >
+                    <div className="w-6 h-6 mx-auto mb-1.5 rounded-full bg-rose-500/20 text-rose-400 text-xs flex items-center justify-center font-bold">
+                      {step.n}
+                    </div>
+                    <div className="text-xs font-medium text-rose-300">{step.label}</div>
+                    <div className="text-[10px] text-slate-500 mt-0.5">{step.desc}</div>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Stats */}
+              <div className="flex justify-center gap-6 mb-8 text-xs text-slate-500">
+                <span>25 TYPES</span>
+                <span className="text-rose-700">|</span>
+                <span>GLOBAL SYNC</span>
+                <span className="text-rose-700">|</span>
+                <span>DAILY CARDS</span>
+              </div>
+
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 mb-4 text-center">
+                  <p className="text-red-400 text-sm">{error}</p>
+                </div>
+              )}
+
+              {/* CTA */}
+              <motion.button
+                onClick={startGame}
+                disabled={isLoading}
+                className="w-full px-8 py-4 bg-gradient-to-r from-rose-600 to-pink-600 rounded-xl font-semibold text-lg hover:shadow-lg hover:shadow-rose-500/40 transition-all flex items-center justify-center gap-2 relative overflow-hidden group disabled:opacity-50"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <span className="absolute inset-0 bg-gradient-to-r from-rose-400/20 to-pink-400/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin relative" />
+                ) : (
+                  <>
+                    <Sparkles className="w-5 h-5 relative" />
+                    <span className="relative">Get Today&apos;s Card</span>
+                  </>
+                )}
+              </motion.button>
             </motion.div>
           )}
 
@@ -465,7 +547,7 @@ export default function SynchronicityBingoPage() {
                         return (
                           <motion.button
                             key={index}
-                            onClick={() => logSynchronicity(index)}
+                            onClick={() => handleCellClick(index)}
                             disabled={cell.logged}
                             className={`aspect-square p-2 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-1 ${
                               isBingoCell
@@ -498,6 +580,43 @@ export default function SynchronicityBingoPage() {
 
                 {/* Global Activity */}
                 <div className="space-y-4">
+                  {/* drand Verification Badge */}
+                  {drandRound && (
+                    <div className="bg-green-950/30 rounded-xl border border-green-500/20 p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                        <span className="text-xs font-medium text-green-400">Verifiable Randomness</span>
+                      </div>
+                      <p className="text-[10px] text-green-300/60">
+                        drand round #{drandRound} ({randomnessSource || 'drand_quicknet'})
+                      </p>
+                      {eventSource && (
+                        <p className="text-[10px] text-green-300/60 mt-0.5">
+                          Events: {eventSource === 'gemini_dynamic' ? 'AI-generated' : 'Static pool'}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Suggested Cell Indicator */}
+                  {suggestedCellIndex !== null && (
+                    <div className="bg-amber-950/30 rounded-xl border border-amber-500/20 p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Lightbulb className="w-4 h-4 text-amber-400" />
+                        <span className="text-xs font-medium text-amber-400">AI Suggestion</span>
+                      </div>
+                      <p className="text-[10px] text-amber-300/60">
+                        Your description best matches cell #{suggestedCellIndex + 1}: &quot;{bingoCard[suggestedCellIndex]?.type.label}&quot;
+                      </p>
+                      <button
+                        onClick={() => setSuggestedCellIndex(null)}
+                        className="text-[10px] text-amber-400/60 hover:text-amber-400 mt-1"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  )}
+
                   <div className="bg-[#0f1520]/30 rounded-xl border border-[#1a2535] p-4">
                     <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
                       <Users className="w-5 h-5 text-rose-400" />
@@ -550,6 +669,48 @@ export default function SynchronicityBingoPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Description Input Modal */}
+              {showDescriptionInput !== null && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+                  onClick={() => setShowDescriptionInput(null)}
+                >
+                  <div
+                    className="bg-[#0f1520] rounded-2xl border border-rose-500/30 p-6 max-w-md w-full"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <h3 className="text-lg font-semibold text-white mb-2">
+                      Log: {bingoCard[showDescriptionInput]?.type.label}
+                    </h3>
+                    <p className="text-sm text-slate-400 mb-4">
+                      {bingoCard[showDescriptionInput]?.type.description}
+                    </p>
+                    <textarea
+                      value={eventDescription}
+                      onChange={(e) => setEventDescription(e.target.value)}
+                      placeholder="Describe what happened (optional - helps AI match events)..."
+                      className="w-full bg-[#0a1018] border border-[#1a2535] rounded-lg p-3 text-sm text-white placeholder-slate-600 resize-none h-24 focus:outline-none focus:border-rose-500/50"
+                    />
+                    <div className="flex gap-3 mt-4">
+                      <button
+                        onClick={() => logSynchronicity(showDescriptionInput, eventDescription || undefined)}
+                        className="flex-1 bg-gradient-to-r from-rose-600 to-pink-600 text-white py-2.5 rounded-lg font-medium text-sm hover:shadow-lg hover:shadow-rose-500/20 transition-all"
+                      >
+                        Log Event
+                      </button>
+                      <button
+                        onClick={() => setShowDescriptionInput(null)}
+                        className="px-4 bg-[#1a2535] text-slate-400 py-2.5 rounded-lg text-sm hover:text-white transition-all"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
             </motion.div>
           )}
 
@@ -599,6 +760,52 @@ export default function SynchronicityBingoPage() {
                     Keep paying attention to the patterns around you.
                   </p>
                 </div>
+
+                {/* Statistics */}
+                {bingoStatistics && (
+                  <div className="bg-[#0f1520]/80 rounded-xl border border-purple-500/30 p-4 max-w-md">
+                    <h3 className="text-sm font-semibold text-purple-400 mb-3">Bingo Statistics</h3>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-slate-500">Cells to bingo:</span>
+                        <span className="text-white ml-2 font-mono">{bingoStatistics.cellsToComplete}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">Expected:</span>
+                        <span className="text-white ml-2 font-mono">{bingoStatistics.expectedCells}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">z-score:</span>
+                        <span className="text-white ml-2 font-mono">{bingoStatistics.zScore.toFixed(2)}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500">p-value:</span>
+                        <span className="text-white ml-2 font-mono">{bingoStatistics.pValue.toFixed(4)}</span>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-center">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        bingoStatistics.significance === 'significant'
+                          ? 'bg-green-500/20 text-green-400'
+                          : 'bg-slate-500/20 text-slate-400'
+                      }`}>
+                        {bingoStatistics.significance === 'significant' ? 'Statistically Significant' : 'Not Significant'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* drand Badge in Results */}
+                {drandRound && (
+                  <div className="bg-green-950/30 rounded-lg border border-green-500/20 px-4 py-2 max-w-md">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-green-400" />
+                      <span className="text-xs text-green-400">
+                        Verified via drand #{drandRound} ({randomnessSource || 'drand_quicknet'})
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex gap-4 justify-center">
                   <button

@@ -466,83 +466,185 @@ export default function PsiPokerPage() {
           {phase === 'intro' && (
             <motion.div
               key="intro"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-6"
+              className="relative"
             >
-              <div className="bg-gradient-to-br from-emerald-900/30 to-green-900/30 rounded-2xl border border-emerald-500/30 p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-3 bg-emerald-500/20 rounded-xl">
-                    <Spade className="w-8 h-8 text-emerald-400" fill="currentColor" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-white">Psi Poker</h1>
-                    <p className="text-emerald-300">Multi-Psi Multiplayer Experiment</p>
-                  </div>
-                </div>
+              {/* Felt table gradient */}
+              <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(ellipse_at_50%_30%,_rgba(5,46,22,0.4)_0%,_transparent_70%)] pointer-events-none" />
 
-                <div className="space-y-4 text-slate-300 mb-8">
-                  <p>
-                    Combine precognition and telepathy in this card game. Predict your
-                    opponents&apos; hidden hands AND the upcoming community cards!
-                  </p>
-
-                  <div className="bg-[#060a0f]/30 rounded-xl p-4 border border-emerald-500/20">
-                    <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <Brain className="w-5 h-5 text-emerald-400" />
-                      How It Works
-                    </h3>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-start gap-2">
-                        <span className="text-emerald-400">1.</span>
-                        <span>You and 2-3 opponents each receive 2 hidden cards</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-emerald-400">2.</span>
-                        <span>Use telepathy: predict each opponent&apos;s hand</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-emerald-400">3.</span>
-                        <span>Use precognition: predict the 5 community cards</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-emerald-400">4.</span>
-                        <span>All cards revealed - score by rank matches</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4">
-                    <h3 className="font-semibold text-emerald-300 mb-2">Scoring</h3>
-                    <p className="text-sm text-slate-400">
-                      Points awarded for matching card ranks. Baseline is ~7.7% (1 in 13 chance).
-                      Test both your telepathic sensing and precognitive abilities!
-                    </p>
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
-                    <p className="text-red-400">{error}</p>
-                  </div>
-                )}
-
-                <button
-                  onClick={startMeditation}
-                  disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white py-4 rounded-xl font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              <div className="relative z-10 text-center pt-8">
+                {/* Fanned card suits */}
+                <motion.div
+                  className="inline-flex gap-1 mb-6"
+                  initial={{ y: -30, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
                 >
+                  {[
+                    { Icon: Spade, color: 'text-slate-300', rotate: -15 },
+                    { Icon: Heart, color: 'text-red-400', rotate: -5 },
+                    { Icon: Diamond, color: 'text-red-400', rotate: 5 },
+                    { Icon: Club, color: 'text-slate-300', rotate: 15 },
+                  ].map(({ Icon, color, rotate }, i) => (
+                    <motion.div
+                      key={i}
+                      className="w-16 h-22 bg-white rounded-lg flex items-center justify-center shadow-xl relative"
+                      style={{ rotate: `${rotate}deg`, zIndex: 4 - Math.abs(rotate) / 5 }}
+                      initial={{ y: -50, opacity: 0, rotate: rotate - 20 }}
+                      animate={{ y: 0, opacity: 1, rotate }}
+                      transition={{ delay: 0.3 + i * 0.1, type: 'spring', stiffness: 200 }}
+                      whileHover={{ y: -8, scale: 1.05 }}
+                    >
+                      <div className="py-5 px-3">
+                        <Icon className={`w-7 h-7 ${color}`} fill="currentColor" />
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+
+                <motion.h1
+                  className="text-5xl md:text-7xl font-black mb-2"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.5, type: 'spring' }}
+                >
+                  <span className="bg-gradient-to-r from-emerald-300 via-green-200 to-teal-300 bg-clip-text text-transparent">
+                    PSI
+                  </span>
+                  <br />
+                  <span className="text-3xl md:text-4xl font-black tracking-wider text-white/80">
+                    POKER
+                  </span>
+                </motion.h1>
+
+                <motion.div
+                  className="flex items-center justify-center gap-3 mt-4 mb-2"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.7 }}
+                >
+                  <Brain className="w-4 h-4 text-emerald-400" />
+                  <span className="text-emerald-300/70 text-sm">Telepathy + Precognition</span>
+                  <Eye className="w-4 h-4 text-emerald-400" />
+                </motion.div>
+
+                <motion.p
+                  className="text-slate-400 max-w-sm mx-auto text-sm mt-2"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8 }}
+                >
+                  Read your opponents&apos; minds and foresee the cards yet to come.
+                  Can you beat a deck stacked by fate?
+                </motion.p>
+              </div>
+
+              {/* Poker table layout */}
+              <motion.div
+                className="relative my-10 mx-auto max-w-sm"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.9 }}
+              >
+                {/* Oval table */}
+                <div className="relative w-full aspect-[16/10] rounded-[50%] bg-gradient-to-b from-emerald-950/60 to-green-950/40 border-2 border-emerald-700/40 shadow-[inset_0_0_40px_rgba(16,185,129,0.1)] flex items-center justify-center">
+                  {/* Community cards area */}
+                  <div className="flex gap-1.5">
+                    {[...Array(5)].map((_, i) => (
+                      <motion.div
+                        key={i}
+                        className="w-8 h-11 rounded bg-emerald-800/50 border border-emerald-600/30 flex items-center justify-center"
+                        initial={{ rotateY: 180 }}
+                        animate={{ rotateY: [180, 0, 180] }}
+                        transition={{ duration: 3, delay: 1.2 + i * 0.2, repeat: Infinity, repeatDelay: 5 }}
+                      >
+                        <span className="text-emerald-400/40 text-xs">?</span>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  {/* Opponent positions */}
+                  {[
+                    { top: '-12px', left: '50%', transform: 'translateX(-50%)' },
+                    { top: '30%', left: '-8px' },
+                    { top: '30%', right: '-8px' },
+                  ].map((pos, i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute w-7 h-7 rounded-full bg-[#0a0e14] border border-emerald-500/40 flex items-center justify-center"
+                      style={pos}
+                      animate={{ borderColor: ['rgba(16,185,129,0.4)', 'rgba(16,185,129,0.8)', 'rgba(16,185,129,0.4)'] }}
+                      transition={{ duration: 2, delay: i * 0.5, repeat: Infinity }}
+                    >
+                      <Users className="w-3.5 h-3.5 text-emerald-400" />
+                    </motion.div>
+                  ))}
+
+                  {/* Your position */}
+                  <motion.div
+                    className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-emerald-600/30 border border-emerald-400/50 rounded-full"
+                    animate={{ boxShadow: ['0 0 0 rgba(16,185,129,0)', '0 0 15px rgba(16,185,129,0.3)', '0 0 0 rgba(16,185,129,0)'] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <span className="text-[10px] text-emerald-300 font-medium">YOU</span>
+                  </motion.div>
+                </div>
+              </motion.div>
+
+              {/* Stats */}
+              <motion.div
+                className="flex justify-center gap-6 mb-8 text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.1 }}
+              >
+                <div>
+                  <div className="text-2xl font-bold text-emerald-400">7.7%</div>
+                  <div className="text-[10px] text-slate-500 uppercase">Baseline</div>
+                </div>
+                <div className="w-px bg-[#1a2535]" />
+                <div>
+                  <div className="text-2xl font-bold text-green-400">2+3</div>
+                  <div className="text-[10px] text-slate-500 uppercase">Opponents</div>
+                </div>
+                <div className="w-px bg-[#1a2535]" />
+                <div>
+                  <div className="text-2xl font-bold text-teal-400">13</div>
+                  <div className="text-[10px] text-slate-500 uppercase">Ranks</div>
+                </div>
+              </motion.div>
+
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
+                  <p className="text-red-400">{error}</p>
+                </div>
+              )}
+
+              {/* CTA */}
+              <motion.button
+                onClick={startMeditation}
+                disabled={isLoading}
+                className="w-full relative group"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.2 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl blur-lg opacity-30 group-hover:opacity-60 transition-opacity" />
+                <div className="relative px-8 py-5 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
-                      <Sparkles className="w-5 h-5" />
-                      Deal Cards
+                      <Spade className="w-5 h-5" fill="currentColor" />
+                      Deal Me In
                     </>
                   )}
-                </button>
-              </div>
+                </div>
+              </motion.button>
             </motion.div>
           )}
 

@@ -117,49 +117,112 @@ export default function EventForecastingPage() {
 
   if (phase === 'intro') {
     return (
-      <div className="min-h-screen bg-[#060a0f]">
+      <div className="min-h-screen bg-[#060a0f] overflow-hidden relative">
         <Header />
-        <div className="container mx-auto px-4 py-20">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl mx-auto">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
-                <Zap className="w-8 h-8 text-white" />
+        {/* Crystal ball glow */}
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[radial-gradient(ellipse,_rgba(99,102,241,0.08)_0%,_transparent_70%)] pointer-events-none" />
+
+        <div className="container mx-auto px-4 py-16 relative z-10">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto text-center">
+            {/* Crystal ball icon */}
+            <motion.div
+              className="inline-flex items-center justify-center w-24 h-24 mb-6 relative"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', delay: 0.2 }}
+            >
+              <motion.div
+                className="absolute inset-0 rounded-full border border-indigo-500/30"
+                animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.2, 0.5] }}
+                transition={{ duration: 3, repeat: Infinity }}
+              />
+              <div className="w-18 h-18 rounded-full bg-gradient-to-br from-blue-600/20 to-indigo-600/20 border border-indigo-400/40 flex items-center justify-center p-4 shadow-[0_0_30px_rgba(99,102,241,0.2)]">
+                <Calendar className="w-10 h-10 text-indigo-400" />
               </div>
-              <div>
-                <h1 className="text-4xl font-bold">Event Forecasting</h1>
-                <p className="text-slate-400">Predict future events with verifiable accuracy</p>
+            </motion.div>
+
+            <motion.h1
+              className="text-5xl md:text-6xl font-black mb-2"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <span className="text-2xl md:text-3xl text-white/50 block font-light tracking-wider">EVENT</span>
+              <span className="bg-gradient-to-r from-blue-300 via-indigo-300 to-violet-400 bg-clip-text text-transparent">
+                FORECASTING
+              </span>
+            </motion.h1>
+
+            <motion.p
+              className="text-indigo-300/60 text-sm mt-3 uppercase tracking-widest"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              Precognition Research
+            </motion.p>
+
+            <motion.p
+              className="text-slate-400 max-w-md mx-auto text-sm mt-4 mb-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+            >
+              Predict future events before they occur. Your forecast is cryptographically
+              sealed and timestamped for verifiable proof.
+            </motion.p>
+
+            {/* Category preview */}
+            <motion.div
+              className="flex flex-wrap justify-center gap-2 mb-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+            >
+              {CATEGORIES.slice(0, 6).map((cat, i) => (
+                <motion.span
+                  key={cat.id}
+                  className="px-3 py-1.5 bg-indigo-950/40 border border-indigo-500/20 text-indigo-300/70 rounded-full text-xs"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.8 + i * 0.05, type: 'spring' }}
+                >
+                  {cat.name}
+                </motion.span>
+              ))}
+            </motion.div>
+
+            {/* Steps */}
+            <motion.div
+              className="grid grid-cols-4 gap-2 mb-8 max-w-md mx-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+            >
+              {['Category', 'Timeframe', 'Predict', 'Commit'].map((s, i) => (
+                <div key={i} className="text-center p-3 rounded-xl bg-[#0a0e14] border border-[#1a2535]">
+                  <div className="text-[10px] text-indigo-500/60 font-mono mb-1">0{i + 1}</div>
+                  <div className="text-[11px] text-white/70">{s}</div>
+                </div>
+              ))}
+            </motion.div>
+
+            <motion.button
+              onClick={handleStartExperiment}
+              className="w-full max-w-md mx-auto relative group block"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.1 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur-lg opacity-30 group-hover:opacity-60 transition-opacity" />
+              <div className="relative px-8 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+                <Zap className="w-5 h-5" />
+                See the Future
+                <ArrowRight className="w-5 h-5" />
               </div>
-            </div>
-
-            <div className="bg-[#0f1520]/80 border border-[#1a2535] rounded-2xl p-8 mb-8">
-              <h2 className="text-2xl font-bold mb-4">How It Works</h2>
-              <p className="text-slate-400 mb-6">
-                Test your ability to forecast future events. Your predictions are cryptographically committed before the event occurs.
-              </p>
-
-              <ol className="space-y-4">
-                <li className="flex gap-3">
-                  <span className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">1</span>
-                  <div><strong>Choose Category</strong><p className="text-slate-400 text-sm">Select event type</p></div>
-                </li>
-                <li className="flex gap-3">
-                  <span className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">2</span>
-                  <div><strong>Set Timeframe</strong><p className="text-slate-400 text-sm">Define when event will occur</p></div>
-                </li>
-                <li className="flex gap-3">
-                  <span className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">3</span>
-                  <div><strong>Make Prediction</strong><p className="text-slate-400 text-sm">Record your forecast</p></div>
-                </li>
-                <li className="flex gap-3">
-                  <span className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">4</span>
-                  <div><strong>Blockchain Commitment</strong><p className="text-slate-400 text-sm">Encrypted and timestamped</p></div>
-                </li>
-              </ol>
-            </div>
-
-            <button onClick={handleStartExperiment} className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg font-semibold text-lg hover:shadow-lg hover:shadow-blue-500/50 transition-all flex items-center justify-center gap-2">
-              Start Experiment<ArrowRight className="w-5 h-5" />
-            </button>
+            </motion.button>
           </motion.div>
         </div>
       </div>

@@ -103,66 +103,162 @@ export default function PKInfluencePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-950 via-yellow-950/10 to-gray-950 text-white">
+    <div className="min-h-screen bg-[#060a0f] text-white">
       <Header />
       <main className="container mx-auto px-4 py-8 max-w-2xl">
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <Zap className="w-7 h-7 text-yellow-400" />
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-              PK Influence Engine
-            </h1>
-          </div>
-          <p className="text-gray-400">Can collective intention shift AI-generated images?</p>
-        </motion.div>
-
         {error && (
           <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-300 text-sm">{error}</div>
         )}
 
         {/* Intro */}
         {phase === 'intro' && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-            <div className="p-6 bg-white/5 rounded-xl border border-white/10 text-center">
-              <Focus className="w-10 h-10 text-yellow-400 mx-auto mb-3" />
-              <h2 className="text-lg font-semibold mb-2">Collective Psychokinesis</h2>
-              <p className="text-sm text-gray-400 max-w-sm mx-auto">
-                An AI will generate an image weighted 50/50 between two concepts.
-                Focus your intention on ONE concept for 30 seconds.
-                The system tracks whether collective intention shifts the AI output.
-              </p>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto pt-8">
+            {/* Electric discharge background */}
+            <div className="relative mb-10">
+              {[...Array(6)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute w-px bg-gradient-to-b from-transparent via-amber-400/40 to-transparent"
+                  style={{
+                    left: `${15 + i * 14}%`,
+                    top: '10%',
+                    height: '80%',
+                  }}
+                  animate={{ opacity: [0, 0.6, 0], scaleY: [0.5, 1, 0.5] }}
+                  transition={{ duration: 2 + i * 0.4, delay: i * 0.5, repeat: Infinity }}
+                />
+              ))}
+
+              {/* Central energy icon */}
+              <div className="relative w-28 h-28 mx-auto mb-6">
+                {/* Outer pulse rings */}
+                {[0, 1, 2].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute inset-0 rounded-full border border-amber-500/30"
+                    animate={{ scale: [1, 1.5 + i * 0.3], opacity: [0.5, 0] }}
+                    transition={{ duration: 2, delay: i * 0.6, repeat: Infinity }}
+                  />
+                ))}
+                <div className="absolute inset-3 rounded-full bg-gradient-to-br from-amber-600 to-orange-700 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                  <Zap className="w-9 h-9 text-white" />
+                </div>
+                {/* Orbiting energy dots */}
+                {[0, 1, 2, 3].map((i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-2 h-2 rounded-full bg-amber-400"
+                    style={{ top: '50%', left: '50%' }}
+                    animate={{
+                      x: [0, Math.cos(i * Math.PI / 2) * 50, 0],
+                      y: [0, Math.sin(i * Math.PI / 2) * 50, 0],
+                      opacity: [0.3, 1, 0.3],
+                    }}
+                    transition={{ duration: 3, delay: i * 0.75, repeat: Infinity }}
+                  />
+                ))}
+              </div>
+
+              {/* Title */}
+              <div className="text-center">
+                <h1 className="text-5xl md:text-6xl font-black tracking-tight leading-none">
+                  <span className="text-amber-400">PK</span>
+                  <br />
+                  <span className="text-orange-300/80 text-3xl md:text-4xl font-light tracking-[0.2em]">INFLUENCE</span>
+                </h1>
+                <p className="text-slate-500 text-sm mt-3 tracking-wide">Collective Psychokinesis Engine</p>
+              </div>
             </div>
 
-            <div className="p-4 bg-white/5 rounded-xl text-center">
-              <p className="text-sm text-gray-400 mb-3">Today's Concept Pair:</p>
-              <p className="text-xl font-bold">
-                <span className="text-blue-400">{conceptPair.a}</span>
-                {' vs '}
-                <span className="text-orange-400">{conceptPair.b}</span>
-              </p>
+            {/* Concept pair display */}
+            <div className="relative mb-8">
+              <div className="flex items-center justify-center gap-4">
+                <motion.div
+                  className="flex-1 text-center p-4 rounded-xl bg-blue-950/30 border border-blue-500/20"
+                  whileHover={{ scale: 1.02, borderColor: 'rgba(59,130,246,0.5)' }}
+                >
+                  <div className="text-2xl mb-1 capitalize font-bold text-blue-400">{conceptPair.a}</div>
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wider">Concept A</div>
+                </motion.div>
+                <motion.div
+                  className="text-amber-500 font-bold text-lg"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                >
+                  VS
+                </motion.div>
+                <motion.div
+                  className="flex-1 text-center p-4 rounded-xl bg-orange-950/30 border border-orange-500/20"
+                  whileHover={{ scale: 1.02, borderColor: 'rgba(249,115,22,0.5)' }}
+                >
+                  <div className="text-2xl mb-1 capitalize font-bold text-orange-400">{conceptPair.b}</div>
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wider">Concept B</div>
+                </motion.div>
+              </div>
+              {/* Energy beam between concepts */}
+              <motion.div
+                className="absolute top-1/2 left-1/4 right-1/4 h-px bg-gradient-to-r from-blue-500/40 via-amber-400/60 to-orange-500/40"
+                animate={{ opacity: [0.3, 0.8, 0.3] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
             </div>
 
-            <div className="text-center text-sm text-gray-400">
+            {/* How it works compact */}
+            <div className="grid grid-cols-3 gap-2 mb-8">
+              {[
+                { label: 'Choose', desc: 'Pick a concept' },
+                { label: 'Focus', desc: '30 sec intent' },
+                { label: 'Reveal', desc: 'AI shows shift' },
+              ].map((step, i) => (
+                <motion.div
+                  key={step.label}
+                  className="text-center p-3 rounded-xl bg-[#0f1008]/60 border border-amber-900/30"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 + i * 0.1 }}
+                >
+                  <div className="text-xs font-medium text-amber-300">{step.label}</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">{step.desc}</div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Stats */}
+            <div className="flex justify-center gap-6 mb-8 text-xs text-slate-500">
+              <span>30s FOCUS</span>
+              <span className="text-amber-700">|</span>
+              <span>AI IMAGE GEN</span>
+              <span className="text-amber-700">|</span>
+              <span>COLLECTIVE PK</span>
+            </div>
+
+            {/* Choice buttons */}
+            <div className="text-center text-sm text-slate-400 mb-4">
               Choose which concept to focus your intention on:
             </div>
-
             <div className="grid grid-cols-2 gap-4">
-              <button
+              <motion.button
                 onClick={() => startFocusing('a')}
-                className="p-6 rounded-xl border-2 border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 transition-all text-center"
+                className="p-5 rounded-xl border-2 border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 transition-all text-center relative overflow-hidden group"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
               >
-                <div className="text-2xl mb-2">{'🔵'}</div>
-                <div className="font-semibold text-blue-300 capitalize">{conceptPair.a}</div>
-                <div className="text-xs text-gray-400 mt-1">Focus on this</div>
-              </button>
-              <button
+                <span className="absolute inset-0 bg-blue-400/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Focus className="w-6 h-6 text-blue-400 mx-auto mb-2 relative" />
+                <div className="font-semibold text-blue-300 capitalize relative">{conceptPair.a}</div>
+                <div className="text-xs text-slate-500 mt-1 relative">Focus intention here</div>
+              </motion.button>
+              <motion.button
                 onClick={() => startFocusing('b')}
-                className="p-6 rounded-xl border-2 border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 transition-all text-center"
+                className="p-5 rounded-xl border-2 border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 transition-all text-center relative overflow-hidden group"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
               >
-                <div className="text-2xl mb-2">{'🟠'}</div>
-                <div className="font-semibold text-orange-300 capitalize">{conceptPair.b}</div>
-                <div className="text-xs text-gray-400 mt-1">Focus on this</div>
-              </button>
+                <span className="absolute inset-0 bg-orange-400/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Focus className="w-6 h-6 text-orange-400 mx-auto mb-2 relative" />
+                <div className="font-semibold text-orange-300 capitalize relative">{conceptPair.b}</div>
+                <div className="text-xs text-slate-500 mt-1 relative">Focus intention here</div>
+              </motion.button>
             </div>
           </motion.div>
         )}

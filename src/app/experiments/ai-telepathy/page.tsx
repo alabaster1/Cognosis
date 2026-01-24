@@ -33,20 +33,36 @@ export default function AITelepathyPage() {
   const [nonce, setNonce] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [drandRound, setDrandRound] = useState<number | null>(null);
+  const [randomnessSource, setRandomnessSource] = useState<string | null>(null);
   const [results, setResults] = useState<{
     success: boolean;
     rounds: Array<{
       round: number;
       target: string;
       category: string;
-      guesses: Array<{ guess: string; warmth: string }>;
+      imagery?: string;
+      guesses: Array<{ guess: string; warmth: string; similarity?: number }>;
       bestGuess: string;
       bestWarmth: string;
+      bestSimilarity?: number;
     }>;
     averageWarmth: string;
     accuracy: string;
     performance: string;
-    targets: Array<{ concept: string; category: string }>;
+    targets: Array<{ concept: string; category: string; imagery?: string }>;
+    statistics?: {
+      zScore: number;
+      pValue: number;
+      significance: string;
+      observedMean: number;
+      baselineMean: number;
+      effectSize: number;
+      scoringMethod: string;
+    };
+    scoringMethod?: string;
+    drandRound?: number;
+    randomnessSource?: string;
   } | null>(null);
 
   // Generate backend target and store commitmentId/nonce
@@ -63,6 +79,8 @@ export default function AITelepathyPage() {
 
       setCommitmentId(result.commitmentId);
       setNonce(result.nonce);
+      if (result.drandRound) setDrandRound(result.drandRound);
+      if (result.randomnessSource) setRandomnessSource(result.randomnessSource);
 
       // Store nonce in localStorage for reveal
       localStorage.setItem(`telepathy_nonce_${result.commitmentId}`, result.nonce);
@@ -130,7 +148,7 @@ export default function AITelepathyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cyan-50 via-blue-50 to-indigo-50">
+    <div className="relative min-h-screen bg-[#060a0f]">
       <Header />
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
@@ -138,67 +156,172 @@ export default function AITelepathyPage() {
           {phase === 'intro' && (
             <motion.div
               key="intro"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               exit={{ opacity: 0, y: -20 }}
-              className="space-y-6"
+              className="relative"
             >
-              <div className="bg-white rounded-2xl shadow-xl p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl">
-                    <Brain className="w-8 h-8 text-white" />
-                  </div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                    AI Telepathy Challenge
-                  </h1>
-                </div>
-
-                <div className="space-y-4 text-slate-600">
-                  <p className="text-lg">
-                    Can you sense what concept the AI is thinking? Use intuition and warmth feedback to guide your guesses.
-                  </p>
-
-                  <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
-                    <h3 className="font-semibold text-cyan-900 mb-2">How It Works:</h3>
-                    <ul className="space-y-2">
-                      <li className="flex items-start gap-2">
-                        <span className="text-cyan-600 mt-1">1.</span>
-                        <span>Begin with a brief meditation to clear your mind</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-cyan-600 mt-1">2.</span>
-                        <span>Complete 3 rounds of concept guessing</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-cyan-600 mt-1">3.</span>
-                        <span>Make up to 5 guesses per round with warmth feedback</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-cyan-600 mt-1">4.</span>
-                        <span>Warmth levels guide you: Burning Hot -&gt; Cold</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h3 className="font-semibold text-blue-900 mb-2">Concept Categories:</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {['Nature', 'Emotions', 'Objects', 'Actions', 'Abstract'].map((cat) => (
-                        <span key={cat} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-                          {cat}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  onClick={startMeditation}
-                  className="mt-6 w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-cyan-600 hover:to-blue-700 transition-all"
-                >
-                  Begin Experience
-                </button>
+              {/* Neural network background */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <svg className="absolute inset-0 w-full h-full opacity-10" viewBox="0 0 400 400">
+                  {[...Array(8)].map((_, i) => (
+                    <motion.circle
+                      key={i}
+                      cx={50 + (i % 4) * 100}
+                      cy={80 + Math.floor(i / 4) * 200}
+                      fill="#22d3ee"
+                      initial={{ opacity: 0.3, r: 3 }}
+                      animate={{ opacity: [0.3, 1, 0.3], r: [2, 4, 2] }}
+                      transition={{ duration: 2, delay: i * 0.3, repeat: Infinity }}
+                    />
+                  ))}
+                  {[...Array(6)].map((_, i) => (
+                    <motion.line
+                      key={`l${i}`}
+                      x1={50 + (i % 3) * 100}
+                      y1={80}
+                      x2={100 + (i % 2) * 200}
+                      y2={280}
+                      stroke="#22d3ee"
+                      strokeWidth="0.5"
+                      animate={{ opacity: [0.1, 0.4, 0.1] }}
+                      transition={{ duration: 3, delay: i * 0.5, repeat: Infinity }}
+                    />
+                  ))}
+                </svg>
               </div>
+
+              <div className="relative z-10 text-center pt-6">
+                {/* AI brain icon */}
+                <motion.div
+                  className="inline-flex items-center justify-center w-24 h-24 mb-6 relative"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', delay: 0.2 }}
+                >
+                  <motion.div
+                    className="absolute inset-0 rounded-2xl border"
+                    style={{ borderColor: 'rgba(6, 182, 212, 0.3)' }}
+                    animate={{ rotate: [0, 5, -5, 0] }}
+                    transition={{ duration: 4, repeat: Infinity }}
+                  />
+                  <div className="w-18 h-18 rounded-2xl bg-gradient-to-br from-cyan-600/20 to-blue-600/20 border border-cyan-400/30 flex items-center justify-center p-4 shadow-[0_0_30px_rgba(34,211,238,0.2)]">
+                    <Brain className="w-10 h-10 text-cyan-400" />
+                  </div>
+                  <motion.div
+                    className="absolute -top-1 -right-1 w-4 h-4 rounded-full"
+                    style={{ backgroundColor: 'rgba(34, 211, 238, 0.8)' }}
+                    animate={{ scale: [1, 1.4, 1], opacity: [0.8, 0.4, 0.8] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                </motion.div>
+
+                <motion.h1
+                  className="text-4xl md:text-6xl font-black mb-2"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <span className="text-2xl md:text-3xl text-white/60 block font-light tracking-wider">AI</span>
+                  <span className="bg-gradient-to-r from-cyan-300 via-blue-300 to-indigo-400 bg-clip-text text-transparent">
+                    TELEPATHY
+                  </span>
+                </motion.h1>
+
+                <motion.p
+                  className="text-cyan-300/60 text-sm mt-3 uppercase tracking-widest"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  Human-AI Mind Connection
+                </motion.p>
+
+                <motion.p
+                  className="text-slate-400 max-w-sm mx-auto text-sm mt-3"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  Sense the concept an AI is holding in mind.
+                  Warmth feedback guides your intuition closer to the target.
+                </motion.p>
+              </div>
+
+              {/* Warmth gradient bar */}
+              <motion.div
+                className="my-8 mx-auto max-w-sm"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+              >
+                <div className="h-3 rounded-full bg-gradient-to-r from-blue-600 via-yellow-500 to-red-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]" />
+                <div className="flex justify-between mt-2 text-[10px] font-mono">
+                  <span className="text-blue-400">COLD</span>
+                  <span className="text-yellow-400">WARM</span>
+                  <span className="text-red-400">BURNING</span>
+                </div>
+              </motion.div>
+
+              {/* Category tags */}
+              <motion.div
+                className="flex flex-wrap justify-center gap-2 mb-8"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}
+              >
+                {['Nature', 'Emotions', 'Objects', 'Actions', 'Abstract'].map((cat, i) => (
+                  <motion.span
+                    key={cat}
+                    className="px-3 py-1.5 bg-cyan-950/40 border border-cyan-500/20 text-cyan-300/80 rounded-full text-xs"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.9 + i * 0.05, type: 'spring' }}
+                  >
+                    {cat}
+                  </motion.span>
+                ))}
+              </motion.div>
+
+              {/* Stats */}
+              <motion.div
+                className="flex justify-center gap-6 mb-8 text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1 }}
+              >
+                <div>
+                  <div className="text-2xl font-bold text-cyan-400">3</div>
+                  <div className="text-[10px] text-slate-500 uppercase">Rounds</div>
+                </div>
+                <div className="w-px bg-[#1a2535]" />
+                <div>
+                  <div className="text-2xl font-bold text-blue-400">5</div>
+                  <div className="text-[10px] text-slate-500 uppercase">Guesses/Rnd</div>
+                </div>
+                <div className="w-px bg-[#1a2535]" />
+                <div>
+                  <div className="text-2xl font-bold text-indigo-400">6</div>
+                  <div className="text-[10px] text-slate-500 uppercase">Warmth Lvls</div>
+                </div>
+              </motion.div>
+
+              {/* CTA */}
+              <motion.button
+                onClick={startMeditation}
+                className="w-full relative group"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.1 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl blur-lg opacity-30 group-hover:opacity-60 transition-opacity" />
+                <div className="relative px-8 py-5 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+                  <Brain className="w-5 h-5" />
+                  Connect to AI Mind
+                </div>
+              </motion.button>
             </motion.div>
           )}
 
@@ -342,7 +465,7 @@ export default function AITelepathyPage() {
             </motion.div>
           )}
 
-          {phase === 'success' && results && (
+          {phase === 'success' && (
             <motion.div
               key="success"
               initial={{ opacity: 0, y: 20 }}
@@ -350,6 +473,7 @@ export default function AITelepathyPage() {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-6"
             >
+              {results ? (
               <div className="bg-white rounded-2xl shadow-xl p-8">
                 <div className="text-center mb-8">
                   <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
@@ -378,6 +502,61 @@ export default function AITelepathyPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Statistics Section */}
+                {results.statistics && (
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-6 mb-6">
+                    <h3 className="font-semibold text-purple-900 mb-4">Statistical Analysis:</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="text-sm text-slate-600">Z-Score:</span>
+                        <p className="font-bold text-lg">{results.statistics.zScore}</p>
+                      </div>
+                      <div>
+                        <span className="text-sm text-slate-600">P-Value:</span>
+                        <p className="font-bold text-lg">{results.statistics.pValue < 0.001 ? '< 0.001' : results.statistics.pValue.toFixed(4)}</p>
+                      </div>
+                      <div>
+                        <span className="text-sm text-slate-600">Effect Size:</span>
+                        <p className="font-bold text-lg">{results.statistics.effectSize}</p>
+                      </div>
+                      <div>
+                        <span className="text-sm text-slate-600">Significance:</span>
+                        <p className={`font-bold text-lg ${
+                          results.statistics.significance === 'highly_significant' ? 'text-purple-600' :
+                          results.statistics.significance === 'significant' ? 'text-green-600' :
+                          results.statistics.significance === 'marginally_significant' ? 'text-yellow-600' :
+                          'text-slate-600'
+                        }`}>
+                          {results.statistics.significance === 'highly_significant' ? 'Highly Significant' :
+                           results.statistics.significance === 'very_significant' ? 'Very Significant' :
+                           results.statistics.significance === 'significant' ? 'Significant' :
+                           results.statistics.significance === 'marginally_significant' ? 'Marginally Significant' :
+                           'Not Significant'}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-3">
+                      Scoring: {results.scoringMethod === 'embedding' ? 'Semantic Embedding (text-embedding-3-small)' : 'String Matching'} |
+                      Observed mean: {results.statistics.observedMean?.toFixed(4)} vs baseline: {results.statistics.baselineMean}
+                    </p>
+                  </div>
+                )}
+
+                {/* drand Verification Badge */}
+                {(results.drandRound || drandRound) && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-green-900">Verifiable Randomness</p>
+                      <p className="text-xs text-green-700">
+                        drand round #{results.drandRound || drandRound} | Source: {results.randomnessSource || randomnessSource || 'drand_quicknet'}
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
                   <h3 className="font-semibold text-gray-700 mb-3">Round-by-Round Results:</h3>
@@ -429,6 +608,7 @@ export default function AITelepathyPage() {
                   Return to Experiments
                 </button>
               </div>
+              ) : null}
             </motion.div>
           )}
         </AnimatePresence>

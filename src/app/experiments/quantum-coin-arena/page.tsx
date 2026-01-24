@@ -445,74 +445,190 @@ export default function QuantumCoinArenaPage() {
           {phase === 'intro' && (
             <motion.div
               key="intro"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              className="relative"
             >
-              <div className="bg-gradient-to-br from-cyan-900/30 to-teal-900/30 rounded-2xl border border-cyan-500/30 p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-3 bg-cyan-500/20 rounded-xl">
-                    <Coins className="w-8 h-8 text-cyan-400" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-white">Quantum Coin Arena</h1>
-                    <p className="text-cyan-300">Multiplayer Psychokinesis Experiment</p>
-                  </div>
-                </div>
+              {/* Quantum particle field */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                {[...Array(20)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-1 h-1 rounded-full bg-cyan-400"
+                    initial={{
+                      x: `${Math.random() * 100}%`,
+                      y: `${Math.random() * 100}%`,
+                      opacity: 0,
+                    }}
+                    animate={{
+                      opacity: [0, 0.6, 0],
+                      scale: [0, 1.5, 0],
+                      x: `${Math.random() * 100}%`,
+                      y: `${Math.random() * 100}%`,
+                    }}
+                    transition={{
+                      duration: 3 + Math.random() * 2,
+                      repeat: Infinity,
+                      delay: Math.random() * 3,
+                    }}
+                  />
+                ))}
+              </div>
 
-                <div className="space-y-4 text-slate-300 mb-8">
-                  <p>
-                    Join other researchers in a collective psychokinesis experiment. Together,
-                    focus your intention on influencing quantum-random coin flips!
-                  </p>
-
-                  <div className="bg-[#060a0f]/30 rounded-xl p-4 border border-cyan-500/20">
-                    <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <Users className="w-5 h-5 text-cyan-400" />
-                      How It Works
-                    </h3>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-start gap-2">
-                        <span className="text-cyan-400">1.</span>
-                        <span>Join an arena with 3-8 players</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-cyan-400">2.</span>
-                        <span>Each round, choose heads or tails to focus on</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-cyan-400">3.</span>
-                        <span>Group intention is determined by majority</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-cyan-400">4.</span>
-                        <span>20 flips total - can collective will influence randomness?</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-xl p-4">
-                    <h3 className="font-semibold text-cyan-300 mb-2">The Science</h3>
-                    <p className="text-sm text-slate-400">
-                      This experiment tests the Global Consciousness hypothesis - whether
-                      collective human intention can influence random events. Chi-square
-                      analysis measures statistical deviation from chance.
-                    </p>
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
-                    <p className="text-red-400">{error}</p>
-                  </div>
-                )}
-
-                <button
-                  onClick={startLobby}
-                  disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white py-4 rounded-xl font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              <div className="relative z-10 text-center pt-6">
+                {/* Spinning coin */}
+                <motion.div
+                  className="inline-flex items-center justify-center w-28 h-28 mb-6 relative"
+                  initial={{ rotateY: 0 }}
+                  animate={{ rotateY: 360 }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                  style={{ perspective: '600px' }}
                 >
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-cyan-400 to-teal-500 shadow-[0_0_40px_rgba(34,211,238,0.4)] flex items-center justify-center border-4 border-cyan-300/30">
+                    <Coins className="w-10 h-10 text-[#0a0e14]" />
+                  </div>
+                </motion.div>
+
+                <motion.h1
+                  className="text-4xl md:text-6xl font-black mb-1"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <span className="bg-gradient-to-r from-cyan-300 via-teal-200 to-cyan-400 bg-clip-text text-transparent">
+                    QUANTUM
+                  </span>
+                </motion.h1>
+                <motion.h2
+                  className="text-2xl md:text-3xl font-black tracking-[0.2em] text-white/70 mb-1"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  COIN ARENA
+                </motion.h2>
+
+                <motion.div
+                  className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 bg-cyan-500/10 border border-cyan-500/30 rounded-full"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <Users className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="text-cyan-300 text-xs font-medium">Collective Psychokinesis</span>
+                </motion.div>
+
+                <motion.p
+                  className="text-slate-400 max-w-sm mx-auto text-sm mt-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.7 }}
+                >
+                  Unite minds to bend probability. Can collective intention
+                  influence quantum-random events?
+                </motion.p>
+              </div>
+
+              {/* Arena visualization */}
+              <motion.div
+                className="relative w-56 h-56 mx-auto my-8"
+                initial={{ opacity: 0, rotate: -10 }}
+                animate={{ opacity: 1, rotate: 0 }}
+                transition={{ delay: 0.8 }}
+              >
+                {/* Central coin */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <motion.div
+                    className="w-14 h-14 rounded-full bg-[#0a0e14] border-2 border-cyan-400/60 flex items-center justify-center shadow-[0_0_20px_rgba(34,211,238,0.2)]"
+                    animate={{ boxShadow: ['0 0 10px rgba(34,211,238,0.1)', '0 0 30px rgba(34,211,238,0.4)', '0 0 10px rgba(34,211,238,0.1)'] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <span className="text-cyan-400 font-bold text-lg">H/T</span>
+                  </motion.div>
+                </div>
+
+                {/* Player nodes in circle */}
+                {[...Array(6)].map((_, i) => {
+                  const angle = (i / 6) * 360 - 90;
+                  const rad = (angle * Math.PI) / 180;
+                  const radius = 90;
+                  const x = Math.cos(rad) * radius;
+                  const y = Math.sin(rad) * radius;
+
+                  return (
+                    <motion.div
+                      key={i}
+                      className="absolute left-1/2 top-1/2"
+                      style={{ transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))` }}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.9 + i * 0.1, type: 'spring' }}
+                    >
+                      <motion.div
+                        className="w-9 h-9 rounded-full bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center"
+                        animate={{ borderColor: ['rgba(34,211,238,0.4)', 'rgba(34,211,238,0.8)', 'rgba(34,211,238,0.4)'] }}
+                        transition={{ duration: 2, delay: i * 0.3, repeat: Infinity }}
+                      >
+                        <Users className="w-4 h-4 text-cyan-400/70" />
+                      </motion.div>
+                      {/* Connection line to center */}
+                      <svg className="absolute top-1/2 left-1/2 w-0 h-0 overflow-visible pointer-events-none">
+                        <motion.line
+                          x1="0" y1="0"
+                          x2={-x} y2={-y}
+                          stroke="rgba(34,211,238,0.15)"
+                          strokeWidth="1"
+                          strokeDasharray="4 4"
+                          animate={{ strokeOpacity: [0.1, 0.3, 0.1] }}
+                          transition={{ duration: 2, delay: i * 0.2, repeat: Infinity }}
+                        />
+                      </svg>
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+
+              {/* Stats */}
+              <motion.div
+                className="grid grid-cols-3 gap-3 mb-8"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.2 }}
+              >
+                <div className="text-center p-3 rounded-xl bg-cyan-950/30 border border-cyan-500/15">
+                  <div className="text-2xl font-bold text-cyan-400">3-8</div>
+                  <div className="text-[10px] text-slate-500 uppercase">Players</div>
+                </div>
+                <div className="text-center p-3 rounded-xl bg-cyan-950/30 border border-cyan-500/15">
+                  <div className="text-2xl font-bold text-teal-400">20</div>
+                  <div className="text-[10px] text-slate-500 uppercase">Flips</div>
+                </div>
+                <div className="text-center p-3 rounded-xl bg-cyan-950/30 border border-cyan-500/15">
+                  <div className="text-2xl font-bold text-cyan-300">50%</div>
+                  <div className="text-[10px] text-slate-500 uppercase">Baseline</div>
+                </div>
+              </motion.div>
+
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
+                  <p className="text-red-400">{error}</p>
+                </div>
+              )}
+
+              {/* CTA */}
+              <motion.button
+                onClick={startLobby}
+                disabled={isLoading}
+                className="w-full relative group"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.3 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-2xl blur-lg opacity-30 group-hover:opacity-60 transition-opacity" />
+                <div className="relative px-8 py-5 bg-gradient-to-r from-cyan-600 to-teal-600 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
@@ -521,8 +637,17 @@ export default function QuantumCoinArenaPage() {
                       Enter the Arena
                     </>
                   )}
-                </button>
-              </div>
+                </div>
+              </motion.button>
+
+              <motion.p
+                className="text-center text-slate-600 text-xs mt-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.4 }}
+              >
+                Global Consciousness hypothesis testing
+              </motion.p>
             </motion.div>
           )}
 

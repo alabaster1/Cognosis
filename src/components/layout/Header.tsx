@@ -196,6 +196,10 @@ export default function Header() {
           <Link href="/dashboard" className="hover:text-cyan-400 transition-colors">
             Dashboard
           </Link>
+          <Link href="/tokenomics" className="flex items-center gap-1 hover:text-cyan-400 transition-colors">
+            <Coins className="w-4 h-4" />
+            Tokenomics
+          </Link>
           <Link href="/about" className="hover:text-cyan-400 transition-colors">
             About
           </Link>

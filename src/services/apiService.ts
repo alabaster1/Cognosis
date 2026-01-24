@@ -238,6 +238,17 @@ class APIService {
     hits: unknown[];
     misses: unknown[];
     feedback: string;
+    statistics?: {
+      zScore: number;
+      pValue: number;
+      significance: string;
+      observedMean: number;
+      baselineMean: number;
+      effectSize: number;
+    };
+    scoringMethod?: string;
+    drandRound?: number;
+    randomnessSource?: string;
   }> {
     try {
       const response = await axios.post(`${this.baseURL}/api/experiments/remote-viewing/reveal`, data);
@@ -322,6 +333,9 @@ class APIService {
     nonce: string;
     totalRounds: number;
     ipfsCID?: string | null;
+    drandRound?: number;
+    randomnessSource?: string;
+    targetSource?: string;
   }> {
     try {
       const response = await axios.post(`${this.baseURL}/api/experiments/ai-telepathy/generate-target`, data);
@@ -347,14 +361,28 @@ class APIService {
       round: number;
       target: string;
       category: string;
-      guesses: Array<{ guess: string; warmth: string }>;
+      imagery?: string;
+      guesses: Array<{ guess: string; warmth: string; similarity?: number }>;
       bestGuess: string;
       bestWarmth: string;
+      bestSimilarity?: number;
     }>;
     averageWarmth: string;
     accuracy: string;
     performance: string;
-    targets: Array<{ concept: string; category: string }>;
+    targets: Array<{ concept: string; category: string; imagery?: string }>;
+    statistics?: {
+      zScore: number;
+      pValue: number;
+      significance: string;
+      observedMean: number;
+      baselineMean: number;
+      effectSize: number;
+      scoringMethod: string;
+    };
+    scoringMethod?: string;
+    drandRound?: number;
+    randomnessSource?: string;
   }> {
     try {
       const response = await axios.post(`${this.baseURL}/api/experiments/ai-telepathy/reveal`, data);
@@ -1049,10 +1077,13 @@ class APIService {
     commitmentId: string;
     nonce: string;
     totalRounds: number;
-    targetEmotions: number[];
-    artSeeds: number[];
+    targetEmotions?: number[];
+    artSeeds?: number[];
+    sessionEmotions?: string[];
     ipfsCID?: string | null;
     commitmentHash: string;
+    drandRound?: number;
+    randomnessSource?: string;
   }> {
     try {
       const response = await axios.post(`${this.baseURL}/api/experiments/emotion-echo/generate-target`, data);
@@ -1370,6 +1401,9 @@ class APIService {
     scheduledTime: string;
     ipfsCID?: string | null;
     commitmentHash: string;
+    pulseConcepts?: string[] | null;
+    drandRound?: number;
+    randomnessSource?: string;
   }> {
     try {
       const response = await axios.post(`${this.baseURL}/api/experiments/mind-pulse/generate-target`, data);
@@ -1394,6 +1428,9 @@ class APIService {
     participantCount: number;
     targetIndex: number;
     scheduledTime: string;
+    pulseConcepts?: string[] | null;
+    drandRound?: number;
+    randomnessSource?: string;
   }> {
     try {
       const response = await axios.post(`${this.baseURL}/api/experiments/mind-pulse/join`, data);
@@ -1470,10 +1507,14 @@ class APIService {
     commitmentId: string;
     nonce: string;
     cardId: string;
+    events?: string[];
     gridOrder: number[];
     date: string;
     ipfsCID?: string | null;
     commitmentHash: string;
+    drandRound?: number;
+    randomnessSource?: string;
+    eventSource?: string;
   }> {
     try {
       const response = await axios.post(`${this.baseURL}/api/experiments/synchronicity-bingo/generate-card`, data);
@@ -1520,10 +1561,12 @@ class APIService {
     description?: string;
   }): Promise<{
     success: boolean;
-    logged: boolean;
+    logged: boolean | object;
     matchedWith: string | null;
     globalCount: number;
     globalMatch?: boolean;
+    suggestedCell?: number | null;
+    matchSimilarity?: number | null;
   }> {
     try {
       const response = await axios.post(`${this.baseURL}/api/experiments/synchronicity-bingo/log`, data);
@@ -1544,10 +1587,19 @@ class APIService {
   }): Promise<{
     success: boolean;
     hasBingo: boolean;
-    bingoLine: number[] | null;
+    bingoLine: string | null;
     loggedCount: number;
     matchedCount: number;
-    globalMatches: Array<{ type: string; users: string[]; timestamp: string }>;
+    globalMatches: Array<{ cellIndex: number; synchronicityType: string; loggedAt: string }>;
+    statistics?: {
+      cellsToComplete: number;
+      expectedCells: number;
+      zScore: number;
+      pValue: number;
+      significance: string;
+    } | null;
+    drandRound?: number | null;
+    randomnessSource?: string | null;
   }> {
     try {
       const response = await axios.post(`${this.baseURL}/api/experiments/synchronicity-bingo/check`, data);

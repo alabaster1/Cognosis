@@ -103,6 +103,9 @@ export default function EmotionEchoPage() {
   const [selections, setSelections] = useState<RoundSelection[]>([]);
   const [results, setResults] = useState<Results | null>(null);
   const [lastSelection, setLastSelection] = useState<{ selected: string; target: string; correct: boolean } | null>(null);
+  const [sessionEmotions, setSessionEmotions] = useState<string[]>([]);
+  const [drandRound, setDrandRound] = useState<number | null>(null);
+  const [randomnessSource, setRandomnessSource] = useState<string | null>(null);
 
   // Seeds for art generation (from backend)
   const artSeedsRef = useRef<number[]>([]);
@@ -220,17 +223,38 @@ export default function EmotionEchoPage() {
       setCommitmentHash(result.commitmentHash);
       setNonce(result.nonce);
 
+      // Store drand info
+      if (result.drandRound) setDrandRound(result.drandRound);
+      if (result.randomnessSource) setRandomnessSource(result.randomnessSource);
+
+      // Store session-specific emotions (dynamic from expanded Plutchik wheel)
+      if (result.sessionEmotions) {
+        setSessionEmotions(result.sessionEmotions);
+      }
+
       // Store nonce in localStorage for verification
       localStorage.setItem(`emotion_echo_nonce_${result.commitmentId}`, result.nonce);
 
-      // Backend provides: targetEmotions (indices), artSeeds (for deterministic rendering)
-      const emotions = result.targetEmotions.map((idx: number) => EMOTIONS[idx].id);
+      // Backend provides: targetEmotions (indices) or sessionEmotions
+      let emotions: string[];
+      if (result.targetEmotions && result.targetEmotions.length > 0) {
+        emotions = result.targetEmotions.map((idx: number) => EMOTIONS[idx]?.id || EMOTIONS[0].id);
+      } else if (result.sessionEmotions) {
+        emotions = result.sessionEmotions.slice(0, TOTAL_ROUNDS);
+      } else {
+        emotions = EMOTIONS.slice(0, TOTAL_ROUNDS).map(e => e.id);
+      }
       setTargetEmotions(emotions);
-      artSeedsRef.current = result.artSeeds;
 
-      // Generate art using backend-provided seeds (deterministic)
+      // Generate art seeds from commitment hash if not provided by backend
+      const seeds = result.artSeeds || emotions.map((_, i) =>
+        parseInt((result.commitmentHash || '0').substring(i * 4, i * 4 + 8), 16) || (i + 1) * 12345
+      );
+      artSeedsRef.current = seeds;
+
+      // Generate art using seeds (deterministic)
       const generatedArts: AbstractArt[] = emotions.map((emotion: string, i: number) =>
-        generateAbstractArt(emotion, result.artSeeds[i])
+        generateAbstractArt(emotion, seeds[i])
       );
       setArts(generatedArts);
 
@@ -427,91 +451,193 @@ export default function EmotionEchoPage() {
           {phase === 'intro' && (
             <motion.div
               key="intro"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative"
             >
-              <div className="bg-gradient-to-br from-pink-900/30 to-rose-900/30 rounded-2xl border border-pink-500/30 p-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-3 bg-pink-500/20 rounded-xl">
-                    <Palette className="w-8 h-8 text-pink-400" />
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold text-white">Emotion Echo</h1>
-                    <p className="text-pink-300">Telepathy & Empathy Experiment</p>
-                  </div>
-                </div>
+              {/* Floating emotion orbs background */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                {EMOTIONS.map((emotion, i) => (
+                  <motion.div
+                    key={emotion.id}
+                    className="absolute w-16 h-16 rounded-full opacity-20 blur-xl"
+                    style={{ backgroundColor: emotion.hex }}
+                    animate={{
+                      x: [0, 30 * Math.sin(i), -20 * Math.cos(i), 0],
+                      y: [0, -25 * Math.cos(i), 15 * Math.sin(i), 0],
+                    }}
+                    transition={{
+                      duration: 6 + i,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                    initial={{
+                      left: `${10 + (i % 4) * 25}%`,
+                      top: `${15 + Math.floor(i / 4) * 50}%`,
+                    }}
+                  />
+                ))}
+              </div>
 
-                <div className="space-y-4 text-slate-300 mb-8">
-                  <p>
-                    Can you sense the emotion embedded in abstract art? Each artwork is generated
-                    with a specific emotional quality - trust your intuition to perceive it.
-                  </p>
-
-                  <div className="bg-[#060a0f]/30 rounded-xl p-4 border border-pink-500/20">
-                    <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
-                      <Heart className="w-5 h-5 text-pink-400" />
-                      How It Works
-                    </h3>
-                    <ul className="space-y-2 text-sm">
-                      <li className="flex items-start gap-2">
-                        <span className="text-pink-400">1.</span>
-                        <span>Abstract art is generated with an &quot;embedded&quot; emotion</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-pink-400">2.</span>
-                        <span>View the art and feel which of 8 emotions it represents</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-pink-400">3.</span>
-                        <span>Select your perceived emotion from Plutchik&apos;s wheel</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-pink-400">4.</span>
-                        <span>10 rounds total - baseline is 12.5% (1 in 8)</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Emotion wheel preview */}
-                  <div className="bg-[#060a0f]/30 rounded-xl p-4 border border-[#1a2535]">
-                    <h3 className="font-semibold text-white mb-3">Plutchik&apos;s 8 Emotions</h3>
-                    <div className="grid grid-cols-4 gap-2">
-                      {EMOTIONS.map((emotion) => (
-                        <div
-                          key={emotion.id}
-                          className={`p-2 rounded-lg ${emotion.bg} border ${emotion.border} text-center`}
-                        >
-                          <emotion.icon className={`w-5 h-5 mx-auto ${emotion.color}`} />
-                          <span className={`text-xs ${emotion.color}`}>{emotion.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
-                    <p className="text-red-400">{error}</p>
-                  </div>
-                )}
-
-                <button
-                  onClick={startMeditation}
-                  disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500 text-white py-4 rounded-xl font-semibold transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              <div className="relative z-10 text-center pt-6">
+                {/* Pulsing heart icon */}
+                <motion.div
+                  className="inline-flex items-center justify-center w-24 h-24 mb-6 relative"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', delay: 0.2 }}
                 >
+                  <motion.div
+                    className="absolute inset-0 rounded-full bg-gradient-to-br from-pink-500/20 to-rose-500/20"
+                    animate={{ scale: [1, 1.3, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                  <motion.div
+                    className="absolute inset-2 rounded-full bg-gradient-to-br from-pink-500/10 to-purple-500/10"
+                    animate={{ scale: [1, 1.15, 1] }}
+                    transition={{ duration: 2, repeat: Infinity, delay: 0.3 }}
+                  />
+                  <Palette className="w-10 h-10 text-pink-400 relative z-10" />
+                </motion.div>
+
+                <motion.h1
+                  className="text-5xl md:text-6xl font-black mb-2"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <span className="bg-gradient-to-r from-pink-300 via-rose-300 to-purple-400 bg-clip-text text-transparent">
+                    EMOTION
+                  </span>
+                  <br />
+                  <span className="text-3xl font-light tracking-[0.3em] text-white/60 italic">
+                    echo
+                  </span>
+                </motion.h1>
+
+                <motion.p
+                  className="text-pink-300/60 text-sm mt-3 mb-2"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  Empathy & Telepathy Research
+                </motion.p>
+
+                <motion.p
+                  className="text-slate-400 max-w-sm mx-auto text-sm"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  Feel the invisible. Sense emotions hidden within abstract art
+                  through pure intuitive empathy.
+                </motion.p>
+              </div>
+
+              {/* Circular emotion wheel */}
+              <motion.div
+                className="relative w-64 h-64 mx-auto my-10"
+                initial={{ rotate: -30, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 1 }}
+                transition={{ delay: 0.7, type: 'spring' }}
+              >
+                {EMOTIONS.map((emotion, i) => {
+                  const angle = (i / EMOTIONS.length) * 360 - 90;
+                  const rad = (angle * Math.PI) / 180;
+                  const radius = 95;
+                  const x = Math.cos(rad) * radius;
+                  const y = Math.sin(rad) * radius;
+
+                  return (
+                    <motion.div
+                      key={emotion.id}
+                      className="absolute left-1/2 top-1/2"
+                      style={{ transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))` }}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 0.8 + i * 0.08, type: 'spring' }}
+                      whileHover={{ scale: 1.3 }}
+                    >
+                      <div
+                        className={`w-12 h-12 rounded-full ${emotion.bg} border ${emotion.border} flex flex-col items-center justify-center cursor-default shadow-lg`}
+                        style={{ boxShadow: `0 0 15px ${emotion.hex}30` }}
+                      >
+                        <emotion.icon className={`w-5 h-5 ${emotion.color}`} />
+                      </div>
+                      <div className={`text-[9px] ${emotion.color} text-center mt-1 font-medium`}>
+                        {emotion.label}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+
+                {/* Center */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <motion.div
+                    className="w-16 h-16 rounded-full bg-[#0a0e14] border border-pink-500/30 flex items-center justify-center"
+                    animate={{ boxShadow: ['0 0 0 rgba(236,72,153,0)', '0 0 20px rgba(236,72,153,0.2)', '0 0 0 rgba(236,72,153,0)'] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                  >
+                    <span className="text-pink-400 text-lg font-bold">8</span>
+                  </motion.div>
+                </div>
+              </motion.div>
+
+              {/* Stats */}
+              <motion.div
+                className="flex justify-center gap-6 mb-8 text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1 }}
+              >
+                <div>
+                  <div className="text-2xl font-bold text-pink-400">10</div>
+                  <div className="text-[10px] text-slate-500 uppercase">Rounds</div>
+                </div>
+                <div className="w-px bg-[#1a2535]" />
+                <div>
+                  <div className="text-2xl font-bold text-rose-400">12.5%</div>
+                  <div className="text-[10px] text-slate-500 uppercase">Baseline</div>
+                </div>
+                <div className="w-px bg-[#1a2535]" />
+                <div>
+                  <div className="text-2xl font-bold text-purple-400">8</div>
+                  <div className="text-[10px] text-slate-500 uppercase">Emotions</div>
+                </div>
+              </motion.div>
+
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
+                  <p className="text-red-400">{error}</p>
+                </div>
+              )}
+
+              {/* CTA */}
+              <motion.button
+                onClick={startMeditation}
+                disabled={isLoading}
+                className="w-full relative group"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.1 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 rounded-2xl blur-lg opacity-30 group-hover:opacity-60 transition-opacity" />
+                <div className="relative px-8 py-5 bg-gradient-to-r from-pink-600 via-rose-500 to-purple-600 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
+                      <Heart className="w-5 h-5" />
+                      Tune Into Emotions
                       <Sparkles className="w-5 h-5" />
-                      Begin Emotion Echo
                     </>
                   )}
-                </button>
-              </div>
+                </div>
+              </motion.button>
             </motion.div>
           )}
 
@@ -768,6 +894,26 @@ export default function EmotionEchoPage() {
                   </p>
                 </div>
               </div>
+
+              {/* drand Verification Badge */}
+              {drandRound && (
+                <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 flex items-center gap-3">
+                  <div className="w-7 h-7 bg-green-500/20 rounded-full flex items-center justify-center">
+                    <Check className="w-4 h-4 text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-green-300">Verifiable Randomness</p>
+                    <p className="text-xs text-green-500">drand round #{drandRound} | {randomnessSource || 'drand_quicknet'}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Dynamic emotions indicator */}
+              {sessionEmotions.length > 0 && (
+                <div className="text-xs text-slate-500 text-center">
+                  Session emotions from expanded Plutchik wheel ({sessionEmotions.length} unique)
+                </div>
+              )}
             </div>
           )}
         </RevealModal>

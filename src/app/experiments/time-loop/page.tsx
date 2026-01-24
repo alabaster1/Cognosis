@@ -211,92 +211,139 @@ export default function TimeLoopPage() {
 
   if (phase === 'intro') {
     return (
-      <div className="min-h-screen bg-[#060a0f]">
+      <div className="min-h-screen bg-[#060a0f] overflow-hidden relative">
         <Header />
-        <div className="container mx-auto px-4 py-20">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-3xl mx-auto"
+        {/* Infinity loop particle effect */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <motion.svg
+            className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-48 opacity-10"
+            viewBox="0 0 200 100"
           >
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center">
-                <Hourglass className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-4xl font-bold">Time-Loop Detection</h1>
-                <p className="text-slate-400">Track déjà vu and temporal anomalies</p>
-              </div>
-            </div>
+            <motion.path
+              d="M50,50 C50,20 80,20 100,50 C120,80 150,80 150,50 C150,20 120,20 100,50 C80,80 50,80 50,50"
+              stroke="url(#loopGrad)"
+              strokeWidth="1.5"
+              fill="none"
+              strokeDasharray="400"
+              animate={{ strokeDashoffset: [400, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+            />
+            <defs>
+              <linearGradient id="loopGrad">
+                <stop offset="0%" stopColor="#a855f7" />
+                <stop offset="100%" stopColor="#d946ef" />
+              </linearGradient>
+            </defs>
+          </motion.svg>
+        </div>
 
-            <div className="bg-[#0f1520]/80 border border-[#1a2535] rounded-2xl p-8 mb-8">
-              <h2 className="text-2xl font-bold mb-4">How It Works</h2>
-              <ol className="space-y-4">
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-violet-500/20 text-violet-400 flex items-center justify-center font-bold">
-                    1
-                  </span>
-                  <div>
-                    <strong>Describe the Event</strong>
-                    <p className="text-slate-400 text-sm">
-                      Record what just happened - location, time, and detailed description
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-violet-500/20 text-violet-400 flex items-center justify-center font-bold">
-                    2
-                  </span>
-                  <div>
-                    <strong>Characterize the Experience</strong>
-                    <p className="text-slate-400 text-sm">
-                      Classify the type of temporal anomaly, its intensity, and duration
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-violet-500/20 text-violet-400 flex items-center justify-center font-bold">
-                    3
-                  </span>
-                  <div>
-                    <strong>Document Prior Knowledge</strong>
-                    <p className="text-slate-400 text-sm">
-                      Record any foreknowledge you had and what specific details you recognized
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-violet-500/20 text-violet-400 flex items-center justify-center font-bold">
-                    4
-                  </span>
-                  <div>
-                    <strong>Identify Patterns</strong>
-                    <p className="text-slate-400 text-sm">
-                      Note if this is recurring, and document variations or branching points
-                    </p>
-                  </div>
-                </li>
-                <li className="flex gap-3">
-                  <span className="flex-shrink-0 w-8 h-8 rounded-full bg-violet-500/20 text-violet-400 flex items-center justify-center font-bold">
-                    5
-                  </span>
-                  <div>
-                    <strong>Commit to Blockchain</strong>
-                    <p className="text-slate-400 text-sm">
-                      Your experience is encrypted and timestamped immutably for future analysis
-                    </p>
-                  </div>
-                </li>
-              </ol>
-            </div>
-
-            <button
-              onClick={handleStartExperiment}
-              className="w-full px-8 py-4 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-lg font-semibold text-lg hover:shadow-lg hover:shadow-violet-500/50 transition-all flex items-center justify-center gap-2"
+        <div className="container mx-auto px-4 py-16 relative z-10">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="max-w-3xl mx-auto text-center">
+            {/* Hourglass with flip animation */}
+            <motion.div
+              className="inline-flex items-center justify-center w-24 h-24 mb-6 relative"
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: 'spring', delay: 0.2 }}
             >
-              Start Experiment
-              <ArrowRight className="w-5 h-5" />
-            </button>
+              <motion.div
+                className="w-18 h-18 rounded-2xl bg-gradient-to-br from-violet-600/20 to-fuchsia-600/20 border border-violet-400/30 flex items-center justify-center p-4 shadow-[0_0_30px_rgba(139,92,246,0.2)]"
+                animate={{ rotate: [0, 180, 360] }}
+                transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <Hourglass className="w-10 h-10 text-violet-400" />
+              </motion.div>
+            </motion.div>
+
+            <motion.h1
+              className="text-5xl md:text-6xl font-black mb-1"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <span className="bg-gradient-to-r from-violet-300 via-fuchsia-300 to-violet-400 bg-clip-text text-transparent">
+                TIME-LOOP
+              </span>
+            </motion.h1>
+            <motion.p
+              className="text-2xl text-white/40 font-light tracking-[0.3em]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              DETECTION
+            </motion.p>
+
+            <motion.p
+              className="text-violet-300/50 text-sm mt-4 uppercase tracking-widest"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              Temporal Anomaly Research
+            </motion.p>
+
+            <motion.p
+              className="text-slate-400 max-w-sm mx-auto text-sm mt-4 mb-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+            >
+              Document d&eacute;j&agrave; vu moments and temporal glitches.
+              Has this happened before?
+            </motion.p>
+
+            {/* Anomaly types */}
+            <motion.div
+              className="flex flex-wrap justify-center gap-2 mb-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+            >
+              {['D\u00e9j\u00e0 Vu', 'Precognitive Dream', 'Time Slip', 'Repeated Pattern', 'Glitch'].map((type, i) => (
+                <motion.span
+                  key={type}
+                  className="px-3 py-1.5 bg-violet-950/40 border border-violet-500/20 text-violet-300/70 rounded-full text-xs"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.8 + i * 0.06, type: 'spring' }}
+                >
+                  {type}
+                </motion.span>
+              ))}
+            </motion.div>
+
+            {/* Compact steps */}
+            <motion.div
+              className="grid grid-cols-5 gap-1 mb-8 max-w-md mx-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+            >
+              {['Describe', 'Classify', 'Document', 'Pattern', 'Commit'].map((s, i) => (
+                <div key={i} className="text-center p-2 rounded-lg bg-[#0a0e14] border border-violet-500/10">
+                  <div className="text-[9px] text-violet-500/50 font-mono">{i + 1}</div>
+                  <div className="text-[10px] text-white/60">{s}</div>
+                </div>
+              ))}
+            </motion.div>
+
+            <motion.button
+              onClick={handleStartExperiment}
+              className="w-full max-w-md mx-auto relative group block"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.1 }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.99 }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-2xl blur-lg opacity-30 group-hover:opacity-60 transition-opacity" />
+              <div className="relative px-8 py-5 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+                <Hourglass className="w-5 h-5" />
+                Log Temporal Event
+                <ArrowRight className="w-5 h-5" />
+              </div>
+            </motion.button>
           </motion.div>
         </div>
       </div>
