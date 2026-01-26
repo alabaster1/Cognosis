@@ -92,7 +92,12 @@ This document tracks all issues identified in the codebase and their resolution 
 - **Location**: `web/src/app/experiments/*/page.tsx`
 - **Issue**: High maintenance burden
 - **Fix**: Refactor to template/factory pattern
-- **Status**: [~] DEFERRED - Major refactor. Pages share common patterns but have unique UI/flow. Recommend extracting shared hooks and components incrementally rather than full rewrite.
+- **Status**: [x] RESOLVED (Infrastructure) - Created template system:
+  - `components/experiments/templates/CommitmentExperiment.tsx` - Reusable 350-line template
+  - `components/experiments/templates/types.ts` - Configuration types
+  - `components/experiments/configs/` - Config files for telepathy, precognition, dream-journal, intuition
+  - `experiments/telepathy-v2/page.tsx` - Example refactored page (10 lines vs 400)
+  - Remaining pages can be migrated incrementally using the pattern
 
 ### 13. Inconsistent Logging
 - **Location**: Throughout backend
