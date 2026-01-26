@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 
 interface RVSessionState {
   sessionId: string | null;
+  userId: string | null;
   currentStage: number;
   protocol: string;
   impressions: Record<string, any>;
@@ -17,6 +18,7 @@ interface SessionStartResult {
 export function useRVSession() {
   const [state, setState] = useState<RVSessionState>({
     sessionId: null,
+    userId: null,
     currentStage: 1,
     protocol: 'CRV',
     impressions: {},
@@ -50,6 +52,7 @@ export function useRVSession() {
       setState(prev => ({
         ...prev,
         sessionId: result.sessionId,
+        userId,
         currentStage: result.currentStage || 1,
         protocol: result.protocol,
         isLoading: false
@@ -99,7 +102,7 @@ export function useRVSession() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId: state.sessionId,
-          userId: 'current-user-id', // TODO: Get from auth context
+          userId: state.userId,
           impressions: allImpressions
         })
       });
@@ -120,11 +123,12 @@ export function useRVSession() {
       }));
       throw error;
     }
-  }, [state.sessionId, state.impressions, state.currentStage]);
+  }, [state.sessionId, state.userId, state.impressions, state.currentStage]);
 
   const reset = useCallback(() => {
     setState({
       sessionId: null,
+      userId: null,
       currentStage: 1,
       protocol: 'CRV',
       impressions: {},

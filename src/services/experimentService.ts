@@ -6,6 +6,7 @@ import encryptionService from './encryptionService';
 import ipfsService from './ipfsService';
 import apiService from './apiService';
 import walletService from './walletService';
+import secureKeyStore from './secureKeyStore';
 import type { ExperimentType, ExperimentMetadata } from '@/types';
 
 class ExperimentService {
@@ -88,9 +89,8 @@ class ExperimentService {
 
       console.log('[ExperimentService] Commitment created:', commitment.id);
 
-      // 7. Store encryption key locally for reveal
-      localStorage.setItem(`exp_key_${commitment.id}`, encryptionKey);
-      localStorage.setItem(`exp_nonce_${commitment.id}`, nonce);
+      // 7. Store encryption key securely for reveal (sessionStorage + memory)
+      secureKeyStore.store(commitment.id, encryptionKey, nonce);
 
       return {
         commitmentId: commitment.id,
@@ -115,13 +115,14 @@ class ExperimentService {
     try {
       console.log('[ExperimentService] Revealing commitment:', commitmentId);
 
-      // 1. Get stored nonce and prediction
-      const nonce = localStorage.getItem(`exp_nonce_${commitmentId}`);
-      const encryptionKey = localStorage.getItem(`exp_key_${commitmentId}`);
+      // 1. Get stored nonce and encryption key from secure store
+      const storedKeys = secureKeyStore.retrieve(commitmentId);
 
-      if (!nonce) {
-        throw new Error('Nonce not found. Cannot reveal this experiment.');
+      if (!storedKeys) {
+        throw new Error('Keys not found. Cannot reveal this experiment. The session may have expired or was closed.');
       }
+
+      const { key: encryptionKey, nonce } = storedKeys;
 
       // 2. Get commitment data from backend
       const commitment = await apiService.getExperimentById(commitmentId);
@@ -147,9 +148,8 @@ class ExperimentService {
 
       console.log('[ExperimentService] Revealed successfully');
 
-      // 6. Clean up local storage
-      localStorage.removeItem(`exp_key_${commitmentId}`);
-      localStorage.removeItem(`exp_nonce_${commitmentId}`);
+      // 6. Clean up stored keys
+      secureKeyStore.remove(commitmentId);
 
       return {
         score: response.aiScore || 0,

@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import RVStageGuide from '@/components/rv/RVStageGuide';
 import { useRVSession } from '@/hooks/useRVSession';
+import { useWalletStore } from '@/store/useWalletStore';
 
 export default function RVSessionPage() {
   const params = useParams();
   const router = useRouter();
   const sessionId = params.sessionId as string;
+  const wallet = useWalletStore((state) => state.wallet);
 
   const {
     currentStage,
@@ -82,7 +84,7 @@ export default function RVSessionPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             sessionId: localSessionId,
-            userId: 'current-user-id', // TODO: Get from auth context
+            userId: wallet?.address || 'guest',
             impressions: allImpressions
           })
         });

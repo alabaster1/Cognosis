@@ -5,6 +5,7 @@
  */
 
 import type { WalletInfo, WalletType } from '@/types';
+import type { CIP30WalletApi } from '@/types/cardano';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -12,7 +13,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 class WalletService {
   private walletAddress: string | null = null;
   private walletType: WalletType | null = null;
-  private walletApi: any = null;
+  private walletApi: CIP30WalletApi | null = null;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -27,7 +28,7 @@ class WalletService {
     if (typeof window === 'undefined') return [];
 
     const wallets: string[] = [];
-    const cardano = (window as any).cardano;
+    const cardano = window.cardano;
 
     if (!cardano) return wallets;
 
@@ -47,13 +48,14 @@ class WalletService {
     try {
       console.log(`[WalletService] Connecting to ${walletName} wallet...`);
 
-      const cardano = (window as any).cardano;
-      if (!cardano || !cardano[walletName.toLowerCase()]) {
+      const cardano = window.cardano;
+      const provider = cardano?.[walletName.toLowerCase()];
+      if (!cardano || !provider) {
         throw new Error(`${walletName} wallet not found. Please install the extension.`);
       }
 
       // Enable wallet (opens popup for user approval)
-      this.walletApi = await cardano[walletName.toLowerCase()].enable();
+      this.walletApi = await provider.enable();
 
       // Get address
       const addresses = await this.walletApi.getUsedAddresses();

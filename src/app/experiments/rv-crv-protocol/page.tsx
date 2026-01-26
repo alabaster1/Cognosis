@@ -5,21 +5,27 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import { Brain, Eye, Hand, Box, Heart, MessageCircle, Sparkles, Clock, Target, CheckCircle } from 'lucide-react';
 import { useRVSession } from '@/hooks/useRVSession';
+import { useWalletStore } from '@/store/useWalletStore';
 import SessionCalibration from '@/components/survey/SessionCalibration';
 
 export default function CRVProtocolPage() {
   const router = useRouter();
+  const wallet = useWalletStore((state) => state.wallet);
   const { startSession, isLoading, error } = useRVSession();
   const [isStarting, setIsStarting] = useState(false);
   const [showCalibration, setShowCalibration] = useState(false);
   const [sessionData, setSessionData] = useState<{ userId: string; sessionId: string } | null>(null);
 
   const handleStartClick = async () => {
+    if (!wallet) {
+      router.push('/onboarding');
+      return;
+    }
+
     setIsStarting(true);
 
     try {
-      // TODO: Get actual userId from auth context
-      const userId = 'demo-user-' + Date.now();
+      const userId = wallet.address;
 
       const result = await startSession(userId, 'CRV');
 

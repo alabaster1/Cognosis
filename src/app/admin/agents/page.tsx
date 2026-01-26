@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
-import { Bot, Sparkles, Shield, Brain, Activity, Database, CheckCircle, AlertCircle, Clock } from 'lucide-react';
+import { Bot, Sparkles, Shield, Brain, Activity, Database, CheckCircle, AlertCircle, Clock, Lock } from 'lucide-react';
+import { useWalletStore } from '@/store/useWalletStore';
 
 interface VectorStore {
   status: string;
@@ -52,6 +54,8 @@ interface Stats {
 }
 
 export default function AgentsDashboard() {
+  const router = useRouter();
+  const { wallet, token } = useWalletStore();
   const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,15 +64,27 @@ export default function AgentsDashboard() {
   const [generatedPost, setGeneratedPost] = useState<PostResponse | null>(null);
   const [generating, setGenerating] = useState(false);
 
+  // Auth check - redirect if not authenticated
   useEffect(() => {
+    if (!wallet || !token) {
+      router.push('/onboarding?redirect=/admin/agents');
+      return;
+    }
     fetchAgentStatus();
     fetchStats();
-  }, []);
+  }, [wallet, token, router]);
+
+  // Helper to get auth headers
+  const getAuthHeaders = () => ({
+    'Content-Type': 'application/json',
+    'Authorization': token ? `Bearer ${token}` : '',
+  });
 
   const fetchAgentStatus = async () => {
     try {
-      // TODO: Add authentication token
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/agents/status`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/agents/status`, {
+        headers: getAuthHeaders(),
+      });
       const data = await response.json();
       if (data.success) {
         setAgentStatus(data);
@@ -80,7 +96,9 @@ export default function AgentsDashboard() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/agents/stats`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/agents/stats`, {
+        headers: getAuthHeaders(),
+      });
       const data = await response.json();
       if (data.success) {
         setStats(data.stats);
@@ -97,7 +115,7 @@ export default function AgentsDashboard() {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/agents/generate-post`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           agentType: selectedAgent,
           experimentType,
