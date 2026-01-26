@@ -42,7 +42,7 @@ function generateToken(userId, walletAddress) {
       iat: Math.floor(Date.now() / 1000),
     },
     JWT_SECRET,
-    { expiresIn: JWT_EXPIRY }
+    { algorithm: 'HS256', expiresIn: JWT_EXPIRY }
   );
 }
 
@@ -51,7 +51,7 @@ function generateToken(userId, walletAddress) {
  */
 function verifyToken(token) {
   try {
-    return jwt.verify(token, JWT_SECRET);
+    return jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
   } catch (error) {
     throw new Error('Invalid or expired token');
   }
