@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+:root {
+  --background: #060a0f;
+  --foreground: #e0e8f0;
+  --psi-cyan: #00f0ff;
+  --psi-teal: #00c8b4;
+  --psi-green: #39ff8e;
+  --psi-violet: #a855f7;
+  --psi-magenta: #e040a0;
+  --psi-amber: #ffb020;
+  --psi-void: #0a0e14;
+  --psi-surface: #0f1520;
+  --psi-border: #1a2535;
+  --grid-line: #142030;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #060a0f;
+    --foreground: #e0e8f0;
+  }
+}
+
+/* Scanline overlay for sci-fi depth */
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', system-ui, sans-serif;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 240, 255, 0.008) 2px,
+    rgba(0, 240, 255, 0.008) 4px
+  );
+}
+
+/* Glowing scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--psi-void);
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--psi-cyan), var(--psi-teal));
+  border-radius: 3px;
+}
+
+/* Ambient glow utility */
+.psi-glow {
+  box-shadow:
+    0 0 15px rgba(0, 240, 255, 0.15),
+    0 0 30px rgba(0, 240, 255, 0.05),
+    inset 0 1px 0 rgba(0, 240, 255, 0.1);
+}
+
+.psi-glow-violet {
+  box-shadow:
+    0 0 15px rgba(168, 85, 247, 0.15),
+    0 0 30px rgba(168, 85, 247, 0.05),
+    inset 0 1px 0 rgba(168, 85, 247, 0.1);
+}
+
+/* Grid background pattern */
+.psi-grid-bg {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Pulsing keyframes for live data elements */
+@keyframes psi-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes psi-scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+.animate-psi-pulse {
+  animation: psi-pulse 2s ease-in-out infinite;
+}
