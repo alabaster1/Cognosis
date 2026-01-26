@@ -1,0 +1,35 @@
+{
+  "name": "Cognis Institute",
+  "version": "1.0.0",
+  "description": "A privacy-preserving mobile application for conducting psi experiments (remote viewing, premonition, telepathy) with blockchain integrity verification and AI-powered scoring.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:backend": "cd backend && npm test",
+    "lint:web": "cd web && npm run lint",
+    "prepare": "husky"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "crypto-js": "^4.2.0"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10"
+  },
+  "lint-staged": {
+    "web/src/**/*.{ts,tsx}": [
+      "cd web && npx eslint --fix"
+    ],
+    "backend/**/*.js": [
+      "cd backend && npx eslint --fix --no-error-on-unmatched-pattern"
+    ]
+  }
+}

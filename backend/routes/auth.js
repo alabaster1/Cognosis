@@ -10,6 +10,7 @@ const {
   authMiddleware,
 } = require('../auth');
 const { getPrismaClient } = require('../db');
+const { validators } = require('../middleware/validation');
 
 const router = express.Router();
 
@@ -17,13 +18,9 @@ const router = express.Router();
  * POST /api/auth/wallet/challenge
  * Request a challenge nonce for wallet signature
  */
-router.post('/wallet/challenge', async (req, res) => {
+router.post('/wallet/challenge', validators.walletChallenge, async (req, res) => {
   try {
     const { walletAddress } = req.body;
-    if (!walletAddress) {
-      return res.status(400).json({ error: 'walletAddress is required' });
-    }
-
     const challenge = generateWalletChallenge(walletAddress);
     res.json({ success: true, ...challenge });
   } catch (error) {
@@ -37,16 +34,9 @@ router.post('/wallet/challenge', async (req, res) => {
  * Authenticate with wallet address + CIP-8 signature
  * Body: { walletAddress, signature: { signature: hex, key: hex } }
  */
-router.post('/wallet', async (req, res) => {
+router.post('/wallet', validators.walletAuth, async (req, res) => {
   try {
     const { walletAddress, signature } = req.body;
-    if (!walletAddress) {
-      return res.status(400).json({ error: 'walletAddress is required' });
-    }
-    if (!signature || !signature.signature || !signature.key) {
-      return res.status(400).json({ error: 'signature with { signature, key } is required' });
-    }
-
     const result = await authenticateWithWallet(walletAddress, signature);
     res.json({ success: true, user: result.user, token: result.token });
   } catch (error) {

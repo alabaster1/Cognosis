@@ -20,6 +20,7 @@ const {
   readLimiter,
 } = require('./middleware/rateLimit');
 const socketService = require('./services/socketService');
+const guestCleanup = require('./utils/guestCleanup');
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -71,6 +72,7 @@ const telepathyRoutes = require('./routes/telepathy');
 const gameExperimentRoutes = require('./routes/gameExperiments');
 const feedRoutes = require('./routes/feed');
 const ipfsRoutes = require('./routes/ipfs');
+const cardanoRoutes = require('./routes/cardano');
 
 // Apply specific rate limiters
 app.use('/api/auth', authLimiter, authRoutes);
@@ -90,6 +92,7 @@ app.use('/api/telepathy', telepathyRoutes);
 app.use('/api/experiments', gameExperimentRoutes);
 app.use('/api/feed', readLimiter, feedRoutes);
 app.use('/api/ipfs', uploadLimiter, ipfsRoutes);
+app.use('/api/cardano', blockchainLimiter, cardanoRoutes);
 
 // Health check with database status
 app.get('/health', async (req, res) => {
@@ -134,6 +137,12 @@ httpServer.listen(PORT, async () => {
   setInterval(() => {
     socketService.cleanupSessions();
   }, 60 * 60 * 1000);
+
+  // Schedule guest data cleanup (runs daily, TTL configurable via GUEST_DATA_TTL_DAYS env var)
+  if (process.env.ENABLE_GUEST_CLEANUP !== 'false') {
+    guestCleanup.scheduleCleanup(24); // Run every 24 hours
+    console.log(`🧹 Guest data cleanup scheduled (TTL: ${guestCleanup.DEFAULT_GUEST_TTL_DAYS} days)`);
+  }
 
   console.log('========================================');
   console.log('Ready to accept requests');
