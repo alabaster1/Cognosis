@@ -383,6 +383,7 @@ phase_deploy() {
 
     # Deploy AI Service (internal only)
     log_info "Deploying AI service to Cloud Run..."
+    # Note: Using ^ as delimiter to allow URLs with colons and commas in CORS_ORIGINS
     gcloud run deploy cognosis-ai-service \
         --image="${ARTIFACT_REGISTRY}/ai-service:latest" \
         --region="$REGION" \
@@ -394,7 +395,7 @@ phase_deploy() {
         --memory=2Gi \
         --cpu=2 \
         --port=8080 \
-        --set-env-vars="NODE_ENV=production,LLM_PROVIDER=gemini,CORS_ORIGINS=https://cognosispredict.com,https://api.cognosispredict.com" \
+        --set-env-vars='^@^NODE_ENV=production@LLM_PROVIDER=gemini@CORS_ORIGINS=https://cognosispredict.com,https://api.cognosispredict.com' \
         --set-secrets="GEMINI_API_KEY=gemini-api-key:latest,DATABASE_URL=db-connection-string:latest,ADMIN_API_KEY=admin-api-key:latest,WEBHOOK_SECRET=webhook-secret:latest" \
         --add-cloudsql-instances="$DB_INSTANCE"
 

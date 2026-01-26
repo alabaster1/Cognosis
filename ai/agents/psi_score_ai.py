@@ -1,6 +1,6 @@
 """
 PsiScoreAI - Specialized Remote Viewing Scoring Agent
-Multi-dimensional analysis of RV session data using AI embeddings
+Multi-dimensional analysis of RV session data using AI (Gemini Vision)
 """
 
 from typing import Dict, List, Any, Optional
@@ -9,37 +9,9 @@ import numpy as np
 from datetime import datetime
 import json
 import base64
+import httpx
 
 from llm_provider import get_default_provider, LLMProvider
-
-# CLIP model for image-to-image similarity scoring
-CLIP_AVAILABLE = False
-clip_model = None
-clip_preprocess = None
-clip_tokenizer = None
-
-try:
-    import open_clip
-    import torch
-    from PIL import Image
-    import io
-    import httpx
-
-    CLIP_AVAILABLE = True
-except ImportError:
-    pass
-
-
-def get_clip_model():
-    """Lazy-load CLIP model (ViT-B/32)"""
-    global clip_model, clip_preprocess, clip_tokenizer
-    if clip_model is None and CLIP_AVAILABLE:
-        clip_model, _, clip_preprocess = open_clip.create_model_and_transforms(
-            'ViT-B-32', pretrained='laion2b_s34b_b79k'
-        )
-        clip_tokenizer = open_clip.get_tokenizer('ViT-B-32')
-        clip_model.eval()
-    return clip_model, clip_preprocess, clip_tokenizer
 
 
 class PsiScoreAI:
@@ -530,36 +502,26 @@ Keep under 150 words. Be specific and scientific."""
         distractor_image_urls: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """
-        Score image similarity using CLIP vectors (cosine similarity).
+        Score image similarity using Gemini Vision API.
 
         Args:
-            target_image_url: URL or path to the target image
-            choice_image_url: URL or path to the user's chosen image
+            target_image_url: URL to the target image
+            choice_image_url: URL to the user's chosen image
             distractor_image_urls: URLs of distractor images for Psi-Coefficient
 
         Returns:
             Similarity scores including Psi-Coefficient if distractors provided
         """
-        if not CLIP_AVAILABLE:
-            return {
-                "error": "CLIP model not available. Install open-clip-torch, torch, Pillow.",
-                "fallback": True,
-                "similarity": 0.0
-            }
+        # Validate URLs
+        if not self._validate_image_url(target_image_url) or not self._validate_image_url(choice_image_url):
+            return {"error": "Invalid image URL", "similarity": 0.0}
 
-        model, preprocess, tokenizer = get_clip_model()
-
-        target_vec = await self._encode_image(target_image_url, model, preprocess)
-        choice_vec = await self._encode_image(choice_image_url, model, preprocess)
-
-        if target_vec is None or choice_vec is None:
-            return {"error": "Failed to encode one or more images", "similarity": 0.0}
-
-        similarity = self._cosine_similarity(target_vec, choice_vec)
+        # Use Gemini to compare images
+        similarity = await self._compare_images_with_gemini(target_image_url, choice_image_url)
 
         result = {
             "target_choice_similarity": float(similarity),
-            "clip_model": "ViT-B-32",
+            "model": "gemini-vision",
         }
 
         if distractor_image_urls:
@@ -575,9 +537,6 @@ Keep under 150 words. Be specific and scientific."""
         # Only allow HTTPS URLs and specific trusted IPFS gateways
         ALLOWED_PREFIXES = [
             'https://',
-            'https://gateway.pinata.cloud/ipfs/',
-            'https://ipfs.io/ipfs/',
-            'https://cloudflare-ipfs.com/ipfs/',
         ]
         # Block internal/local URLs (SSRF prevention)
         BLOCKED_PATTERNS = [
@@ -594,50 +553,99 @@ Keep under 150 words. Be specific and scientific."""
                 return False
         return any(url.startswith(prefix) for prefix in ALLOWED_PREFIXES)
 
-    async def _encode_image(self, image_source: str, model, preprocess) -> Optional[Any]:
-        """Encode an image to a CLIP vector from URL only (file paths disabled for security)"""
+    async def _fetch_image_as_base64(self, image_url: str) -> Optional[str]:
+        """Fetch image from URL and convert to base64"""
         try:
-            # SECURITY: Only allow validated HTTPS URLs, no file paths (path traversal prevention)
-            if not image_source.startswith(('http://', 'https://')):
-                print(f"[PsiScoreAI] SECURITY: Rejected non-URL image source: {image_source[:50]}")
-                return None
-
-            if not self._validate_image_url(image_source):
-                print(f"[PsiScoreAI] SECURITY: Rejected invalid/blocked URL: {image_source[:50]}")
+            if not self._validate_image_url(image_url):
+                print(f"[PsiScoreAI] SECURITY: Rejected invalid/blocked URL: {image_url[:50]}")
                 return None
 
             async with httpx.AsyncClient() as client:
-                resp = await client.get(image_source, timeout=30.0)
+                resp = await client.get(image_url, timeout=30.0)
                 resp.raise_for_status()
                 # SECURITY: Validate content type
                 content_type = resp.headers.get('content-type', '')
                 if not content_type.startswith('image/'):
                     print(f"[PsiScoreAI] SECURITY: Rejected non-image content type: {content_type}")
                     return None
-                image = Image.open(io.BytesIO(resp.content)).convert('RGB')
-
-            image_tensor = preprocess(image).unsqueeze(0)
-            with torch.no_grad():
-                image_features = model.encode_image(image_tensor)
-                image_features = image_features / image_features.norm(dim=-1, keepdim=True)
-            return image_features[0]
+                return base64.b64encode(resp.content).decode('utf-8')
         except Exception as e:
-            print(f"[PsiScoreAI] Error encoding image {image_source}: {e}")
+            print(f"[PsiScoreAI] Error fetching image {image_url}: {e}")
             return None
 
-    def _cosine_similarity(self, vec_a, vec_b) -> float:
-        """Compute cosine similarity between two vectors"""
-        if CLIP_AVAILABLE:
-            return float(torch.nn.functional.cosine_similarity(
-                vec_a.unsqueeze(0), vec_b.unsqueeze(0)
-            ).item())
-        else:
-            dot = float(np.dot(vec_a, vec_b))
-            norm_a = float(np.linalg.norm(vec_a))
-            norm_b = float(np.linalg.norm(vec_b))
-            if norm_a == 0 or norm_b == 0:
+    async def _compare_images_with_gemini(self, image1_url: str, image2_url: str) -> float:
+        """Use Gemini Vision to compare two images and return similarity score (0-1)"""
+        try:
+            prompt = """Compare these two images and rate their visual similarity on a scale from 0 to 1.
+
+Consider:
+- Visual elements (shapes, colors, objects)
+- Composition and layout
+- Overall theme/concept
+- Semantic meaning
+
+Respond with ONLY a JSON object: {"similarity": 0.XX, "reasoning": "brief explanation"}
+
+Be objective and precise. A score of 1.0 means nearly identical, 0.5 means moderate similarity, 0.0 means completely different."""
+
+            # Use LLM with image URLs for vision
+            response = await self.llm.chat_completion_with_images(
+                messages=[{"role": "user", "content": prompt}],
+                image_urls=[image1_url, image2_url],
+                model=self.model,
+                temperature=0.1
+            )
+
+            result = json.loads(response["content"])
+            return float(result.get("similarity", 0.0))
+        except Exception as e:
+            print(f"[PsiScoreAI] Error comparing images with Gemini: {e}")
+            # Fallback to text-based comparison if vision fails
+            return await self._compare_images_fallback(image1_url, image2_url)
+
+    async def _compare_images_fallback(self, image1_url: str, image2_url: str) -> float:
+        """Fallback: describe images and compare descriptions"""
+        try:
+            # Get descriptions of both images
+            desc1 = await self._describe_image(image1_url)
+            desc2 = await self._describe_image(image2_url)
+
+            if not desc1 or not desc2:
                 return 0.0
-            return dot / (norm_a * norm_b)
+
+            # Compare descriptions
+            prompt = f"""Compare these two image descriptions and rate their similarity (0-1):
+
+Image 1: {desc1}
+Image 2: {desc2}
+
+Respond with JSON: {{"similarity": 0.XX}}"""
+
+            response = await self.llm.chat_completion(
+                messages=[{"role": "user", "content": prompt}],
+                model=self.model,
+                temperature=0.1
+            )
+
+            result = json.loads(response["content"])
+            return float(result.get("similarity", 0.0))
+        except Exception as e:
+            print(f"[PsiScoreAI] Fallback comparison failed: {e}")
+            return 0.0
+
+    async def _describe_image(self, image_url: str) -> Optional[str]:
+        """Get a description of an image using Gemini Vision"""
+        try:
+            response = await self.llm.chat_completion_with_images(
+                messages=[{"role": "user", "content": "Describe this image in detail (shapes, colors, objects, mood, composition). Be concise but thorough."}],
+                image_urls=[image_url],
+                model=self.model,
+                temperature=0.3
+            )
+            return response["content"]
+        except Exception as e:
+            print(f"[PsiScoreAI] Error describing image: {e}")
+            return None
 
     async def calculate_psi_coefficient(
         self,
@@ -646,7 +654,7 @@ Keep under 150 words. Be specific and scientific."""
         distractor_image_urls: List[str]
     ) -> Dict[str, Any]:
         """
-        Calculate the Psi-Coefficient:
+        Calculate the Psi-Coefficient using Gemini Vision:
         Ψ = (Sim(R,T) - Mean(Sim(R,D₁...₃))) / σ
 
         Where:
@@ -663,24 +671,14 @@ Keep under 150 words. Be specific and scientific."""
         Returns:
             Psi-Coefficient with statistical context
         """
-        if not CLIP_AVAILABLE:
-            return {"error": "CLIP not available", "psi": 0.0}
+        # Calculate similarity between response and target
+        sim_rt = await self._compare_images_with_gemini(response_image_url, target_image_url)
 
-        model, preprocess, tokenizer = get_clip_model()
-
-        response_vec = await self._encode_image(response_image_url, model, preprocess)
-        target_vec = await self._encode_image(target_image_url, model, preprocess)
-
-        if response_vec is None or target_vec is None:
-            return {"error": "Failed to encode target or response", "psi": 0.0}
-
-        sim_rt = self._cosine_similarity(response_vec, target_vec)
-
+        # Calculate similarities between response and each distractor
         distractor_sims = []
         for d_url in distractor_image_urls:
-            d_vec = await self._encode_image(d_url, model, preprocess)
-            if d_vec is not None:
-                sim_rd = self._cosine_similarity(response_vec, d_vec)
+            if self._validate_image_url(d_url):
+                sim_rd = await self._compare_images_with_gemini(response_image_url, d_url)
                 distractor_sims.append(sim_rd)
 
         if not distractor_sims:
@@ -730,7 +728,7 @@ Keep under 150 words. Be specific and scientific."""
             "status": "active",
             "model": self.model,
             "total_scorings": self.total_scorings,
-            "clip_available": CLIP_AVAILABLE,
+            "vision_available": True,
             "scoring_dimensions": [
                 "spatial_correlation",
                 "semantic_alignment",
@@ -738,13 +736,13 @@ Keep under 150 words. Be specific and scientific."""
                 "sensory_accuracy",
                 "symbolic_correspondence"
             ],
-            "embedding_model": "all-MiniLM-L6-v2" if self.embedding_model else "OpenAI API",
+            "image_comparison": "gemini-vision",
             "capabilities": [
                 "multi_dimensional_scoring",
                 "statistical_analysis",
                 "correspondence_detection",
                 "effect_size_calculation",
-                "clip_image_similarity",
+                "gemini_image_similarity",
                 "psi_coefficient"
             ]
         }

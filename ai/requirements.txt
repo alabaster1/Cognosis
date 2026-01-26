@@ -1,0 +1,32 @@
+# FastAPI and server
+fastapi==0.115.5
+uvicorn[standard]==0.34.0
+pydantic==2.10.3
+python-dotenv==1.0.1
+
+# LLM SDKs
+openai==1.57.2
+google-generativeai==0.8.3
+
+# Database
+psycopg2-binary==2.9.10
+sqlalchemy==2.0.36
+
+# Validation and safety
+guardrails-ai==0.5.14
+# pydantic-ai removed due to griffe version conflict with guardrails-ai
+
+# Utilities
+httpx==0.28.1
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Image processing (lightweight, no ML frameworks)
+Pillow==10.4.0
+
+# Image Generation
+replicate==0.25.1
+
+# Utilities
+numpy>=1.22.4
+scipy>=1.10.0
