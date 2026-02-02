@@ -24,13 +24,20 @@
 ### Step 1: Platform Collects Fees
 - Remote Viewing experiment fees
 - Other experiment fees
-- Lottery entry fees
+- **Lottery entry fees** (increased to 1 ADA from 0.01 ADA)
 - Future premium features
 
 **Revenue Split:**
-- 50% → PSY Holder Rewards (distributed in ADA)
-- 25% → Treasury (platform development)
-- 25% → Rewards Pool (RV rewards, lottery prizes)
+- 50% → PSY Holder Rewards (distributed in ADA, auto-send)
+- 50% → Lottery Pool (weekly draws)
+
+**Lottery Fee Update:**
+- Current: 0.01 ADA per entry (too low)
+- New: 1 ADA per entry
+- **Why:** More sustainable revenue for holder rewards + larger lottery prizes
+- **Impact:** If 100 people enter weekly lottery = 100 ADA fees
+  - 50 ADA → holder rewards
+  - 50 ADA → lottery prize pool
 
 ### Step 2: Monthly Snapshot
 Every 30 days:
@@ -147,30 +154,33 @@ validator rewards_distributor {
 - **Challenge:** Expensive to query all UTxOs on-chain
 
 **Option B: Off-Chain Indexer (Better)**
-- Off-chain service (Blockfrost, Koios, or custom indexer)
-- Queries blockchain state at snapshot time
+- Off-chain service queries blockchain state at snapshot time
 - Generates snapshot data
 - Contract verifies snapshot (Merkle root or similar)
 - **Cheaper and faster**
 
-**Recommended:** Option B (off-chain indexer with on-chain verification)
+**Indexer Options (No Blockfrost):**
+1. **Koios API** - Similar to Blockfrost, public API, free tier
+2. **cardano-db-sync** - Run our own indexer (full control, no external dependency)
+3. **Ogmios + Kupo** - Lightweight local solution (fast, efficient)
+4. **cardano-cli direct** - Query UTxOs directly (slow but simple, no extra services)
 
-### Distribution Methods
+**Recommended:** Ogmios + Kupo (best balance of control + efficiency)
 
-**Option A: Batch Transaction**
-- Contract sends ADA to all holders in one large batch tx
-- **Pro:** Automatic, no user action needed
-- **Con:** Expensive if many holders (tx size limits)
+### Distribution Method: Auto-Send ✅
 
-**Option B: Claim Portal**
-- Snapshot stored on-chain (or IPFS + hash on-chain)
-- Users visit `/claim` page on website
-- Connect wallet, prove ownership
-- Claim ADA based on snapshot
-- **Pro:** Scalable, users pay their own tx fees
-- **Con:** Requires user action (some may forget to claim)
+**Batch transactions** sent automatically to all eligible holders:
+- Contract sends ADA directly to holder addresses
+- **Min threshold: 5 ADA** (only send if reward ≥5 ADA)
+  - Avoids spam/dust transactions
+  - Can be lowered later if needed
+- **Pro:** Automatic, seamless UX (no user action)
+- **Con:** Platform pays tx fees (but worth it for UX)
 
-**Recommended:** Option B (claim portal) - more scalable
+**Implementation:**
+- Off-chain script batches holders into groups (Cardano tx limits)
+- Sends multiple batch txs if needed (split large holder lists)
+- Users wake up to ADA in wallet - no action needed!
 
 ---
 
@@ -380,35 +390,39 @@ validator rewards_distributor {
 
 ---
 
-## Off-Chain Indexer (Blockfrost)
+## Off-Chain Indexer (Ogmios + Kupo)
 
 ```typescript
-import { BlockFrostAPI } from '@blockfrost/blockfrost-js';
+import { createChainSyncClient } from '@cardano-ogmios/client';
 
 const PSY_POLICY_ID = "your_psy_token_policy_id";
 const PSY_ASSET_NAME = "PSY";
 
 async function snapshotPsyHolders(blockHeight: number) {
-  const api = new BlockFrostAPI({ projectId: process.env.BLOCKFROST_KEY });
+  // Connect to local Ogmios + Kupo
+  const ogmios = await createChainSyncClient({
+    host: 'localhost',
+    port: 1337
+  });
   
-  // Get all addresses holding PSY at specific block
-  const holders = await api.assetsAddresses(
-    PSY_POLICY_ID + PSY_ASSET_NAME,
-    { order: 'desc' }
-  );
+  // Query all UTxOs containing PSY token at specific block
+  const psyUtxos = await queryPsyUtxos(ogmios, blockHeight);
   
-  // Aggregate balances
-  const balances = holders.map(h => ({
-    address: h.address,
-    quantity: parseInt(h.quantity),
-  }));
+  // Aggregate by address
+  const holders = new Map<string, number>();
+  for (const utxo of psyUtxos) {
+    const current = holders.get(utxo.address) || 0;
+    holders.set(utxo.address, current + utxo.psyAmount);
+  }
   
-  const totalSupply = balances.reduce((sum, b) => sum + b.quantity, 0);
+  const totalSupply = Array.from(holders.values())
+    .reduce((sum, amt) => sum + amt, 0);
   
   // Calculate shares
-  const snapshot = balances.map(b => ({
-    ...b,
-    share: b.quantity / totalSupply,
+  const snapshot = Array.from(holders.entries()).map(([addr, amt]) => ({
+    address: addr,
+    quantity: amt,
+    share: amt / totalSupply,
   }));
   
   // Generate Merkle tree
@@ -484,13 +498,23 @@ async function snapshotPsyHolders(blockHeight: number) {
 
 ---
 
-## Questions for Albert:
+## Decisions Made ✅
 
-1. **Revenue split:** 50/25/25 (holders/treasury/rewards) confirmed?
-2. **Snapshot frequency:** 30 days good or prefer weekly/monthly?
-3. **Distribution method:** Claim portal (recommended) or batch tx?
-4. **Minimum reward:** Should we set min threshold (e.g., only send if ≥1 ADA)?
-5. **Timeline:** Rush to launch (6-8 weeks) or thorough testing (10-12 weeks)?
+1. **Revenue split:** 50% holders / 50% lottery (APPROVED)
+2. **Snapshot frequency:** 30 days (APPROVED)
+3. **Distribution method:** Auto-send batch tx (APPROVED)
+4. **Min threshold:** 5 ADA minimum (can lower later if needed) (APPROVED)
+5. **Lottery fee:** Increase from 0.01 ADA → 1 ADA (APPROVED)
+6. **Indexer:** No Blockfrost - use Ogmios + Kupo or cardano-db-sync (APPROVED)
+
+**Next Steps:**
+1. Set up Ogmios + Kupo locally
+2. Write snapshot generation script
+3. Build rewards distributor contract (Aiken)
+4. Test on preprod
+5. Deploy to mainnet
+
+**Target First Snapshot:** March 31, 2026 (~8 weeks)
 
 ---
 
