@@ -155,7 +155,7 @@ export default function HelpPage() {
               <div>
                 <h3 className="font-semibold text-white mb-1">How is my data protected?</h3>
                 <p className="text-sm text-slate-400">
-                  All your responses are encrypted client-side before storage. We use Midnight blockchain for cryptographic commitments, ensuring data integrity while maintaining your privacy. Only you and the AI scoring service can decrypt your data.
+                  All your responses are encrypted client-side before storage. We use Cardano blockchain for cryptographic commitments, ensuring data integrity while maintaining your privacy. Only you and the AI scoring service can decrypt your data.
                 </p>
               </div>
               <div>

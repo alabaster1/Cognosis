@@ -96,23 +96,44 @@ export default function ExperimentsPage() {
             <div key={category.category}>
               <h2 className="text-2xl font-bold mb-6 text-cyan-400">{category.category}</h2>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {category.experiments.map((exp) => (
-                  <Link
-                    key={exp.id}
-                    href={`/experiments/${exp.id}`}
-                    className="p-6 bg-[#0f1520]/80 border border-[#1a2535] rounded-xl hover:border-cyan-500/40 transition-all group relative"
-                  >
-                    {exp.isNew && (
-                      <span className="absolute top-4 right-4 px-2 py-1 bg-emerald-400 text-[#060a0f] text-xs font-bold rounded">
-                        NEW
-                      </span>
-                    )}
-                    <exp.icon className={`w-12 h-12 mb-4 text-${exp.color}-400`} />
-                    <h3 className="text-xl font-bold mb-2">{exp.name}</h3>
-                    <p className="text-slate-400 text-sm">{exp.description}</p>
-                    <p className="text-cyan-400 text-sm mt-4 group-hover:translate-x-1 transition-transform">Start experiment →</p>
-                  </Link>
-                ))}
+                {category.experiments.map((exp) => {
+                  // Only "Remote Viewing" category experiments are active
+                  const isActive = category.category === 'Remote Viewing';
+                  const Element = isActive ? Link : 'div';
+                  
+                  return (
+                    <Element
+                      key={exp.id}
+                      {...(isActive ? { href: `/experiments/${exp.id}` } : {})}
+                      className={`p-6 bg-[#0f1520]/80 border border-[#1a2535] rounded-xl transition-all group relative ${
+                        isActive 
+                          ? 'hover:border-cyan-500/40 cursor-pointer' 
+                          : 'opacity-60 cursor-not-allowed'
+                      }`}
+                    >
+                      {/* Coming Soon Badge for inactive experiments */}
+                      {!isActive && (
+                        <span className="absolute top-4 right-4 px-3 py-1 bg-amber-500/20 border border-amber-500/40 rounded-full text-amber-400 text-xs font-bold">
+                          COMING SOON
+                        </span>
+                      )}
+                      {/* New Badge for active new experiments */}
+                      {isActive && exp.isNew && (
+                        <span className="absolute top-4 right-4 px-2 py-1 bg-emerald-400 text-[#060a0f] text-xs font-bold rounded">
+                          NEW
+                        </span>
+                      )}
+                      <exp.icon className={`w-12 h-12 mb-4 text-${exp.color}-400 ${!isActive ? 'opacity-50' : ''}`} />
+                      <h3 className="text-xl font-bold mb-2">{exp.name}</h3>
+                      <p className="text-slate-400 text-sm">{exp.description}</p>
+                      {isActive ? (
+                        <p className="text-cyan-400 text-sm mt-4 group-hover:translate-x-1 transition-transform">Start experiment →</p>
+                      ) : (
+                        <p className="text-amber-400 text-xs mt-4 font-semibold">Full Integration Coming Soon</p>
+                      )}
+                    </Element>
+                  );
+                })}
               </div>
             </div>
           ))}

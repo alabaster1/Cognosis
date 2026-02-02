@@ -327,17 +327,21 @@ export default function HomePage() {
         </div>
         <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {otherExperiments.slice(0, 6).map((exp) => (
-            <Link
+            <div
               key={exp.id}
-              href={`/experiments/${exp.id}`}
-              className="block p-6 bg-[#0f1520]/60 border border-[#1a2535] rounded-xl hover:border-cyan-500/30 transition-all group"
+              className="relative block p-6 bg-[#0f1520]/60 border border-[#1a2535] rounded-xl opacity-60 cursor-not-allowed"
             >
-              <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${exp.gradient} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+              {/* Coming Soon Badge */}
+              <div className="absolute top-4 right-4 px-3 py-1 bg-amber-500/20 border border-amber-500/40 rounded-full text-amber-400 text-xs font-bold">
+                COMING SOON
+              </div>
+              <div className={`w-12 h-12 rounded-lg bg-gradient-to-br ${exp.gradient} flex items-center justify-center mb-3 opacity-50`}>
                 <exp.icon className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-lg font-bold mb-1">{exp.name}</h3>
               <p className="text-sm text-slate-400">{exp.description}</p>
-            </Link>
+              <p className="text-xs text-amber-400 mt-2 font-semibold">Full Integration Coming Soon</p>
+            </div>
           ))}
         </div>
         <div className="text-center mt-8">

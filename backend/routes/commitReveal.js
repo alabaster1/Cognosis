@@ -391,7 +391,7 @@ router.post('/submit-score-to-blockchain', optionalAuthMiddleware, async (req, r
     // For now, this is a placeholder that would:
     // 1. Create blockchain transaction with score data
     // 2. Sign with user's wallet (if verified mode)
-    // 3. Submit to Midnight Network
+    // 3. Submit to Cardano blockchain
     // 4. Wait for confirmation
     // 5. Update commitment status in database
 
@@ -418,7 +418,7 @@ router.post('/submit-score-to-blockchain', optionalAuthMiddleware, async (req, r
       score,
       status: 'submitted',
       timestamp: new Date().toISOString(),
-      message: 'Score submitted to blockchain (mock - implement actual Midnight tx)'
+      message: 'Score submitted to blockchain (mock - implement actual Cardano tx)'
     });
   } catch (error) {
     console.error('Blockchain submission error:', error);

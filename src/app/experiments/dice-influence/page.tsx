@@ -407,7 +407,7 @@ export default function DiceInfluencePage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 1.1 }}
             >
-              Results verified on Midnight blockchain
+              Results verified on Cardano blockchain
             </motion.p>
           </motion.div>
         </div>
@@ -917,7 +917,7 @@ export default function DiceInfluencePage() {
                 <div>
                   <strong>Blockchain Verified</strong>
                   <p className="text-sm text-slate-400">
-                    Commitment hash timestamped on Midnight
+                    Commitment hash timestamped on Cardano
                   </p>
                 </div>
               </div>

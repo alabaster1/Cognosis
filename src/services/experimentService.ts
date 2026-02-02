@@ -63,17 +63,17 @@ class ExperimentService {
         throw new Error('No wallet connected');
       }
 
-      // 6. Blockchain timestamping (TODO: implement when Midnight smart contracts are ready)
+      // 6. Blockchain timestamping (TODO: implement when Cardano smart contracts are ready)
       // For now, the commitment is timestamped via:
       // - IPFS upload (decentralized storage with CID)
       // - Backend database (timestamp + commitment hash)
-      // - Future: Midnight blockchain smart contract transaction
+      // - Future: Cardano blockchain smart contract transaction
       const blockchainTxHash = null;
 
-      // Note: Lace Midnight wallet API for transaction building is not yet available
+      // Note: Lace Cardano wallet API for transaction building is not yet available
       // in browser contexts. Will implement when the full SDK is released.
       console.log('[ExperimentService] Commitment timestamped via IPFS CID:', cid);
-      console.log('[ExperimentService] TODO: Add Midnight blockchain tx when smart contracts are ready');
+      console.log('[ExperimentService] TODO: Add Cardano blockchain tx when smart contracts are ready');
 
       // 7. Submit to backend for storage
       const commitment = await apiService.createCommitment({

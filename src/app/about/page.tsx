@@ -182,7 +182,7 @@ const howItWorks = [
   {
     icon: Lock,
     title: 'Experience Capture',
-    description: 'Record dreams, intuitions, or experiment outcomes in a secure, privacy-preserving journal. All data is encrypted locally and committed to the Midnight network.',
+    description: 'Record dreams, intuitions, or experiment outcomes in a secure, privacy-preserving journal. All data is encrypted locally and committed to the Cardano blockchain.',
     number: '01',
   },
   {
@@ -457,7 +457,7 @@ export default function AboutPage() {
                 <div className="space-y-4">
                   {[
                     'Host experiments locally on your own node',
-                    'Sync anonymized results via the Midnight network',
+                    'Sync anonymized results via the Cardano blockchain',
                     'Participate in global data meta-analysis',
                   ].map((item, i) => (
                     <div key={i} className="flex items-start gap-3">

@@ -1,5 +1,5 @@
 /**
- * Midnight Network Service - Testnet Integration
+ * Cardano blockchain Service - Testnet Integration
  * Handles balance queries, transaction submission, and network interactions
  * Uses Polkadot API for real blockchain interaction
  */
@@ -7,7 +7,7 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 
-export interface MidnightBalance {
+export interface CardanoBalance {
   tDust: string; // Total tDust balance in smallest units
   tDustFormatted: string; // Human-readable tDust (with decimals)
   nfts: NFTBalance[];
@@ -28,8 +28,8 @@ export interface TransactionResult {
   timestamp?: string;
 }
 
-class MidnightService {
-  // Real Midnight Network Testnet RPC Endpoint
+class CardanoService {
+  // Real Cardano blockchain Testnet RPC Endpoint
   private readonly TESTNET_RPC_URL = 'wss://rpc.testnet-02.midnight.network';
   private readonly TESTNET_EXPLORER_URL = 'https://explorer.midnight.network';
   private network: 'testnet' | 'mainnet' = 'testnet';
@@ -45,7 +45,7 @@ class MidnightService {
   }
 
   /**
-   * Initialize connection to Midnight Network via Polkadot API
+   * Initialize connection to Cardano blockchain via Polkadot API
    * Uses singleton pattern to reuse connection
    */
   private async connect(): Promise<ApiPromise> {
@@ -63,7 +63,7 @@ class MidnightService {
     this.isConnecting = true;
     this.connectionPromise = (async () => {
       try {
-        console.log('[MidnightService] Connecting to Midnight Network:', this.TESTNET_RPC_URL);
+        console.log('[CardanoService] Connecting to Cardano blockchain:', this.TESTNET_RPC_URL);
 
         const wsProvider = new WsProvider(this.TESTNET_RPC_URL);
         const api = await ApiPromise.create({ provider: wsProvider });
@@ -71,17 +71,17 @@ class MidnightService {
         // Wait for API to be ready
         await api.isReady;
 
-        console.log('[MidnightService] Connected to Midnight Network');
+        console.log('[CardanoService] Connected to Cardano blockchain');
         this.api = api;
         this.isConnecting = false;
 
         return api;
       } catch (error: unknown) {
-        console.error('[MidnightService] Connection failed:', error);
+        console.error('[CardanoService] Connection failed:', error);
         this.isConnecting = false;
         this.connectionPromise = null;
         const message = error instanceof Error ? error.message : 'Unknown error';
-        throw new Error(`Failed to connect to Midnight Network: ${message}`);
+        throw new Error(`Failed to connect to Cardano blockchain: ${message}`);
       }
     })();
 
@@ -89,7 +89,7 @@ class MidnightService {
   }
 
   /**
-   * Disconnect from Midnight Network
+   * Disconnect from Cardano blockchain
    */
   async disconnect(): Promise<void> {
     if (this.api) {
@@ -100,14 +100,14 @@ class MidnightService {
   }
 
   /**
-   * Get wallet balance from Midnight testnet using Polkadot API
+   * Get wallet balance from Cardano testnet using Polkadot API
    * Queries both tDust (native token) and NFTs
    */
-  async getBalance(address: string): Promise<MidnightBalance> {
+  async getBalance(address: string): Promise<CardanoBalance> {
     try {
-      console.log('[MidnightService] Fetching balance for:', address);
+      console.log('[CardanoService] Fetching balance for:', address);
 
-      // Try to connect to real Midnight Network
+      // Try to connect to real Cardano blockchain
       try {
         const api = await this.connect();
 
@@ -119,10 +119,10 @@ class MidnightService {
         const freeBalance = accountData.free?.toString() || '0';
         const tDustFormatted = this.formatTDust(freeBalance);
 
-        console.log('[MidnightService] Balance retrieved:', { freeBalance, tDustFormatted });
+        console.log('[CardanoService] Balance retrieved:', { freeBalance, tDustFormatted });
 
-        // Query NFTs/assets (if available on Midnight)
-        // Note: Midnight may use different asset system - adjust as needed
+        // Query NFTs/assets (if available on Cardano)
+        // Note: Cardano may use different asset system - adjust as needed
         const nfts: NFTBalance[] = [];
 
         // Try to get assets if the chain supports it
@@ -145,7 +145,7 @@ class MidnightService {
               }
             }
           } catch (assetError) {
-            console.warn('[MidnightService] Asset query not available:', assetError);
+            console.warn('[CardanoService] Asset query not available:', assetError);
           }
         }
 
@@ -157,7 +157,7 @@ class MidnightService {
 
       } catch (rpcError: unknown) {
         const message = rpcError instanceof Error ? rpcError.message : 'Unknown error';
-        console.warn('[MidnightService] RPC connection failed, checking Lace wallet:', message);
+        console.warn('[CardanoService] RPC connection failed, checking Lace wallet:', message);
 
         // Fallback to Lace wallet if available
         if (typeof window !== 'undefined' && (window as any).midnight) {
@@ -176,12 +176,12 @@ class MidnightService {
               nfts
             };
           } catch (laceError) {
-            console.warn('[MidnightService] Lace wallet failed:', laceError);
+            console.warn('[CardanoService] Lace wallet failed:', laceError);
           }
         }
 
         // Final fallback: Return zero balance
-        console.warn('[MidnightService] All balance queries failed, returning zero');
+        console.warn('[CardanoService] All balance queries failed, returning zero');
         return {
           tDust: '0',
           tDustFormatted: '0.00',
@@ -190,7 +190,7 @@ class MidnightService {
       }
 
     } catch (error: unknown) {
-      console.error('[MidnightService] Balance fetch error:', error);
+      console.error('[CardanoService] Balance fetch error:', error);
       return {
         tDust: '0',
         tDustFormatted: '0.00',
@@ -216,7 +216,7 @@ class MidnightService {
           metadata: asset.metadata as Record<string, unknown> | undefined
         }));
     } catch (error: unknown) {
-      console.warn('[MidnightService] NFT fetch failed:', error);
+      console.warn('[CardanoService] NFT fetch failed:', error);
       return [];
     }
   }
@@ -239,7 +239,7 @@ class MidnightService {
   }
 
   /**
-   * Submit a transaction to Midnight testnet using Polkadot API
+   * Submit a transaction to Cardano testnet using Polkadot API
    *
    * @param signedTx - Signed transaction hex or SubmittableExtrinsic
    * @param metadata - Optional transaction metadata
@@ -255,7 +255,7 @@ class MidnightService {
     }
   ): Promise<TransactionResult> {
     try {
-      console.log('[MidnightService] Submitting transaction to Midnight testnet...');
+      console.log('[CardanoService] Submitting transaction to Cardano testnet...');
 
       // Try to submit via Polkadot API
       try {
@@ -273,7 +273,7 @@ class MidnightService {
           txHash = result.toString();
         }
 
-        console.log('[MidnightService] Transaction submitted via RPC:', txHash);
+        console.log('[CardanoService] Transaction submitted via RPC:', txHash);
 
         return {
           txHash,
@@ -283,7 +283,7 @@ class MidnightService {
 
       } catch (rpcError: unknown) {
         const message = rpcError instanceof Error ? rpcError.message : 'Unknown error';
-        console.warn('[MidnightService] RPC submission failed, trying Lace wallet:', message);
+        console.warn('[CardanoService] RPC submission failed, trying Lace wallet:', message);
 
         // Fallback to Lace wallet if available
         if (typeof window !== 'undefined' && (window as any).midnight) {
@@ -294,7 +294,7 @@ class MidnightService {
             // Submit transaction through Lace
             const txHash = await wallet.submitTx(typeof signedTx === 'string' ? signedTx : signedTx.toHex());
 
-            console.log('[MidnightService] Transaction submitted via Lace:', txHash);
+            console.log('[CardanoService] Transaction submitted via Lace:', txHash);
 
             return {
               txHash,
@@ -302,7 +302,7 @@ class MidnightService {
               timestamp: new Date().toISOString()
             };
           } catch (laceError: unknown) {
-            console.error('[MidnightService] Lace submission failed:', laceError);
+            console.error('[CardanoService] Lace submission failed:', laceError);
             const message = laceError instanceof Error ? laceError.message : 'Unknown error';
             throw new Error(`Transaction submission failed: ${message}`);
           }
@@ -312,21 +312,21 @@ class MidnightService {
       }
 
     } catch (error: unknown) {
-      console.error('[MidnightService] Transaction submission error:', error);
+      console.error('[CardanoService] Transaction submission error:', error);
       const message = error instanceof Error ? error.message : 'Unknown error';
       throw new Error(`Failed to submit transaction: ${message}`);
     }
   }
 
   /**
-   * Get transaction status from Midnight testnet using Polkadot API
+   * Get transaction status from Cardano testnet using Polkadot API
    *
    * @param txHash - Transaction hash to query
    * @returns Transaction result with status
    */
   async getTransactionStatus(txHash: string): Promise<TransactionResult> {
     try {
-      console.log('[MidnightService] Fetching transaction status:', txHash);
+      console.log('[CardanoService] Fetching transaction status:', txHash);
 
       // Try to query via Polkadot API
       try {
@@ -355,7 +355,7 @@ class MidnightService {
 
       } catch (rpcError: unknown) {
         const message = rpcError instanceof Error ? rpcError.message : 'Unknown error';
-        console.warn('[MidnightService] RPC query failed, trying Lace wallet:', message);
+        console.warn('[CardanoService] RPC query failed, trying Lace wallet:', message);
 
         // Fallback to Lace wallet if available
         if (typeof window !== 'undefined' && (window as any).midnight) {
@@ -373,7 +373,7 @@ class MidnightService {
               timestamp: tx.timestamp
             };
           } catch (laceError) {
-            console.warn('[MidnightService] Lace query failed:', laceError);
+            console.warn('[CardanoService] Lace query failed:', laceError);
           }
         }
 
@@ -386,7 +386,7 @@ class MidnightService {
       }
 
     } catch (error: unknown) {
-      console.error('[MidnightService] Transaction status error:', error);
+      console.error('[CardanoService] Transaction status error:', error);
       return {
         txHash,
         status: 'failed'
@@ -396,7 +396,7 @@ class MidnightService {
 
   /**
    * Get explorer URL for transaction
-   * Uses Polkadot.js Apps with Midnight testnet RPC
+   * Uses Polkadot.js Apps with Cardano testnet RPC
    */
   getExplorerUrl(txHash: string): string {
     const rpcParam = encodeURIComponent(this.TESTNET_RPC_URL);
@@ -405,7 +405,7 @@ class MidnightService {
 
   /**
    * Get explorer URL for address
-   * Uses Polkadot.js Apps with Midnight testnet RPC
+   * Uses Polkadot.js Apps with Cardano testnet RPC
    */
   getAddressExplorerUrl(): string {
     const rpcParam = encodeURIComponent(this.TESTNET_RPC_URL);
@@ -441,7 +441,7 @@ class MidnightService {
   }
 
   /**
-   * Check if address is valid Midnight address
+   * Check if address is valid Cardano address
    */
   isValidAddress(address: string): boolean {
     // Testnet addresses start with 'mid_test1'
@@ -464,4 +464,4 @@ class MidnightService {
   }
 }
 
-export default new MidnightService();
+export default new CardanoService();

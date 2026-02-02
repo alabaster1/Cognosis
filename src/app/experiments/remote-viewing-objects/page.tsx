@@ -226,7 +226,7 @@ export default function RemoteViewingObjectsPage() {
 
             <div className="bg-blue-900/20 border border-blue-500/50 rounded-lg p-4 mb-8">
               <p className="text-sm text-blue-300">
-                <strong>🔒 Cryptographic Fairness:</strong> The object is selected and committed to IPFS/Midnight before you begin. This ensures the experiment cannot be manipulated.
+                <strong>🔒 Cryptographic Fairness:</strong> The object is selected and committed to IPFS/Cardano before you begin. This ensures the experiment cannot be manipulated.
               </p>
             </div>
 

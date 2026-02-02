@@ -47,7 +47,7 @@ const features = [
   {
     icon: Sparkles,
     title: 'Blockchain Verified',
-    description: 'Cryptographic commitments on Midnight Network prove prediction timing',
+    description: 'Cryptographic commitments on Cardano blockchain prove prediction timing',
   },
   {
     icon: Globe,

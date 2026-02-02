@@ -331,7 +331,7 @@ export default function PrecognitionPage() {
                 <div>
                   <strong>Blockchain Verified</strong>
                   <p className="text-sm text-slate-400">
-                    Commitment hash timestamped on Midnight
+                    Commitment hash timestamped on Cardano
                   </p>
                 </div>
               </div>
