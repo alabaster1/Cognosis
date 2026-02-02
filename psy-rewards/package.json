@@ -1,0 +1,32 @@
+{
+  "name": "psy-rewards",
+  "version": "0.1.0",
+  "description": "PSY token holder snapshot rewards system",
+  "main": "scripts/snapshot.ts",
+  "scripts": {
+    "snapshot": "ts-node scripts/snapshot.ts",
+    "snapshot:submit": "ts-node scripts/submit-snapshot.ts",
+    "distribute": "ts-node scripts/distribute.ts",
+    "verify": "ts-node scripts/verify.ts",
+    "build:contracts": "cd contracts && aiken build",
+    "test:contracts": "cd contracts && aiken check"
+  },
+  "keywords": [
+    "cardano",
+    "rewards",
+    "snapshot",
+    "plutus",
+    "aiken"
+  ],
+  "author": "Elliot (Cognosis)",
+  "license": "MIT",
+  "dependencies": {
+    "@cardano-ogmios/client": "^6.0.0",
+    "dotenv": "^16.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  }
+}
