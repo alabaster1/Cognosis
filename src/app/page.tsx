@@ -271,6 +271,156 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* REWARDS & LOTTERY SYSTEM */}
+      <section className="container mx-auto px-4 py-20 border-t border-[#1a2535]">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              <span className="bg-gradient-to-r from-amber-300 to-orange-300 bg-clip-text text-transparent">
+                Earn Rewards for Accuracy
+              </span>
+            </h2>
+            <p className="text-slate-400 text-lg">
+              Get paid in PSY tokens for remote viewing accuracy • Join weekly lottery draws
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Reward System Card */}
+            <div className="p-8 bg-gradient-to-br from-[#0f1520] to-[#0a1018] border border-cyan-500/30 rounded-2xl">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-cyan-500/20 rounded-lg">
+                  <Sparkles className="w-8 h-8 text-cyan-400" />
+                </div>
+                <h3 className="text-2xl font-bold">PSY Token Rewards</h3>
+              </div>
+
+              <div className="space-y-4 mb-6">
+                <p className="text-slate-300">
+                  Earn PSY tokens based on your remote viewing accuracy. The better your prediction, the more you earn.
+                </p>
+                
+                <div className="p-4 bg-[#060a0f]/60 rounded-xl border border-[#1a2535]">
+                  <div className="text-sm text-slate-400 mb-3">Reward Structure:</div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-300">Base Reward (participation):</span>
+                      <span className="font-bold text-cyan-400">100 PSY</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-300">50% Accuracy:</span>
+                      <span className="font-bold text-emerald-400">~150 PSY</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-300">75% Accuracy:</span>
+                      <span className="font-bold text-amber-400">~245 PSY</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-300">100% Perfect Score:</span>
+                      <span className="font-bold text-orange-400">400 PSY</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-xs text-slate-500 leading-relaxed">
+                  Rewards use an exponential curve - high accuracy is significantly rewarded. AI scoring ensures objective, reproducible results.
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-4 bg-cyan-500/10 border border-cyan-500/30 rounded-lg">
+                <Shield className="w-5 h-5 text-cyan-400 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-slate-300">
+                  <strong className="text-cyan-300">Blockchain Verified:</strong> All rewards are distributed via smart contracts on Cardano. No middleman, no manipulation.
+                </div>
+              </div>
+            </div>
+
+            {/* Lottery System Card */}
+            <div className="p-8 bg-gradient-to-br from-[#0f1520] to-[#0a1018] border border-amber-500/30 rounded-2xl">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-amber-500/20 rounded-lg">
+                  <Sparkles className="w-8 h-8 text-amber-400" />
+                </div>
+                <h3 className="text-2xl font-bold">Weekly Lottery</h3>
+              </div>
+
+              <div className="space-y-4 mb-6">
+                <p className="text-slate-300">
+                  Every experiment you complete automatically enters you into the weekly lottery draw.
+                </p>
+
+                <div className="p-4 bg-[#060a0f]/60 rounded-xl border border-[#1a2535]">
+                  <div className="text-sm text-slate-400 mb-3">How It Works:</div>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-bold text-amber-400">1</span>
+                      </div>
+                      <div className="text-sm text-slate-300">
+                        Small fee from each experiment funds the lottery pool
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-bold text-amber-400">2</span>
+                      </div>
+                      <div className="text-sm text-slate-300">
+                        Pool accumulates throughout the week
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-bold text-amber-400">3</span>
+                      </div>
+                      <div className="text-sm text-slate-300">
+                        Random winner selected every Sunday via Cardano VRF
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-xs font-bold text-amber-400">4</span>
+                      </div>
+                      <div className="text-sm text-slate-300">
+                        Winner receives entire pool (automatically distributed)
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                  <div className="text-center">
+                    <div className="text-xs text-slate-400 mb-1">Current Pool (Example)</div>
+                    <div className="text-3xl font-bold text-amber-400 mb-1">2,450 ADA</div>
+                    <div className="text-xs text-slate-500">Drawn every Sunday at 12:00 UTC</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                <Target className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-slate-300">
+                  <strong className="text-emerald-300">Provably Fair:</strong> Cardano's VRF ensures truly random, verifiable lottery draws. No rigging possible.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom CTA */}
+          <div className="mt-12 text-center">
+            <Link
+              href="/experiments/remote-viewing"
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl font-bold text-lg text-[#060a0f] hover:shadow-lg hover:shadow-amber-500/50 hover:scale-105 transition-all"
+            >
+              Start Earning PSY Tokens
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+            <p className="mt-3 text-sm text-slate-500">
+              First experiment is free • Wallet required for rewards
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* WHY CARDANO SECTION */}
       <section className="container mx-auto px-4 py-20 border-t border-[#1a2535]">
         <div className="max-w-4xl mx-auto">
