@@ -28,6 +28,14 @@ export default function RVSessionPage() {
   const [localSessionId, setLocalSessionId] = useState<string>(sessionId);
   const [loadingPhrase, setLoadingPhrase] = useState<string>('Analyzing your impressions...');
 
+  // Require wallet
+  useEffect(() => {
+    if (!wallet) {
+      router.push('/onboarding');
+      return;
+    }
+  }, [wallet, router]);
+
   // Initialize session on mount
   useEffect(() => {
     if (sessionId) {
@@ -79,12 +87,16 @@ export default function RVSessionPage() {
           [`stage_${currentStage}_data`]: stageImpressions
         };
 
+        if (!wallet?.address) {
+          throw new Error('Wallet not connected');
+        }
+
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/webhooks/rv/session-complete`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             sessionId: localSessionId,
-            userId: wallet?.address || 'guest',
+            userId: wallet.address,
             impressions: allImpressions
           })
         });

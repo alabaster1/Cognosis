@@ -225,10 +225,6 @@ export default function HomePage() {
             Start Your First Remote Viewing Session
             <ArrowRight className="w-6 h-6" />
           </Link>
-
-          <p className="mt-4 text-sm text-slate-500">
-            No wallet required to try • Full blockchain verification available
-          </p>
         </motion.div>
       </section>
 
@@ -389,8 +385,8 @@ export default function HomePage() {
 
                 <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
                   <div className="text-center">
-                    <div className="text-xs text-slate-400 mb-1">Current Pool (Example)</div>
-                    <div className="text-3xl font-bold text-amber-400 mb-1">2,450 ADA</div>
+                    <div className="text-xs text-slate-400 mb-1">Prize Pool</div>
+                    <div className="text-lg font-bold text-amber-400 mb-1">Growing Weekly</div>
                     <div className="text-xs text-slate-500">Drawn every Sunday at 12:00 UTC</div>
                   </div>
                 </div>
@@ -415,7 +411,7 @@ export default function HomePage() {
               <ArrowRight className="w-5 h-5" />
             </Link>
             <p className="mt-3 text-sm text-slate-500">
-              First experiment is free • Wallet required for rewards
+              Wallet required for rewards
             </p>
           </div>
         </div>

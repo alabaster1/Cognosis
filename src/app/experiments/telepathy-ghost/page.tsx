@@ -1,16 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Header from '@/components/layout/Header';
-import { useWalletStore } from '@/store/walletStore';
+import { useWalletStore } from '@/store/useWalletStore';
 import { Ghost, Send, Radio, Users, Clock, Loader2, Copy, Check } from 'lucide-react';
 import Link from 'next/link';
 
 type Mode = 'menu' | 'create' | 'join' | 'matchmaking' | 'waiting';
 
 export default function TelepathyGhostPage() {
-  const wallet = useWalletStore();
+  const router = useRouter();
+  const wallet = useWalletStore((state) => state.wallet);
   const [mode, setMode] = useState<Mode>('menu');
   const [inviteCode, setInviteCode] = useState('');
   const [joinCode, setJoinCode] = useState('');
@@ -21,16 +23,26 @@ export default function TelepathyGhostPage() {
   const [delayMinutes, setDelayMinutes] = useState(30);
   const [sessions, setSessions] = useState<any[]>([]);
 
-  const userId = (wallet as any).address || 'guest-user';
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+  // Require wallet
   useEffect(() => {
-    loadSessions();
-  }, []);
+    if (!wallet) {
+      router.push('/onboarding');
+      return;
+    }
+  }, [wallet, router]);
+
+  useEffect(() => {
+    if (wallet?.address) {
+      loadSessions();
+    }
+  }, [wallet]);
 
   const loadSessions = async () => {
+    if (!wallet?.address) return;
     try {
-      const resp = await fetch(`${API_URL}/api/telepathy/sessions?userId=${userId}`);
+      const resp = await fetch(`${API_URL}/api/telepathy/sessions?userId=${wallet.address}`);
       if (resp.ok) {
         const data = await resp.json();
         setSessions(data);
@@ -39,13 +51,14 @@ export default function TelepathyGhostPage() {
   };
 
   const createSession = async () => {
+    if (!wallet?.address) return;
     setIsLoading(true);
     setError('');
     try {
       const resp = await fetch(`${API_URL}/api/telepathy/sessions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, delayMinutes }),
+        body: JSON.stringify({ userId: wallet.address, delayMinutes }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error);
@@ -60,19 +73,20 @@ export default function TelepathyGhostPage() {
   };
 
   const joinSession = async () => {
+    if (!wallet?.address) return;
     setIsLoading(true);
     setError('');
     try {
       const resp = await fetch(`${API_URL}/api/telepathy/sessions/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, inviteCode: joinCode }),
+        body: JSON.stringify({ userId: wallet.address, inviteCode: joinCode }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error);
       setSessionId(data.sessionId);
       // Navigate to receiver page
-      window.location.href = `/experiments/telepathy-ghost/receiver?sessionId=${data.sessionId}&userId=${userId}`;
+      window.location.href = `/experiments/telepathy-ghost/receiver?sessionId=${data.sessionId}&userId=${wallet.address}`;
     } catch (err: any) {
       setError(err.message || 'Failed to join session');
     } finally {
@@ -81,19 +95,20 @@ export default function TelepathyGhostPage() {
   };
 
   const joinMatchmaking = async () => {
+    if (!wallet?.address) return;
     setIsLoading(true);
     setError('');
     try {
       const resp = await fetch(`${API_URL}/api/telepathy/matchmaking`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, role: 'any', preferredDelay: delayMinutes }),
+        body: JSON.stringify({ userId: wallet.address, role: 'any', preferredDelay: delayMinutes }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error);
       if (data.matched) {
         setSessionId(data.sessionId);
-        window.location.href = `/experiments/telepathy-ghost/sender?sessionId=${data.sessionId}&userId=${userId}`;
+        window.location.href = `/experiments/telepathy-ghost/sender?sessionId=${data.sessionId}&userId=${wallet.address}`;
       } else {
         setMode('waiting');
       }
@@ -181,7 +196,7 @@ export default function TelepathyGhostPage() {
                   {sessions.slice(0, 5).map((s: any) => (
                     <Link
                       key={s.sessionId}
-                      href={`/experiments/telepathy-ghost/${s.role}?sessionId=${s.sessionId}&userId=${userId}`}
+                      href={`/experiments/telepathy-ghost/${s.role}?sessionId=${s.sessionId}&userId=${wallet?.address}`}
                       className="block p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-all"
                     >
                       <div className="flex justify-between items-center">
@@ -290,7 +305,7 @@ export default function TelepathyGhostPage() {
                 </p>
 
                 <Link
-                  href={`/experiments/telepathy-ghost/sender?sessionId=${sessionId}&userId=${userId}`}
+                  href={`/experiments/telepathy-ghost/sender?sessionId=${sessionId}&userId=${wallet?.address}`}
                   className="mt-4 inline-block px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition-all"
                 >
                   Go to Sender View

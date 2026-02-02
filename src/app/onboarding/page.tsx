@@ -70,6 +70,16 @@ export default function OnboardingPage() {
           transition={{ delay: 0.1 }}
           className="max-w-2xl mx-auto p-8 bg-gradient-to-br from-cyan-900/20 to-[#0f1520] border border-cyan-500/30 rounded-2xl"
         >
+          {/* Preprod Notice */}
+          <div className="mb-6 p-4 bg-amber-900/20 border border-amber-500/40 rounded-lg">
+            <p className="text-sm text-amber-300 text-center font-semibold">
+              ⚠️ Currently running on Cardano Preprod Testnet
+            </p>
+            <p className="text-xs text-amber-400/70 text-center mt-1">
+              Use a preprod-enabled wallet • No real ADA required
+            </p>
+          </div>
+
           <Wallet className="w-16 h-16 text-cyan-400 mb-4 mx-auto" />
           <h2 className="text-2xl font-bold mb-3 text-center">Connect Wallet</h2>
           <p className="text-slate-400 mb-6 text-center">

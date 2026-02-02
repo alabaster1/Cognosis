@@ -58,3 +58,5 @@ env/
 *.pem
 *.key
 wallet.json
+.vercel
+.env*.local
