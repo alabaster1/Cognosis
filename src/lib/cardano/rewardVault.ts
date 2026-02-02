@@ -51,8 +51,12 @@ export interface RewardClaimResult {
 
 export let REWARD_VAULT_ADDRESS = "";
 export let REWARD_VAULT_SCRIPT = "";
-export let PSY_POLICY_ID = "";
-export let PSY_ASSET_NAME = "";
+
+// PSY Token Configuration (Mainnet)
+export let PSY_POLICY_ID = "d137118335bd9618c1b5be5612691baf7a5c13c159b00d44fb69f177";
+export let PSY_ASSET_NAME = "507379"; // "Psy" in hex
+
+// For preprod testing, these will be different (set via initializeRewardVault)
 
 /**
  * Initialize reward vault contract state

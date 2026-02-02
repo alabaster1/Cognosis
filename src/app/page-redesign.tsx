@@ -5,7 +5,7 @@
  * 
  * Structure:
  * 1. Hero: RV Front & Center
- * 2. Stats Ticker (LIVE DATA)
+ * 2. Stats Ticker
  * 3. How It Works (3 Steps)
  * 4. Why Cardano?
  * 5. Other Experiments (below fold)
@@ -13,51 +13,16 @@
  */
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import Header from '@/components/layout/Header';
 import { Brain, Lock, Sparkles, Globe, ArrowRight, Eye, Zap, Users, Shield, Clock, TrendingUp, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-interface RVStats {
-  totalTrials: number;
-  averageAccuracy: number;
-  activeResearchers: number;
-}
-
-// Fetch live stats from API
-function useRVStats() {
-  const [stats, setStats] = useState<RVStats | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchStats() {
-      try {
-        const res = await fetch('/api/stats/remote-viewing');
-        const data = await res.json();
-        if (data.success) {
-          setStats({
-            totalTrials: data.stats.totalTrials,
-            averageAccuracy: data.stats.averageAccuracy,
-            activeResearchers: data.stats.activeResearchers,
-          });
-        }
-      } catch (err) {
-        console.error('Failed to fetch RV stats:', err);
-        // Fallback to mock data if API fails
-        setStats({
-          totalTrials: 0,
-          averageAccuracy: 0,
-          activeResearchers: 0,
-        });
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchStats();
-  }, []);
-
-  return { stats, loading };
-}
+// Mock stats - replace with real data from API
+const stats = [
+  { label: 'Trials Completed', value: '12,847', icon: TrendingUp },
+  { label: 'Avg Accuracy', value: '67%', icon: Target },
+  { label: 'Active Researchers', value: '1,234', icon: Users },
+];
 
 const rvSteps = [
   {
@@ -122,8 +87,6 @@ const features = [
 ];
 
 export default function HomePage() {
-  const { stats, loading } = useRVStats();
-
   return (
     <div className="min-h-screen bg-[#060a0f] psi-grid-bg">
       <Header />
@@ -153,67 +116,26 @@ export default function HomePage() {
 
           {/* Subheadline */}
           <p className="text-xl md:text-2xl text-slate-400 mb-8 max-w-3xl mx-auto">
-            Can you sense a location you've never seen? Live data. Blockchain-verified. AI-scored.
+            Can you sense a location you've never seen? Thousands of trials. Blockchain-verified. AI-scored.
           </p>
 
-          {/* Stats Ticker - LIVE DATA */}
+          {/* Stats Ticker */}
           <div className="grid grid-cols-3 gap-6 max-w-3xl mx-auto mb-12 p-6 bg-[#0f1520]/60 border border-[#1a2535] rounded-2xl backdrop-blur-sm">
-            {loading ? (
-              <div className="col-span-3 text-center text-slate-400 py-4">
-                Loading stats...
-              </div>
-            ) : stats ? (
-              <>
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="text-center"
-                >
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <TrendingUp className="w-5 h-5 text-cyan-400" />
-                    <div className="text-3xl font-bold text-cyan-300">
-                      {stats.totalTrials.toLocaleString()}
-                    </div>
-                  </div>
-                  <div className="text-sm text-slate-400">Trials Completed</div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="text-center"
-                >
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <Target className="w-5 h-5 text-cyan-400" />
-                    <div className="text-3xl font-bold text-cyan-300">
-                      {stats.averageAccuracy}%
-                    </div>
-                  </div>
-                  <div className="text-sm text-slate-400">Avg Accuracy</div>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  className="text-center"
-                >
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <Users className="w-5 h-5 text-cyan-400" />
-                    <div className="text-3xl font-bold text-cyan-300">
-                      {stats.activeResearchers.toLocaleString()}
-                    </div>
-                  </div>
-                  <div className="text-sm text-slate-400">Active Researchers</div>
-                </motion.div>
-              </>
-            ) : (
-              <div className="col-span-3 text-center text-slate-400 py-4">
-                Stats unavailable
-              </div>
-            )}
+            {stats.map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + index * 0.1 }}
+                className="text-center"
+              >
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <stat.icon className="w-5 h-5 text-cyan-400" />
+                  <div className="text-3xl font-bold text-cyan-300">{stat.value}</div>
+                </div>
+                <div className="text-sm text-slate-400">{stat.label}</div>
+              </motion.div>
+            ))}
           </div>
 
           {/* CTA Button */}

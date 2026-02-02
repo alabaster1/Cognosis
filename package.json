@@ -18,6 +18,8 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@lucid-evolution/lucid": "^0.4.29",
+    "bip39": "^3.1.0",
     "crypto-js": "^4.2.0"
   },
   "devDependencies": {
