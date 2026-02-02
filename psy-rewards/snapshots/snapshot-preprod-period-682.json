@@ -1,0 +1,164 @@
+{
+  "blockHeight": 0,
+  "timestamp": 1770067173871,
+  "period": 682,
+  "holders": [
+    {
+      "address": "addr_test1qz...mock4",
+      "psyBalance": 100000,
+      "share": 31.25,
+      "merkleProof": [
+        "71a38d201b0a8fe48b796df1517f371d8ff66c40463b36af6e8f32664665df88",
+        "d2f77648237e3bc184e21e85c4fb56efa6b011a1b8b88ad77f28f4549bbaeb28",
+        "0f8e8daebabcc6d7406845039fa79d4238f5768f206f12fda813b0cc49f5ae1c",
+        "61e6ee53a9da75686cf59d1b4489c22e0acb4da4d80733f61fdd94a1f1d23068"
+      ]
+    },
+    {
+      "address": "addr_test1qz...mock6",
+      "psyBalance": 75000,
+      "share": 23.4375,
+      "merkleProof": [
+        "a05436a55c5655f851715d78beddcd2eaf0d1f02eb30ff6752136719e2cbad36",
+        "d2f77648237e3bc184e21e85c4fb56efa6b011a1b8b88ad77f28f4549bbaeb28",
+        "0f8e8daebabcc6d7406845039fa79d4238f5768f206f12fda813b0cc49f5ae1c",
+        "61e6ee53a9da75686cf59d1b4489c22e0acb4da4d80733f61fdd94a1f1d23068"
+      ]
+    },
+    {
+      "address": "addr_test1qz...mock2",
+      "psyBalance": 50000,
+      "share": 15.625,
+      "merkleProof": [
+        "6aaf9af34495eeead47218e8a2f6db1cdc80397c9cd7a8545c156fce3ac34bf5",
+        "a9a7f79fc02d692790111a05026014e0b74ee34062b90db21f5430e60464a4b9",
+        "0f8e8daebabcc6d7406845039fa79d4238f5768f206f12fda813b0cc49f5ae1c",
+        "61e6ee53a9da75686cf59d1b4489c22e0acb4da4d80733f61fdd94a1f1d23068"
+      ]
+    },
+    {
+      "address": "addr_test1qz...mock9",
+      "psyBalance": 30000,
+      "share": 9.375,
+      "merkleProof": [
+        "c3f1fbba19b5227a6912e109a238554de88a32f48813289d20ff5bc8d47c9bc2",
+        "a9a7f79fc02d692790111a05026014e0b74ee34062b90db21f5430e60464a4b9",
+        "0f8e8daebabcc6d7406845039fa79d4238f5768f206f12fda813b0cc49f5ae1c",
+        "61e6ee53a9da75686cf59d1b4489c22e0acb4da4d80733f61fdd94a1f1d23068"
+      ]
+    },
+    {
+      "address": "addr_test1qz...mock5",
+      "psyBalance": 25000,
+      "share": 7.8125,
+      "merkleProof": [
+        "818ab774c6a33d339a9f1cd7a4130ef1f184c8d0fd79fa8cda42829f5d25ffc5",
+        "f2a36813f194bf71737eb73be1bd6d13ddb7a98d86864df7f635fb5c653eceb1",
+        "9e0d36ab5bc0af714568a763669c973ecd6cd259bcfb71cb11b66afd3ae2a51f",
+        "61e6ee53a9da75686cf59d1b4489c22e0acb4da4d80733f61fdd94a1f1d23068"
+      ]
+    },
+    {
+      "address": "addr_test1qz...mock7",
+      "psyBalance": 15000,
+      "share": 4.6875,
+      "merkleProof": [
+        "bce2f6bb133657c9e31c3d3a9c893bec03beee890cfb7b82f9c117fffc6ddbc0",
+        "f2a36813f194bf71737eb73be1bd6d13ddb7a98d86864df7f635fb5c653eceb1",
+        "9e0d36ab5bc0af714568a763669c973ecd6cd259bcfb71cb11b66afd3ae2a51f",
+        "61e6ee53a9da75686cf59d1b4489c22e0acb4da4d80733f61fdd94a1f1d23068"
+      ]
+    },
+    {
+      "address": "addr_test1qz...mock1",
+      "psyBalance": 10000,
+      "share": 3.125,
+      "merkleProof": [
+        "6f67556047460d716aa33b2bc5514c9b250b613d09437389820d37e441c8d069",
+        "0e5fc26ac3c0635c847601a2a8a446d1efa594341b8116fe96d55dc05cb04572",
+        "9e0d36ab5bc0af714568a763669c973ecd6cd259bcfb71cb11b66afd3ae2a51f",
+        "61e6ee53a9da75686cf59d1b4489c22e0acb4da4d80733f61fdd94a1f1d23068"
+      ]
+    },
+    {
+      "address": "addr_test1qz...mock8",
+      "psyBalance": 8000,
+      "share": 2.5,
+      "merkleProof": [
+        "fc908044b1754f34350938f70473366c8ace916767372d7449346ab2c9290b7a",
+        "0e5fc26ac3c0635c847601a2a8a446d1efa594341b8116fe96d55dc05cb04572",
+        "9e0d36ab5bc0af714568a763669c973ecd6cd259bcfb71cb11b66afd3ae2a51f",
+        "61e6ee53a9da75686cf59d1b4489c22e0acb4da4d80733f61fdd94a1f1d23068"
+      ]
+    },
+    {
+      "address": "addr_test1qz...mock3",
+      "psyBalance": 5000,
+      "share": 1.5625,
+      "merkleProof": [
+        "2ddea7144407dada7443ccf9d86f81110a715cb200ef5d3c8f6fa7292411b038",
+        "b2a464a9d92f78a70ea253933d559e85cd96530c5a85647f3a348e8bf09ba529"
+      ]
+    },
+    {
+      "address": "addr_test1qz...mock10",
+      "psyBalance": 2000,
+      "share": 0.625,
+      "merkleProof": [
+        "868a909fa3e35ac8620a4e3e9a5485a26acf5360a554931fba93ac29ff165ed5",
+        "b2a464a9d92f78a70ea253933d559e85cd96530c5a85647f3a348e8bf09ba529"
+      ]
+    }
+  ],
+  "totalSupply": 320000,
+  "merkleRoot": "df85dd45d945d12ab6f504ec11e31db898f4e77332d87326731e8fb4c2f8c263",
+  "rewardPool": 10000000000,
+  "merkleTree": [
+    {
+      "level": 0,
+      "hashes": [
+        "a05436a55c5655f851715d78beddcd2eaf0d1f02eb30ff6752136719e2cbad36",
+        "71a38d201b0a8fe48b796df1517f371d8ff66c40463b36af6e8f32664665df88",
+        "c3f1fbba19b5227a6912e109a238554de88a32f48813289d20ff5bc8d47c9bc2",
+        "6aaf9af34495eeead47218e8a2f6db1cdc80397c9cd7a8545c156fce3ac34bf5",
+        "bce2f6bb133657c9e31c3d3a9c893bec03beee890cfb7b82f9c117fffc6ddbc0",
+        "818ab774c6a33d339a9f1cd7a4130ef1f184c8d0fd79fa8cda42829f5d25ffc5",
+        "fc908044b1754f34350938f70473366c8ace916767372d7449346ab2c9290b7a",
+        "6f67556047460d716aa33b2bc5514c9b250b613d09437389820d37e441c8d069",
+        "868a909fa3e35ac8620a4e3e9a5485a26acf5360a554931fba93ac29ff165ed5",
+        "2ddea7144407dada7443ccf9d86f81110a715cb200ef5d3c8f6fa7292411b038"
+      ]
+    },
+    {
+      "level": 1,
+      "hashes": [
+        "a9a7f79fc02d692790111a05026014e0b74ee34062b90db21f5430e60464a4b9",
+        "d2f77648237e3bc184e21e85c4fb56efa6b011a1b8b88ad77f28f4549bbaeb28",
+        "0e5fc26ac3c0635c847601a2a8a446d1efa594341b8116fe96d55dc05cb04572",
+        "f2a36813f194bf71737eb73be1bd6d13ddb7a98d86864df7f635fb5c653eceb1",
+        "4602035b63011422de355a21cbbcbcc5f15e37d463f43f00575a889d1ea3a0b4"
+      ]
+    },
+    {
+      "level": 2,
+      "hashes": [
+        "9e0d36ab5bc0af714568a763669c973ecd6cd259bcfb71cb11b66afd3ae2a51f",
+        "0f8e8daebabcc6d7406845039fa79d4238f5768f206f12fda813b0cc49f5ae1c",
+        "647da6bf34f67683d0c4889a6adc36694a9609ba1d8dbf38ef3c855201211002"
+      ]
+    },
+    {
+      "level": 3,
+      "hashes": [
+        "b2a464a9d92f78a70ea253933d559e85cd96530c5a85647f3a348e8bf09ba529",
+        "61e6ee53a9da75686cf59d1b4489c22e0acb4da4d80733f61fdd94a1f1d23068"
+      ]
+    },
+    {
+      "level": 4,
+      "hashes": [
+        "df85dd45d945d12ab6f504ec11e31db898f4e77332d87326731e8fb4c2f8c263"
+      ]
+    }
+  ]
+}
