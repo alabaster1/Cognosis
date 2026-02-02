@@ -15,13 +15,19 @@
 - [x] Document setup process (Ogmios + Kupo)
 - [x] Create package.json + dependencies
 - [x] Commit to git
+- [x] Install Ogmios (native binary)
+- [x] Reuse existing cardano-node (Aurumelius preprod node)
+- [x] Start Ogmios service (port 1337)
+- [x] Test Ogmios connectivity ✅ WORKING
+- [x] Create cardano-cli snapshot script (simple approach)
+- [x] Verify can query blockchain data
 
 ### Remaining This Week
-- [ ] Install Ogmios + Kupo locally (requires system setup)
-- [ ] Sync cardano-node to preprod
-- [ ] Test Ogmios/Kupo connectivity
 - [ ] Install Aiken compiler
-- [ ] Run first test snapshot (mock data)
+- [ ] Integrate Ogmios into TypeScript snapshot script
+- [ ] Run first test snapshot (mock data → real queries)
+- [ ] Build Merkle tree generation
+- [ ] Test full snapshot flow
 
 ---
 
@@ -98,7 +104,23 @@
 - ✅ Created tracking docs (README, PROGRESS)
 - ✅ Committed to git
 
-**Next:** Install Ogmios + Kupo, test connectivity
+**Next:** Install Aiken, integrate Ogmios into snapshot script
+
+### 2026-02-02 (Continued - Infrastructure Setup)
+- ✅ Discovered cardano-node already running from Aurumelius (can reuse!)
+- ✅ Downloaded Ogmios v6.9.0 (pre-built binary)
+- ✅ Started Ogmios pointing to existing cardano-node socket
+- ✅ Tested Ogmios API (queryNetwork/tip, protocolParameters, blockHeight)
+- ✅ Created test scripts:
+  - `snapshot-cardano-cli.sh` - Simple cardano-cli based snapshot (fallback)
+  - `test-ogmios.sh` - Verify Ogmios connectivity
+- ✅ Verified blockchain connectivity:
+  - Preprod block: 4,384,685
+  - Ogmios slot: 114,383,188
+  - All APIs responding correctly
+
+**Ogmios Status:** Running on port 1337 (PID 439133)  
+**Next:** Install Aiken compiler, integrate Ogmios into TypeScript snapshot script
 
 ---
 
