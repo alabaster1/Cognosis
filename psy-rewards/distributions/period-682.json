@@ -1,0 +1,73 @@
+{
+  "period": 682,
+  "distributions": [
+    {
+      "address": "addr_test1qz...mock4",
+      "amount": 467144191,
+      "monthlyReward": 467144191,
+      "accumulated": 0
+    },
+    {
+      "address": "addr_test1qz...mock6",
+      "amount": 350358143,
+      "monthlyReward": 350358143,
+      "accumulated": 0
+    },
+    {
+      "address": "addr_test1qz...mock2",
+      "amount": 233572095,
+      "monthlyReward": 233572095,
+      "accumulated": 0
+    },
+    {
+      "address": "addr_test1qz...mock9",
+      "amount": 140143257,
+      "monthlyReward": 140143257,
+      "accumulated": 0
+    },
+    {
+      "address": "addr_test1qz...mock5",
+      "amount": 116786047,
+      "monthlyReward": 116786047,
+      "accumulated": 0
+    },
+    {
+      "address": "addr_test1qz...mock7",
+      "amount": 70071628,
+      "monthlyReward": 70071628,
+      "accumulated": 0
+    },
+    {
+      "address": "addr_test1qz...mock1",
+      "amount": 46714419,
+      "monthlyReward": 46714419,
+      "accumulated": 0
+    },
+    {
+      "address": "addr_test1qz...mock8",
+      "amount": 37371535,
+      "monthlyReward": 37371535,
+      "accumulated": 0
+    },
+    {
+      "address": "addr_test1qz...mock3",
+      "amount": 23357209,
+      "monthlyReward": 23357209,
+      "accumulated": 0
+    },
+    {
+      "address": "addr_test1qz...mock10_small",
+      "amount": 9342883,
+      "monthlyReward": 9342883,
+      "accumulated": 0
+    }
+  ],
+  "stats": {
+    "sent": 1494861407,
+    "accumulated": 5138585,
+    "holders": {
+      "sent": 10,
+      "accumulated": 2
+    }
+  }
+}

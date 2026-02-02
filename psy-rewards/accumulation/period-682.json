@@ -1,0 +1,10 @@
+{
+  "period": 682,
+  "lastUpdated": "2026-02-02T21:28:22.908Z",
+  "accumulated": {
+    "addr_test1qz...mock11_tiny": 3737153,
+    "addr_test1qz...mock12_micro": 1401432
+  },
+  "totalAddresses": 2,
+  "totalAccumulated": 5138585
+}

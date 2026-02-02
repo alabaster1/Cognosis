@@ -96,17 +96,18 @@ async function queryPsyHolders(config: Config): Promise<Map<string, number>> {
   mockHolders.set('addr_test1qz...mock7', 15000);
   mockHolders.set('addr_test1qz...mock8', 8000);
   mockHolders.set('addr_test1qz...mock9', 30000);
-  mockHolders.set('addr_test1qz...mock10', 2000);  // Below 5 ADA threshold
+  mockHolders.set('addr_test1qz...mock10_small', 2000);  // ~6 ADA/month (will accumulate)
+  mockHolders.set('addr_test1qz...mock11_tiny', 800);    // ~2.5 ADA/month (will accumulate)
+  mockHolders.set('addr_test1qz...mock12_micro', 300);   // ~0.9 ADA/month (will accumulate)
   
   console.log(`✅ Found ${mockHolders.size} PSY holders`);
   
   return mockHolders;
 }
 
-// Calculate shares and filter by min threshold
+// Calculate shares (NO filtering - include everyone!)
 function calculateShares(
   holders: Map<string, number>,
-  minRewardThreshold: number,
   rewardPool: number
 ): PsyHolder[] {
   const totalSupply = Array.from(holders.values()).reduce((sum, amt) => sum + amt, 0);
@@ -114,31 +115,117 @@ function calculateShares(
   console.log(`📈 Total PSY supply: ${totalSupply.toLocaleString()}`);
   
   const holderList: PsyHolder[] = [];
-  let skippedCount = 0;
-  let skippedAmount = 0;
   
   for (const [address, balance] of holders.entries()) {
     const share = (balance / totalSupply) * 100;
-    const estimatedReward = Math.floor((rewardPool * share) / 100);
     
-    if (estimatedReward >= minRewardThreshold) {
-      holderList.push({
-        address,
-        psyBalance: balance,
-        share,
+    holderList.push({
+      address,
+      psyBalance: balance,
+      share,
+    });
+  }
+  
+  console.log(`✅ ${holderList.length} total holders (everyone included!)`);
+  
+  return holderList.sort((a, b) => b.psyBalance - a.psyBalance);
+}
+
+// Load previous accumulation state
+function loadAccumulationState(period: number): Record<string, number> {
+  const stateDir = path.join(__dirname, '../accumulation');
+  const stateFile = path.join(stateDir, `period-${period}.json`);
+  
+  if (!fs.existsSync(stateFile)) {
+    console.log(`   No previous accumulation found (period ${period})`);
+    return {};
+  }
+  
+  const data = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
+  console.log(`   Loaded accumulation from period ${period}`);
+  console.log(`   ${Object.keys(data.accumulated || {}).length} addresses with accumulated rewards`);
+  
+  return data.accumulated || {};
+}
+
+// Save accumulation state
+function saveAccumulationState(period: number, accumulated: Record<string, number>) {
+  const stateDir = path.join(__dirname, '../accumulation');
+  
+  if (!fs.existsSync(stateDir)) {
+    fs.mkdirSync(stateDir, { recursive: true });
+  }
+  
+  const stateFile = path.join(stateDir, `period-${period}.json`);
+  
+  const state = {
+    period,
+    lastUpdated: new Date().toISOString(),
+    accumulated,
+    totalAddresses: Object.keys(accumulated).length,
+    totalAccumulated: Object.values(accumulated).reduce((sum, amt) => sum + amt, 0),
+  };
+  
+  fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
+  
+  console.log(`💾 Accumulation state saved: period-${period}.json`);
+  console.log(`   ${state.totalAddresses} addresses accumulating`);
+  console.log(`   ${(state.totalAccumulated / 1_000_000).toFixed(2)} ADA total accumulated`);
+}
+
+// Calculate distributions with accumulation
+function calculateDistributions(
+  holders: PsyHolder[],
+  rewardPool: number,
+  previousAccumulation: Record<string, number>
+): {
+  distributions: Array<{ address: string; amount: number; monthlyReward: number; accumulated: number }>;
+  newAccumulation: Record<string, number>;
+  stats: { sent: number; accumulated: number; holders: { sent: number; accumulated: number } };
+} {
+  const MIN_THRESHOLD = 5_000_000;  // 5 ADA in lovelace
+  const distributions: Array<{ address: string; amount: number; monthlyReward: number; accumulated: number }> = [];
+  const newAccumulation: Record<string, number> = {};
+  
+  let totalSent = 0;
+  let totalAccumulated = 0;
+  let holdersSent = 0;
+  let holdersAccumulated = 0;
+  
+  for (const holder of holders) {
+    const monthlyReward = Math.floor((rewardPool * holder.share) / 100);
+    const previouslyAccumulated = previousAccumulation[holder.address] || 0;
+    const totalOwed = monthlyReward + previouslyAccumulated;
+    
+    if (totalOwed >= MIN_THRESHOLD) {
+      // Send it!
+      distributions.push({
+        address: holder.address,
+        amount: totalOwed,
+        monthlyReward,
+        accumulated: previouslyAccumulated,
       });
+      totalSent += totalOwed;
+      holdersSent++;
+      // Reset accumulation for this address
+      delete newAccumulation[holder.address];
     } else {
-      skippedCount++;
-      skippedAmount += balance;
-      console.log(`   ⏭️  Skipping ${address.slice(0, 30)}... (reward ${(estimatedReward / 1_000_000).toFixed(2)} ADA < 5 ADA threshold)`);
+      // Accumulate
+      newAccumulation[holder.address] = totalOwed;
+      totalAccumulated += totalOwed;
+      holdersAccumulated++;
     }
   }
   
-  console.log(`✅ ${holderList.length} holders eligible (>= 5 ADA)`);
-  console.log(`   ${skippedCount} holders skipped (< 5 ADA threshold)`);
-  console.log(`   Skipped PSY amount: ${skippedAmount.toLocaleString()} (${((skippedAmount / totalSupply) * 100).toFixed(2)}%)`);
-  
-  return holderList.sort((a, b) => b.psyBalance - a.psyBalance);
+  return {
+    distributions,
+    newAccumulation,
+    stats: {
+      sent: totalSent,
+      accumulated: totalAccumulated,
+      holders: { sent: holdersSent, accumulated: holdersAccumulated },
+    },
+  };
 }
 
 // Build Merkle tree
@@ -270,10 +357,28 @@ async function main() {
   const rewardPool = 10_000_000_000;  // 10,000 ADA
   console.log(`💰 Reward pool: ${(rewardPool / 1_000_000).toLocaleString()} ADA\n`);
   
-  // Calculate shares (min 5 ADA threshold)
-  const holders = calculateShares(holdersMap, 5_000_000, rewardPool);
+  // Load previous accumulation
+  console.log(`📊 Loading previous accumulation...`);
+  const previousAccumulation = loadAccumulationState(period - 1);
+  console.log(``);
+  
+  // Calculate shares (NO filtering - everyone included!)
+  const holders = calculateShares(holdersMap, rewardPool);
   
   const totalSupply = Array.from(holdersMap.values()).reduce((sum, amt) => sum + amt, 0);
+  
+  // Calculate distributions with accumulation
+  console.log(`\n💵 Calculating distributions with accumulation...`);
+  const { distributions, newAccumulation, stats } = calculateDistributions(
+    holders,
+    rewardPool,
+    previousAccumulation
+  );
+  
+  console.log(`✅ Distribution calculation complete:`);
+  console.log(`   To distribute: ${stats.holders.sent} holders → ${(stats.sent / 1_000_000).toFixed(2)} ADA`);
+  console.log(`   Accumulating: ${stats.holders.accumulated} holders → ${(stats.accumulated / 1_000_000).toFixed(2)} ADA`);
+  console.log(``);
   
   // Build Merkle tree
   const { root: merkleRoot, tree: merkleTree } = buildMerkleTree(holders);
@@ -289,24 +394,69 @@ async function main() {
     rewardPool,
   };
   
-  // Save
+  // Save snapshot
   saveSnapshot(snapshot, merkleTree, config);
   
+  // Save accumulation state
+  saveAccumulationState(period, newAccumulation);
+  
+  // Save distribution list
+  const distributionsDir = path.join(__dirname, '../distributions');
+  if (!fs.existsSync(distributionsDir)) {
+    fs.mkdirSync(distributionsDir, { recursive: true });
+  }
+  fs.writeFileSync(
+    path.join(distributionsDir, `period-${period}.json`),
+    JSON.stringify({ period, distributions, stats }, null, 2)
+  );
+  console.log(`💾 Distribution list saved: period-${period}.json\n`);
+  
   // Summary
-  console.log(`\n📊 Snapshot Summary:`);
+  console.log(`📊 Snapshot Summary:`);
   console.log(`   Total Holders: ${holdersMap.size}`);
-  console.log(`   Eligible Holders: ${holders.length} (>= 5 ADA)`);
   console.log(`   Total PSY Supply: ${totalSupply.toLocaleString()}`);
   console.log(`   Reward Pool: ${(rewardPool / 1_000_000).toLocaleString()} ADA`);
-  console.log(`   Avg Reward/Holder: ${((rewardPool / holders.length) / 1_000_000).toFixed(2)} ADA`);
   console.log(`   Merkle Root: ${merkleRoot}`);
+  console.log(``);
+  console.log(`📊 Distribution Summary:`);
+  console.log(`   Sending Now: ${stats.holders.sent} holders → ${(stats.sent / 1_000_000).toFixed(2)} ADA`);
+  console.log(`   Accumulating: ${stats.holders.accumulated} holders → ${(stats.accumulated / 1_000_000).toFixed(2)} ADA`);
+  console.log(`   Avg Payment: ${stats.holders.sent > 0 ? ((stats.sent / stats.holders.sent) / 1_000_000).toFixed(2) : 0} ADA`);
   
-  // Top 5
-  console.log(`\n🏆 Top 5 Holders:`);
-  holders.slice(0, 5).forEach((h, i) => {
-    const reward = Math.floor((rewardPool * h.share) / 100);
-    console.log(`   ${i + 1}. ${h.address.slice(0, 35)}... - ${h.psyBalance.toLocaleString()} PSY (${h.share.toFixed(2)}%) → ${(reward / 1_000_000).toFixed(2)} ADA`);
+  // Top 5 distributions
+  console.log(`\n🏆 Top 5 Distributions (This Period):`);
+  distributions.slice(0, 5).forEach((d, i) => {
+    const holder = holders.find(h => h.address === d.address);
+    const wasAccumulated = d.accumulated > 0;
+    console.log(`   ${i + 1}. ${d.address.slice(0, 35)}...`);
+    console.log(`      PSY: ${holder?.psyBalance.toLocaleString()} (${holder?.share.toFixed(2)}%)`);
+    console.log(`      This month: ${(d.monthlyReward / 1_000_000).toFixed(2)} ADA`);
+    if (wasAccumulated) {
+      console.log(`      + Accumulated: ${(d.accumulated / 1_000_000).toFixed(2)} ADA`);
+    }
+    console.log(`      → Total sending: ${(d.amount / 1_000_000).toFixed(2)} ADA`);
   });
+  
+  // Show some accumulating holders
+  if (stats.holders.accumulated > 0) {
+    console.log(`\n📊 Sample Accumulating Holders:`);
+    const accumulatingList = Object.entries(newAccumulation)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 3);
+    
+    accumulatingList.forEach(([address, amount], i) => {
+      const holder = holders.find(h => h.address === address);
+      const monthlyReward = Math.floor((rewardPool * (holder?.share || 0)) / 100);
+      const previouslyAccumulated = previousAccumulation[address] || 0;
+      console.log(`   ${i + 1}. ${address.slice(0, 35)}...`);
+      console.log(`      PSY: ${holder?.psyBalance.toLocaleString()}`);
+      console.log(`      This month: ${(monthlyReward / 1_000_000).toFixed(2)} ADA`);
+      if (previouslyAccumulated > 0) {
+        console.log(`      + Previously: ${(previouslyAccumulated / 1_000_000).toFixed(2)} ADA`);
+      }
+      console.log(`      = Accumulated: ${(amount / 1_000_000).toFixed(2)} ADA (need ${((5_000_000 - amount) / 1_000_000).toFixed(2)} more)`);
+    });
+  }
   
   console.log(`\n✅ Snapshot generation complete!\n`);
   
