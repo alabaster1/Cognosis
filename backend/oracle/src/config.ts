@@ -53,10 +53,11 @@ export const config: OracleConfig = {
   oracleSigningKey,
   oracleAddress,
   
-  // Smart contract addresses (preprod)
-  experimentAddress: 'addr_test1wp0m9gv6fzvr5gunqvzlj2g2s235vz3ecndvrg7hdtw92hsaucqr4',
-  vaultAddress: 'addr_test1wztacuc3ux3r9wnsdad0uwc0rmzt78wm9jhgk5tugp95vvge8k9ge',
-  lotteryAddress: 'addr_test1wrszchzeux6k0gk8uqm7fvhhe6v5y2c2uf6yjherkd3adacz5k0jp',
+  // Smart contract addresses (preprod - PlutusV3)
+  // Updated 2026-02-02 for PlutusV3 migration
+  experimentAddress: 'addr_test1wrfwt5tsy7gxk0cr857esk2pxf5cj738vzvc76gl6quswlqnd52h7',
+  vaultAddress: 'addr_test1wz54mujyqzpgsl5n46scw690z6a4c7z0w8fnmw3p5svr57cpj8jzj',
+  lotteryAddress: 'addr_test1wqcddm6lc83z3442numt57uvz6kgqfcz252zvs8k75tkczsmr0sg4',
   
   openaiApiKey: process.env.OPENAI_API_KEY || '',
   pollIntervalMs: parseInt(process.env.POLL_INTERVAL_MS || '30000', 10), // 30 seconds

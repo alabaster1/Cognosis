@@ -53,7 +53,8 @@ export let REWARD_VAULT_ADDRESS = "";
 export let REWARD_VAULT_SCRIPT = "";
 
 // PSY Token Configuration (Mainnet)
-export let PSY_POLICY_ID = "d137118335bd9618c1b5be5612691baf7a5c13c159b00d44fb69f177";
+// Updated 2026-02-02 for PlutusV3 migration (preprod policy)
+export let PSY_POLICY_ID = "52f4f6afcef8453af8189f4eeec850df31cb1c27a9bf2d8e4594216e";
 export let PSY_ASSET_NAME = "507379"; // "Psy" in hex
 
 // For preprod testing, these will be different (set via initializeRewardVault)
