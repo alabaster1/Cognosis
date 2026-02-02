@@ -18,10 +18,16 @@
 **Staking Mechanics:**
 - **Period:** 30-day epochs
 - **Snapshot:** Taken at end of epoch (records who staked how much)
-- **Rewards Distribution:** Proportional to stake amount
+- **Rewards Distribution:** Proportional to stake amount at snapshot time
   - If you stake 10% of total → you get 10% of reward pool
 - **Rewards Token:** ADA (not BODEGA) - real yield in native currency
-- **Unstaking:** Can unstake anytime, but lose rewards if unstaked before snapshot
+- **Unstaking:** Can unstake anytime - tokens NOT locked!
+  - You just need tokens staked AT SNAPSHOT TIME to get rewards for that period
+  - This is already liquid/flexible - no lockup
+
+**Important Clarification:**
+- **Staking ≠ Locking:** BODEGA tokens are only locked when used in prediction markets (betting)
+- **Staking = Snapshot-based:** You can move tokens freely, just stake them before snapshot to earn rewards
 
 **Example:**
 ```
@@ -39,20 +45,39 @@ User stakes 100,000 BODEGA (10% of total):
 
 ---
 
-## Proposed PSY Liquid Staking Model
+## Proposed PSY Staking Model
 
-### Enhancement: Add Liquid Staking (What Bodega Doesn't Have)
+### Core Model: Direct Bodega Clone (Simplest)
 
-**Problem with Bodega's Model:**
-- Tokens are locked during staking period
-- Can't use staked tokens in DeFi or other markets
-- Capital inefficiency
+**Bodega's model is already flexible** - no token lockup!
 
-**Solution: Liquid Staking Tokens (LSTs)**
-When users stake PSY, they receive **sPSY** (staked PSY) tokens:
-- **sPSY** represents staked PSY + accrued rewards
-- **sPSY** is tradeable, transferable, usable in DeFi
-- **sPSY** can be redeemed for PSY + rewards at any time
+**How it works:**
+1. Users stake PSY tokens (anytime)
+2. Snapshot taken at end of 30-day period
+3. Rewards (50% of platform fees) distributed based on snapshot
+4. Users can unstake anytime - just need to be staked at snapshot to earn
+
+**Benefits:**
+- ✅ Simple, proven model
+- ✅ No lockups - use tokens elsewhere if needed
+- ✅ Real yield (ADA from platform fees)
+- ✅ Proportional rewards
+
+**This may be all we need!** Simple > complex.
+
+---
+
+### Optional Enhancement: Liquid Staking Tokens (sPSY)
+
+**Why add sPSY if tokens aren't locked?**
+
+Even without lockup, sPSY could provide:
+1. **Auto-compounding:** Rewards compound into sPSY value (no manual claim)
+2. **Proof of stake:** sPSY shows "I was staked at snapshot" for other protocols
+3. **Tradeable yield:** Sell sPSY before snapshot = transfer rewards to buyer
+4. **Composability:** DeFi protocols could accept sPSY as collateral
+
+**But:** This adds complexity. Start simple, add later if needed.
 
 ---
 
@@ -236,19 +261,21 @@ validator rewards_distributor {
 
 ## Comparison: Bodega vs. Cognosis (PSY)
 
-| Feature | Bodega | Cognosis (Proposed) |
-|---------|--------|---------------------|
-| **Stake Token** | BODEGA | PSY |
-| **Reward Token** | ADA | ADA (or PSY buyback) |
-| **Revenue Share** | 50% to stakers | 50% to stakers |
-| **Staking Period** | 30-day epochs | 30-day epochs (or continuous) |
-| **Liquid Staking** | ❌ No (tokens locked) | ✅ Yes (sPSY receipt tokens) |
-| **Unstaking** | Anytime, but lose rewards | Anytime, keep rewards (in sPSY value) |
-| **DeFi Composability** | ❌ No | ✅ sPSY usable in DeFi |
-| **Reward Distribution** | Manual claim after snapshot | Auto-compound into sPSY value |
-| **Governance** | Governance can adjust ratios | Same |
+| Feature | Bodega | Cognosis (Simple) | Cognosis (+ sPSY) |
+|---------|--------|-------------------|-------------------|
+| **Stake Token** | BODEGA | PSY | PSY |
+| **Reward Token** | ADA | ADA | ADA |
+| **Revenue Share** | 50% to stakers | 50% to stakers | 50% to stakers |
+| **Staking Period** | 30-day epochs | 30-day epochs | 30-day epochs |
+| **Token Lockup** | ✅ No lockup! | ✅ No lockup! | ✅ No lockup! |
+| **Snapshot-based** | ✅ Yes | ✅ Yes | ✅ Yes |
+| **Unstaking** | Anytime | Anytime | Anytime |
+| **Liquid Receipt Token** | ❌ No | ❌ No (keep simple) | ✅ sPSY optional |
+| **DeFi Composability** | Limited | Limited | ✅ sPSY usable |
+| **Reward Distribution** | Manual claim | Manual claim | Auto-compound (sPSY) |
+| **Complexity** | Simple | Simple ✅ | More complex |
 
-**Key Advantage:** Liquid staking (sPSY) makes Cognosis more capital-efficient than Bodega.
+**Recommendation:** Start with simple Bodega clone (column 2). Add sPSY later if needed (column 3).
 
 ---
 
@@ -347,11 +374,36 @@ If PSY = $1, APR = 60%)
 3. [ ] Security audit (if possible)
 4. [ ] Deploy to mainnet
 
-**Questions for Albert:**
-1. Should we do 50/25/25 split (stakers/treasury/rewards) or different ratio?
-2. Do we want continuous staking (like Lido) or 30-day epochs (like Bodega)?
-3. Should rewards be in ADA or PSY buyback (or both)?
-4. Priority: Fast launch (8 weeks) or thorough audit (12+ weeks)?
+## Recommendation: Start Simple 🦞
+
+**Phase 1: Direct Bodega Clone (MVP)**
+- Stake PSY → earn ADA from platform fees
+- 30-day epochs with snapshots
+- No lockup (can unstake anytime)
+- 50% fees → stakers, 25% treasury, 25% rewards pool
+- Simple, proven, fast to implement
+
+**Phase 2: Add sPSY (If Needed)**
+- Only if users demand more composability
+- Or if we want auto-compounding
+- Don't over-engineer upfront
+
+**Timeline (Simple Model):**
+- 4-6 weeks: Smart contracts (staking vault + rewards distributor)
+- 2-3 weeks: Frontend (/stake page)
+- 1 week: Deploy to mainnet
+- **Total: 7-10 weeks** (vs 8-12 with sPSY complexity)
+
+---
+
+## Questions for Albert:
+
+1. **Revenue split:** 50/25/25 (stakers/treasury/rewards) good? Or different?
+2. **Rewards token:** ADA directly or use ADA to buyback PSY and distribute PSY?
+3. **Snapshot frequency:** 30-day epochs (like Bodega) or weekly/monthly?
+4. **Launch priority:** Fast & simple (7-10 weeks) or add sPSY upfront (10-14 weeks)?
+
+**My vote:** Fast & simple. Start with Bodega model exactly, add enhancements later based on user feedback.
 
 ---
 
