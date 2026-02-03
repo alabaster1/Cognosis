@@ -34,8 +34,8 @@ export const PSY_REWARD_CONFIG = {
   // Lottery system
   lottery: {
     feePerSubmission: 0.01,    // ADA (10,000 lovelace)
-    drawingFrequency: 'weekly', // How often to draw
-    drawingFrequencyMs: 7 * 24 * 60 * 60 * 1000, // 1 week in milliseconds
+    drawingFrequency: 'hourly (PREPROD TESTING)', // How often to draw
+    drawingFrequencyMs: 60 * 60 * 1000, // 1 hour in milliseconds (PREPROD: was 1 week)
     alphaWeight: 0.5,          // Hybrid sqrt/log balance (0-1)
     
     // Ticket weighting (hybrid α=0.5)
