@@ -8,6 +8,7 @@
     "snapshot:submit": "ts-node scripts/submit-snapshot.ts",
     "distribute": "ts-node scripts/distribute.ts",
     "verify": "ts-node scripts/verify.ts",
+    "hourly": "bash scripts/hourly-cycle.sh",
     "build:contracts": "cd contracts && aiken build",
     "test:contracts": "cd contracts && aiken check"
   },
