@@ -1,11 +1,11 @@
 name = "cognosis/on-chain-lottery"
 version = "0.1.0"
+compiler = "v1.1.21"
 plutus = "v3"
-compiler = "v1.1.8"
 license = "Apache-2.0"
 description = "Permissionless lottery with Cardano VRF for provably fair winner selection"
 
 [[dependencies]]
 name = "aiken-lang/stdlib"
-version = "2.2.0"
+version = "v3.0.0"
 source = "github"
