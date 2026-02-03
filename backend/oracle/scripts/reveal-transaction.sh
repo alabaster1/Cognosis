@@ -44,7 +44,10 @@ cardano-cli query utxo --address "$VAULT_ADDR" $TESTNET --out-file /tmp/vault-ut
 VAULT_UTXO=$(jq -r 'to_entries | .[0].key' /tmp/vault-utxos.json)
 VAULT_LOVELACE=$(jq -r --arg utxo "$VAULT_UTXO" '.[$utxo].value.lovelace' /tmp/vault-utxos.json)
 PSY_ASSET=$(jq -r --arg utxo "$VAULT_UTXO" '.[$utxo].value | to_entries | .[] | select(.key != "lovelace") | .key' /tmp/vault-utxos.json)
-PSY_BALANCE=$(jq -r --arg utxo "$VAULT_UTXO" --arg asset "$PSY_ASSET" '.[$utxo].value[$asset]' /tmp/vault-utxos.json)
+
+# Get PSY balance (extract from nested token structure)
+PSY_TOKEN_NAME=$(jq -r --arg utxo "$VAULT_UTXO" --arg asset "$PSY_ASSET" '.[$utxo].value[$asset] | to_entries | .[0].key' /tmp/vault-utxos.json)
+PSY_BALANCE=$(jq -r --arg utxo "$VAULT_UTXO" --arg asset "$PSY_ASSET" --arg token "$PSY_TOKEN_NAME" '.[$utxo].value[$asset][$token]' /tmp/vault-utxos.json)
 
 echo "   Vault UTxO: $VAULT_UTXO"
 echo "   PSY Asset: $PSY_ASSET"
@@ -132,12 +135,15 @@ EOF
 echo "   ✅ Vault redeemer (ClaimReward) created"
 echo
 
-# Step 6: Derive user address from PKH
+# Step 6: Derive user address from PKH using cardano-cli
 echo "6️⃣ Deriving user address..."
-# For preprod testnet, payment address from key hash
-USER_ADDR="addr_test1vp$(echo $USER_PKH | cut -c 1-56)"  # Simplified - proper derivation needed
+
+# Create temporary payment verification key from PKH (for address derivation)
+# This is a workaround - ideally we'd have the user's actual address
+# For now, we'll construct a payment-only address on preprod
+USER_ADDR=$(cardano-cli address build --payment-verification-key-hash "$USER_PKH" --testnet-magic 1)
+
 echo "   User address: $USER_ADDR"
-echo "   ⚠️ Note: Using simplified address derivation"
 echo
 
 # Step 7: Get Oracle collateral
@@ -164,7 +170,7 @@ echo
 # Step 9: Build transaction
 echo "9️⃣ Building transaction..."
 
-cardano-cli transaction build \
+cardano-cli latest transaction build \
   --tx-in "$EXPERIMENT_UTXO" \
   --tx-in-script-file "$VALIDATORS_DIR/experiment-validator-v3.plutus" \
   --tx-in-inline-datum-present \
@@ -174,9 +180,9 @@ cardano-cli transaction build \
   --tx-in-inline-datum-present \
   --tx-in-redeemer-file /tmp/vault-redeemer.json \
   --tx-in-collateral "$COLLATERAL_UTXO" \
-  --tx-out "${USER_ADDR}+2000000+${PSY_REWARD} ${PSY_ASSET}" \
+  --tx-out "${USER_ADDR}+2000000+${PSY_REWARD} ${PSY_ASSET}.${PSY_TOKEN_NAME}" \
   --tx-out "${LOTTERY_ADDR}+10000000" \
-  --tx-out "${VAULT_ADDR}+${VAULT_LOVELACE}+${NEW_PSY_BALANCE} ${PSY_ASSET}" \
+  --tx-out "${VAULT_ADDR}+${VAULT_LOVELACE}+${NEW_PSY_BALANCE} ${PSY_ASSET}.${PSY_TOKEN_NAME}" \
   --tx-out-inline-datum-file /tmp/new-vault-datum.json \
   --required-signer-hash $(cardano-cli address key-hash --payment-verification-key-file ~/cardano-preprod/oracle/payment.vkey) \
   --change-address "$ORACLE_ADDR" \
@@ -188,7 +194,7 @@ echo
 
 # Step 10: Sign transaction
 echo "🔟 Signing transaction..."
-cardano-cli transaction sign \
+cardano-cli latest transaction sign \
   --tx-body-file /tmp/reveal-tx.raw \
   --signing-key-file "$ORACLE_SKEY" \
   $TESTNET \
@@ -199,10 +205,10 @@ echo
 
 # Step 11: Submit transaction
 echo "1️⃣1️⃣ Submitting transaction..."
-TX_HASH=$(cardano-cli transaction submit --tx-file /tmp/reveal-tx.signed $TESTNET 2>&1)
+TX_HASH=$(cardano-cli latest transaction submit --tx-file /tmp/reveal-tx.signed $TESTNET 2>&1)
 
 if echo "$TX_HASH" | grep -q "successfully submitted"; then
-    ACTUAL_TX_HASH=$(cardano-cli transaction txid --tx-file /tmp/reveal-tx.signed)
+    ACTUAL_TX_HASH=$(cardano-cli latest transaction txid --tx-file /tmp/reveal-tx.signed)
     echo "   ✅ Transaction submitted!"
     echo
     echo "=================================="

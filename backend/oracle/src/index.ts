@@ -5,7 +5,7 @@
  */
 
 import { config } from './config.js';
-import { CardanoClient } from './cardano-client.js';
+import { CardanoClientCLI } from './cardano-client-cli.js';
 import { AIScorer } from './ai-scorer.js';
 import { RevealTransactionBuilderCLI } from './tx-builder-cli.js';
 
@@ -17,12 +17,11 @@ async function main() {
   console.log('');
 
   // Initialize services
-  const cardano = new CardanoClient(config);
+  const cardano = new CardanoClientCLI(config);
   const aiScorer = new AIScorer(config.openaiApiKey);
   const txBuilder = new RevealTransactionBuilderCLI(config);
 
   await cardano.initialize();
-  console.log('✅ Cardano client initialized');
   console.log('✅ AI scorer ready');
   console.log('');
 

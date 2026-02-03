@@ -4,7 +4,7 @@
  */
 
 import { execSync } from 'child_process';
-import { ExperimentUTxO } from './cardano-client.js';
+import { ExperimentUTxO } from './cardano-client-cli.js';
 import { OracleConfig } from './config.js';
 import { join } from 'path';
 
