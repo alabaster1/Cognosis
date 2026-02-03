@@ -63,7 +63,7 @@ const rvSteps = [
   {
     number: '1',
     title: 'Predict',
-    description: 'Describe a random location without knowing what it is',
+    description: 'Describe a random target without knowing what it is',
     icon: Brain,
   },
   {
@@ -153,7 +153,7 @@ export default function HomePage() {
 
           {/* Subheadline */}
           <p className="text-xl md:text-2xl text-slate-400 mb-8 max-w-3xl mx-auto">
-            Can you sense a location you've never seen? Live data. Blockchain-verified. AI-scored.
+            Can you sense a target you've never seen? Live data. Blockchain-verified. AI-scored.
           </p>
 
           {/* Stats Ticker - LIVE DATA */}
