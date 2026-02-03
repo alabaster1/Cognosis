@@ -135,13 +135,67 @@ EOF
 echo "   ✅ Vault redeemer (ClaimReward) created"
 echo
 
-# Step 6: Derive user address from PKH using cardano-cli
-echo "6️⃣ Deriving user address..."
+# Step 6: Build user address from PKH (bech32 encoding)
+echo "6️⃣ Building user address from PKH..."
 
-# Create temporary payment verification key from PKH (for address derivation)
-# This is a workaround - ideally we'd have the user's actual address
-# For now, we'll construct a payment-only address on preprod
-USER_ADDR=$(cardano-cli address build --payment-verification-key-hash "$USER_PKH" --testnet-magic 1)
+# Construct payment-only address from key hash
+# Network ID: 0x00 for testnet payment address
+# Address format: 0x00 (header) + payment credential hash
+# Then bech32 encode with "addr_test" prefix
+
+# Use Python for bech32 encoding
+USER_ADDR=$(python3 - "$USER_PKH" <<'PYTHON'
+import sys
+import hashlib
+
+def bech32_polymod(values):
+    GEN = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3]
+    chk = 1
+    for v in values:
+        b = chk >> 25
+        chk = (chk & 0x1ffffff) << 5 ^ v
+        for i in range(5):
+            chk ^= GEN[i] if ((b >> i) & 1) else 0
+    return chk
+
+def bech32_hrp_expand(hrp):
+    return [ord(x) >> 5 for x in hrp] + [0] + [ord(x) & 31 for x in hrp]
+
+def bech32_encode(hrp, data):
+    combined = bech32_hrp_expand(hrp) + data
+    polymod = bech32_polymod(combined + [0, 0, 0, 0, 0, 0]) ^ 1
+    checksum = [(polymod >> 5 * (5 - i)) & 31 for i in range(6)]
+    charset = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
+    return hrp + "1" + "".join([charset[d] for d in data + checksum])
+
+def convertbits(data, frombits, tobits, pad=True):
+    acc = 0
+    bits = 0
+    ret = []
+    maxv = (1 << tobits) - 1
+    max_acc = (1 << (frombits + tobits - 1)) - 1
+    for value in data:
+        acc = ((acc << frombits) | value) & max_acc
+        bits += frombits
+        while bits >= tobits:
+            bits -= tobits
+            ret.append((acc >> bits) & maxv)
+    if pad and bits:
+        ret.append((acc << (tobits - bits)) & maxv)
+    return ret
+
+pkh = sys.argv[1]
+# Preprod payment address: header byte 0x00 + PKH
+header = 0x00  # Testnet enterprise address (no stake key)
+pkh_bytes = bytes.fromhex(pkh)
+addr_bytes = bytes([header]) + pkh_bytes
+
+# Convert to 5-bit groups for bech32
+data = convertbits(addr_bytes, 8, 5)
+address = bech32_encode("addr_test", data)
+print(address)
+PYTHON
+)
 
 echo "   User address: $USER_ADDR"
 echo

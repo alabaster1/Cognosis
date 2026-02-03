@@ -2,7 +2,7 @@
 
 /**
  * Onboarding Page - Cardano Wallet Connection
- * Wallet-only authentication (CIP-30 + CIP-8)
+ * Auto-detects and supports multiple wallets
  */
 
 import { useRouter } from 'next/navigation';
@@ -15,29 +15,48 @@ import { useState, useEffect } from 'react';
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { connectLace, connectCardano, isLoading, error, clearError } = useWalletStore();
+  const { connectCardano, isLoading, error, clearError } = useWalletStore();
   const [availableWallets, setAvailableWallets] = useState<string[]>([]);
+  const [primaryWallet, setPrimaryWallet] = useState<string | null>(null);
 
   useEffect(() => {
-    setAvailableWallets(walletService.getAvailableWallets());
+    const wallets = walletService.getAvailableWallets();
+    setAvailableWallets(wallets);
+    
+    // Set primary wallet (first available)
+    if (wallets.length > 0) {
+      setPrimaryWallet(wallets[0]);
+    }
   }, []);
 
-  const handleConnectLace = async () => {
+  const handleConnectWallet = async (walletName?: string) => {
     try {
-      await connectLace();
+      // Use specified wallet or primary wallet
+      const wallet = walletName || primaryWallet;
+      if (!wallet) {
+        throw new Error('No wallet found. Please install a Cardano wallet extension.');
+      }
+      
+      await connectCardano(wallet);
       router.push('/experiments');
     } catch (err) {
-      console.error('Connect Lace error:', err);
+      console.error('Connect wallet error:', err);
     }
   };
 
-  const handleConnectWallet = async (name: string) => {
-    try {
-      await connectCardano(name);
-      router.push('/experiments');
-    } catch (err) {
-      console.error(`Connect ${name} error:`, err);
-    }
+  const getWalletIcon = (wallet: string) => {
+    const icons: Record<string, string> = {
+      nami: '🐠',
+      eternl: '♾️',
+      lace: '🎴',
+      flint: '🔥',
+      yoroi: '⛩️',
+    };
+    return icons[wallet] || '💳';
+  };
+
+  const getWalletDisplayName = (wallet: string) => {
+    return wallet.charAt(0).toUpperCase() + wallet.slice(1);
   };
 
   return (
@@ -99,42 +118,126 @@ export default function OnboardingPage() {
               Permanent experiment records
             </li>
           </ul>
-          <div className="space-y-3">
-            <button
-              onClick={handleConnectLace}
-              disabled={isLoading}
-              className="w-full px-6 py-3 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-lg font-semibold hover:shadow-lg hover:shadow-cyan-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {isLoading ? 'Connecting...' : 'Connect Lace Wallet'}
-              <Wallet className="w-5 h-5" />
-            </button>
 
-            {availableWallets.filter(w => w !== 'lace').length > 0 && (
-              <div className="pt-2 space-y-2">
-                <p className="text-xs text-slate-500 text-center">Or connect with:</p>
-                <div className="flex gap-2 justify-center flex-wrap">
-                  {availableWallets.filter(w => w !== 'lace').map(wallet => (
-                    <button
-                      key={wallet}
-                      onClick={() => handleConnectWallet(wallet)}
-                      disabled={isLoading}
-                      className="px-4 py-2 border border-cyan-500/30 rounded-lg text-sm font-medium hover:bg-cyan-900/15 transition-all disabled:opacity-50 capitalize"
-                    >
-                      {wallet}
-                    </button>
-                  ))}
+          {availableWallets.length > 0 ? (
+            <div className="space-y-3">
+              {/* Primary wallet button */}
+              <button
+                onClick={() => handleConnectWallet()}
+                disabled={isLoading}
+                className="w-full px-6 py-3 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-lg font-semibold hover:shadow-lg hover:shadow-cyan-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isLoading ? (
+                  'Connecting...'
+                ) : (
+                  <>
+                    {getWalletIcon(primaryWallet || '')} Connect Wallet
+                    {primaryWallet && ` (${getWalletDisplayName(primaryWallet)})`}
+                  </>
+                )}
+                <Wallet className="w-5 h-5" />
+              </button>
+
+              {/* Alternative wallets */}
+              {availableWallets.length > 1 && (
+                <div className="pt-2 space-y-2">
+                  <p className="text-xs text-slate-500 text-center">Or connect with:</p>
+                  <div className="flex gap-2 justify-center flex-wrap">
+                    {availableWallets.slice(1).map(wallet => (
+                      <button
+                        key={wallet}
+                        onClick={() => handleConnectWallet(wallet)}
+                        disabled={isLoading}
+                        className="px-4 py-2 border border-cyan-500/30 rounded-lg text-sm font-medium hover:bg-cyan-900/15 transition-all disabled:opacity-50 capitalize flex items-center gap-1"
+                      >
+                        <span>{getWalletIcon(wallet)}</span>
+                        {getWalletDisplayName(wallet)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="p-4 bg-orange-900/20 border border-orange-500/40 rounded-lg text-center">
+                <p className="text-orange-300 mb-2">No Cardano wallet detected</p>
+                <p className="text-xs text-orange-400/70">
+                  Please install a wallet extension to continue
+                </p>
+              </div>
+
+              {/* Wallet installation links */}
+              <div className="space-y-2">
+                <p className="text-xs text-slate-500 text-center mb-3">Supported Wallets:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <a
+                    href="https://namiwallet.io/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 border border-cyan-500/30 rounded-lg text-sm font-medium hover:bg-cyan-900/15 transition-all text-center"
+                  >
+                    🐠 Install Nami
+                  </a>
+                  <a
+                    href="https://eternl.io/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 border border-cyan-500/30 rounded-lg text-sm font-medium hover:bg-cyan-900/15 transition-all text-center"
+                  >
+                    ♾️ Install Eternl
+                  </a>
+                  <a
+                    href="https://www.lace.io/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 border border-cyan-500/30 rounded-lg text-sm font-medium hover:bg-cyan-900/15 transition-all text-center"
+                  >
+                    🎴 Install Lace
+                  </a>
+                  <a
+                    href="https://yoroi-wallet.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 border border-cyan-500/30 rounded-lg text-sm font-medium hover:bg-cyan-900/15 transition-all text-center"
+                  >
+                    ⛩️ Install Yoroi
+                  </a>
                 </div>
               </div>
-            )}
+            </div>
+          )}
+        </motion.div>
 
-            <a
-              href="https://chromewebstore.google.com/detail/lace-midnight-preview/hgeekaiplokcnmakghbdfbgnlfheichg?pli=1"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block w-full px-6 py-3 border border-cyan-500/30 rounded-lg font-semibold hover:bg-cyan-900/15 transition-all text-center"
-            >
-              Install Lace Extension
-            </a>
+        {/* Features Grid */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="max-w-4xl mx-auto mt-12 grid md:grid-cols-3 gap-6"
+        >
+          <div className="p-6 bg-gradient-to-br from-purple-900/20 to-[#0f1520] border border-purple-500/30 rounded-xl">
+            <div className="text-3xl mb-3">🔮</div>
+            <h3 className="text-lg font-semibold mb-2">Remote Viewing</h3>
+            <p className="text-sm text-slate-400">
+              Test your ability to perceive distant locations
+            </p>
+          </div>
+
+          <div className="p-6 bg-gradient-to-br from-cyan-900/20 to-[#0f1520] border border-cyan-500/30 rounded-xl">
+            <div className="text-3xl mb-3">🧠</div>
+            <h3 className="text-lg font-semibold mb-2">AI Scoring</h3>
+            <p className="text-sm text-slate-400">
+              GPT-4 evaluates your predictions objectively
+            </p>
+          </div>
+
+          <div className="p-6 bg-gradient-to-br from-teal-900/20 to-[#0f1520] border border-teal-500/30 rounded-xl">
+            <div className="text-3xl mb-3">🏆</div>
+            <h3 className="text-lg font-semibold mb-2">Earn Rewards</h3>
+            <p className="text-sm text-slate-400">
+              Receive PSY tokens based on accuracy
+            </p>
           </div>
         </motion.div>
       </div>
