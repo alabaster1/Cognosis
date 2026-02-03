@@ -52,7 +52,7 @@ export default function OnboardingPage() {
           <div className="p-6 bg-gradient-to-br from-purple-900/20 to-[#0f1520] border border-purple-500/30 rounded-xl">
             <h3 className="text-lg font-semibold mb-2">Remote Viewing</h3>
             <p className="text-sm text-slate-400">
-              Test your ability to perceive distant locations
+              Test your ability to perceive distant targets
             </p>
           </div>
 
