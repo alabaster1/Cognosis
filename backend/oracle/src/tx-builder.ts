@@ -8,7 +8,7 @@
  * - Updates vault datum
  */
 
-import { Data, Constr } from 'lucid-cardano';
+import { Data, Constr, fromText, Lucid, UTxO, Assets } from 'lucid-cardano';
 import { CardanoClient, ExperimentUTxO } from './cardano-client.js';
 import { OracleConfig } from './config.js';
 import { readFileSync } from 'fs';
@@ -17,31 +17,41 @@ import { join } from 'path';
 export class RevealTransactionBuilder {
   private cardano: CardanoClient;
   private config: OracleConfig;
-  private experimentValidator: string;
-  private vaultValidator: string;
+  private experimentValidator: any;
+  private vaultValidator: any;
+  private experimentScriptCbor: string;
+  private vaultScriptCbor: string;
 
   constructor(cardano: CardanoClient, config: OracleConfig) {
     this.cardano = cardano;
     this.config = config;
 
-    // Load validator scripts
+    // Load validator scripts (PlutusV3)
     const validatorsPath = join(process.env.HOME!, 'cardano-preprod/validators');
     
     try {
-      this.experimentValidator = readFileSync(
-        join(validatorsPath, 'experiment-validator-wrapped.json'),
+      const experimentWrapperContent = readFileSync(
+        join(validatorsPath, 'experiment-validator-v3-wrapped.json'),
         'utf-8'
       );
+      this.experimentValidator = JSON.parse(experimentWrapperContent);
+      this.experimentScriptCbor = this.experimentValidator.cborHex;
+      console.log('   ✅ Loaded experiment validator (PlutusV3)');
     } catch (err) {
+      console.error('   ❌ Failed to load experiment validator:', err);
       throw new Error('Failed to load experiment validator');
     }
 
     try {
-      this.vaultValidator = readFileSync(
-        join(validatorsPath, 'vault-validator-wrapped.json'),
+      const vaultWrapperContent = readFileSync(
+        join(validatorsPath, 'vault-validator-v3-wrapped.json'),
         'utf-8'
       );
+      this.vaultValidator = JSON.parse(vaultWrapperContent);
+      this.vaultScriptCbor = this.vaultValidator.cborHex;
+      console.log('   ✅ Loaded vault validator (PlutusV3)');
     } catch (err) {
+      console.error('   ❌ Failed to load vault validator:', err);
       throw new Error('Failed to load vault validator');
     }
   }
@@ -55,64 +65,179 @@ export class RevealTransactionBuilder {
   ): Promise<string> {
     const lucid = this.cardano.getLucid();
 
+    console.log(`\n🔨 Building reveal transaction...`);
+    console.log(`   Experiment: ${experiment.utxo.txHash}#${experiment.utxo.outputIndex}`);
+    console.log(`   User PKH: ${experiment.datum.userPkh}`);
+    console.log(`   Accuracy: ${accuracyScore}%`);
+
     // Get vault UTxO
     const vaultUTxO = await this.cardano.getVaultUTxO();
     if (!vaultUTxO) {
       throw new Error('Vault UTxO not found');
     }
 
+    console.log(`   Vault: ${vaultUTxO.txHash}#${vaultUTxO.outputIndex}`);
+
+    // Parse vault datum
+    const vaultDatum = this.parseVaultDatum(vaultUTxO);
+    console.log(`   Vault PSY balance: ${vaultDatum.psyBalance}`);
+    console.log(`   Claims count: ${vaultDatum.claimsCount}`);
+
     // Calculate PSY reward using exponential curve
     const reward = this.calculateReward(accuracyScore);
-    console.log(`   💰 Calculated reward: ${reward} PSY for ${accuracyScore}% accuracy`);
+    console.log(`   💰 Calculated reward: ${reward} PSY`);
+
+    // Get PSY asset ID from vault UTxO
+    const psyAsset = this.getPsyAssetFromVault(vaultUTxO);
+    if (!psyAsset) {
+      throw new Error('PSY token not found in vault');
+    }
+    console.log(`   PSY Asset: ${psyAsset}`);
 
     // Build experiment redeemer: Reveal { accuracy_score, ai_model }
     const experimentRedeemer = Data.to(
       new Constr(0, [ // Reveal variant
         BigInt(accuracyScore),
-        Data.fromJson({ bytes: Buffer.from('gpt-4').toString('hex') })
+        fromText('gpt-4')
       ])
     );
 
     // Build vault redeemer: ClaimReward { participant_pkh, accuracy_score }
     const vaultRedeemer = Data.to(
       new Constr(0, [ // ClaimReward variant
-        Data.fromJson({ bytes: experiment.datum.userPkh }),
+        experiment.datum.userPkh,
         BigInt(accuracyScore)
       ])
     );
 
-    // TODO: Implement full transaction building with Lucid
-    // This is a complex transaction that requires:
-    // 1. Spending both experiment and vault UTxOs
-    // 2. Providing redeemers for both
-    // 3. Calculating exact PSY token amounts
-    // 4. Building outputs (user, lottery, continuing vault)
-    // 5. Balancing and signing
-
-    // For now, throw error with details
-    throw new Error(
-      `Transaction building not yet implemented. Would distribute ${reward} PSY to user ${experiment.datum.userPkh}`
+    // Build updated vault datum
+    const newVaultDatum = Data.to(
+      new Constr(0, [
+        vaultDatum.psyPolicyId,
+        BigInt(vaultDatum.psyBalance - reward),
+        vaultDatum.oraclePkh,
+        vaultDatum.experimentScriptHash,
+        vaultDatum.lotteryScriptHash,
+        BigInt(100), // base_reward
+        BigInt(400), // max_reward
+        BigInt(25), // steepness (2.5 * 10)
+        BigInt(vaultDatum.claimsCount + 1) // increment claims
+      ])
     );
 
-    // TODO: Replace with actual Lucid transaction:
-    /*
-    const tx = await lucid
-      .newTx()
-      .collectFrom([experiment.utxo], experimentRedeemer)
-      .attachSpendingValidator(JSON.parse(this.experimentValidator))
-      .collectFrom([vaultUTxO], vaultRedeemer)
-      .attachSpendingValidator(JSON.parse(this.vaultValidator))
-      .payToAddress(userAddress, { lovelace: minAda, [psyAsset]: BigInt(reward) })
-      .payToAddress(this.config.lotteryAddress, { lovelace: 10000n }) // 0.01 ADA
-      .payToContract(this.config.vaultAddress, updatedVaultDatum, remainingAssets)
-      .addSigner(this.config.oracleAddress)
-      .complete();
+    // Calculate remaining vault assets
+    const remainingPSY = BigInt(vaultDatum.psyBalance - reward);
+    const vaultAssets: Assets = {
+      lovelace: vaultUTxO.assets.lovelace,
+      [psyAsset]: remainingPSY
+    };
 
-    const signedTx = await tx.sign().complete();
-    const txHash = await signedTx.submit();
+    // User address (derive from PKH)
+    const userAddress = await this.deriveAddressFromPkh(experiment.datum.userPkh);
+    console.log(`   User address: ${userAddress}`);
+
+    // Build and submit transaction
+    try {
+      const tx = await lucid
+        .newTx()
+        .collectFrom([experiment.utxo], experimentRedeemer)
+        .attachSpendingValidator({
+          type: 'PlutusV2',
+          script: this.experimentScriptCbor
+        })
+        .collectFrom([vaultUTxO], vaultRedeemer)
+        .attachSpendingValidator({
+          type: 'PlutusV2',
+          script: this.vaultScriptCbor
+        })
+        .payToAddress(userAddress, { 
+          lovelace: 2000000n, // 2 ADA min
+          [psyAsset]: BigInt(reward) 
+        })
+        .payToAddress(this.config.lotteryAddress, { 
+          lovelace: 10000000n // 10 ADA lottery contribution
+        })
+        .payToContract(
+          this.config.vaultAddress,
+          { inline: newVaultDatum },
+          vaultAssets
+        )
+        .addSigner(this.config.oracleAddress)
+        .complete();
+
+      console.log('   ✅ Transaction built successfully');
+      console.log('   📝 Signing transaction...');
+
+      const signedTx = await tx.sign().complete();
+      
+      console.log('   📡 Submitting to blockchain...');
+      const txHash = await signedTx.submit();
+      
+      console.log(`   ✅ Transaction submitted: ${txHash}`);
+      console.log(`   🔗 https://preprod.cardanoscan.io/transaction/${txHash}`);
+      
+      return txHash;
+
+    } catch (error: any) {
+      console.error('   ❌ Transaction building/submission failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Parse vault datum from UTxO
+   */
+  private parseVaultDatum(utxo: UTxO): any {
+    if (!utxo.datum) {
+      throw new Error('Vault UTxO has no datum');
+    }
+
+    const datum = Data.from(utxo.datum);
     
-    return txHash;
-    */
+    // Vault datum structure (Constr 0):
+    // [ psy_policy_id, psy_balance, oracle_pkh, experiment_script_hash, 
+    //   lottery_script_hash, base_reward, max_reward, steepness, claims_count ]
+    
+    return {
+      psyPolicyId: (datum as any).fields[0],
+      psyBalance: Number((datum as any).fields[1]),
+      oraclePkh: (datum as any).fields[2],
+      experimentScriptHash: (datum as any).fields[3],
+      lotteryScriptHash: (datum as any).fields[4],
+      baseReward: Number((datum as any).fields[5]),
+      maxReward: Number((datum as any).fields[6]),
+      steepness: Number((datum as any).fields[7]),
+      claimsCount: Number((datum as any).fields[8])
+    };
+  }
+
+  /**
+   * Get PSY asset ID from vault UTxO
+   */
+  private getPsyAssetFromVault(utxo: UTxO): string | null {
+    for (const asset in utxo.assets) {
+      if (asset !== 'lovelace' && utxo.assets[asset] > 1000000n) {
+        return asset;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Derive user address from public key hash
+   */
+  private async deriveAddressFromPkh(pkh: string): Promise<string> {
+    const lucid = this.cardano.getLucid();
+    
+    // For preprod testnet, construct payment address from pkh
+    // Format: addr_test1 + payment credential (pkh)
+    const paymentCredential = {
+      type: 'Key' as const,
+      hash: pkh
+    };
+
+    const address = lucid.utils.credentialToAddress(paymentCredential);
+    return address;
   }
 
   /**

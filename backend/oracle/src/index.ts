@@ -7,7 +7,7 @@
 import { config } from './config.js';
 import { CardanoClient } from './cardano-client.js';
 import { AIScorer } from './ai-scorer.js';
-import { RevealTransactionBuilder } from './tx-builder.js';
+import { RevealTransactionBuilderCLI } from './tx-builder-cli.js';
 
 async function main() {
   console.log('🔮 Cognosis Oracle Starting...');
@@ -19,7 +19,7 @@ async function main() {
   // Initialize services
   const cardano = new CardanoClient(config);
   const aiScorer = new AIScorer(config.openaiApiKey);
-  const txBuilder = new RevealTransactionBuilder(cardano, config);
+  const txBuilder = new RevealTransactionBuilderCLI(config);
 
   await cardano.initialize();
   console.log('✅ Cardano client initialized');

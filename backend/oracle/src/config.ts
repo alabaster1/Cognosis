@@ -28,7 +28,13 @@ let oracleSigningKey = '';
 try {
   const skeyFile = readFileSync(ORACLE_SKEY_PATH, 'utf-8');
   const skeyJson = JSON.parse(skeyFile);
-  oracleSigningKey = skeyJson.cborHex;
+  // Extract private key from CBOR hex (strip CBOR wrapper "5820" prefix)
+  const cborHex = skeyJson.cborHex;
+  if (cborHex.startsWith('5820')) {
+    oracleSigningKey = cborHex.slice(4); // Remove "5820" prefix
+  } else {
+    oracleSigningKey = cborHex;
+  }
 } catch (err) {
   console.error(`Failed to load Oracle signing key from ${ORACLE_SKEY_PATH}`);
   throw err;
