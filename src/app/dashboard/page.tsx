@@ -177,7 +177,7 @@ export default function DashboardPage() {
       if (wallet?.type === 'lace') {
         console.log('[Dashboard] Submitting via Lace wallet...');
 
-        // Prepare transaction data for Midnight Network
+        // Prepare transaction data for Cardano blockchain
         const transactionData = {
           type: 'score_commitment',
           commitmentId: (currentResults as any).experimentId,
@@ -187,7 +187,7 @@ export default function DashboardPage() {
         };
 
         // Submit directly via Lace wallet
-        const txResult = await walletService.submitMidnightTransaction(transactionData);
+        const txResult = await walletService.submitCardanoTransaction(transactionData);
 
         if (!txResult.success) {
           throw new Error(txResult.error || 'Transaction submission failed');

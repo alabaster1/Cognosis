@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Header from '@/components/layout/Header';
-import { useWalletStore } from '@/store/walletStore';
+import { useWalletStore } from '@/store/useWalletStore';
 import { Zap, Focus, Loader2, Users, BarChart3 } from 'lucide-react';
 
 type Phase = 'intro' | 'focusing' | 'generating' | 'results';
@@ -23,7 +24,8 @@ const CONCEPT_PAIRS: ConceptPair[] = [
 ];
 
 export default function PKInfluencePage() {
-  const wallet = useWalletStore();
+  const router = useRouter();
+  const wallet = useWalletStore((state) => state.wallet);
   const [phase, setPhase] = useState<Phase>('intro');
   const [conceptPair, setConceptPair] = useState<ConceptPair>(CONCEPT_PAIRS[0]);
   const [focusTarget, setFocusTarget] = useState<'a' | 'b' | null>(null);
@@ -34,9 +36,16 @@ export default function PKInfluencePage() {
   const [participants, setParticipants] = useState(1);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const userId = (wallet as any).address || 'guest-user';
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
   const FOCUS_TIME = 30; // 30 seconds of focus
+
+  // Require wallet
+  useEffect(() => {
+    if (!wallet) {
+      router.push('/onboarding');
+      return;
+    }
+  }, [wallet, router]);
 
   useEffect(() => {
     // Random concept pair each session
@@ -63,6 +72,7 @@ export default function PKInfluencePage() {
   };
 
   const submitInfluence = async () => {
+    if (!wallet?.address) return;
     setPhase('generating');
     setIsLoading(true);
     setError('');
@@ -72,7 +82,7 @@ export default function PKInfluencePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId,
+          userId: wallet.address,
           conceptA: conceptPair.a,
           conceptB: conceptPair.b,
           focusTarget: focusTarget === 'a' ? conceptPair.a : conceptPair.b,

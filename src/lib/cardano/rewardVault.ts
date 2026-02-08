@@ -51,8 +51,13 @@ export interface RewardClaimResult {
 
 export let REWARD_VAULT_ADDRESS = "";
 export let REWARD_VAULT_SCRIPT = "";
-export let PSY_POLICY_ID = "";
-export let PSY_ASSET_NAME = "";
+
+// PSY Token Configuration (Mainnet)
+// Updated 2026-02-02 for PlutusV3 migration (preprod policy)
+export let PSY_POLICY_ID = "52f4f6afcef8453af8189f4eeec850df31cb1c27a9bf2d8e4594216e";
+export let PSY_ASSET_NAME = "507379"; // "Psy" in hex
+
+// For preprod testing, these will be different (set via initializeRewardVault)
 
 /**
  * Initialize reward vault contract state

@@ -2,12 +2,12 @@
 
 /**
  * WalletInfo Component - Display wallet balance and NFTs
- * Shows tDust balance and experiment NFTs from Midnight Network
+ * Shows tDust balance and experiment NFTs from Cardano blockchain
  */
 
 import { useState, useEffect } from 'react';
 import { Wallet, Coins, Image, ExternalLink, RefreshCw } from 'lucide-react';
-import midnightService, { type MidnightBalance } from '@/services/midnightService';
+import midnightService, { type CardanoBalance } from '@/services/midnightService';
 import { motion } from 'framer-motion';
 
 interface WalletInfoProps {
@@ -16,7 +16,7 @@ interface WalletInfoProps {
 }
 
 export default function WalletInfo({ address, compact = false }: WalletInfoProps) {
-  const [balance, setBalance] = useState<MidnightBalance | null>(null);
+  const [balance, setBalance] = useState<CardanoBalance | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');

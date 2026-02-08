@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from '@/components/layout/Header';
-import { useWalletStore } from '@/store/walletStore';
+import { useWalletStore } from '@/store/useWalletStore';
 import { Map, Compass, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 
 type Phase = 'intro' | 'selecting' | 'committing' | 'generating' | 'results';
@@ -23,7 +24,8 @@ const SECTORS: Sector[] = [
 ];
 
 export default function PrecogExplorerPage() {
-  const wallet = useWalletStore();
+  const router = useRouter();
+  const wallet = useWalletStore((state) => state.wallet);
   const [phase, setPhase] = useState<Phase>('intro');
   const [selectedSector, setSelectedSector] = useState<number | null>(null);
   const [targetSector, setTargetSector] = useState<number | null>(null);
@@ -32,11 +34,18 @@ export default function PrecogExplorerPage() {
   const [error, setError] = useState('');
   const [score, setScore] = useState<any>(null);
 
-  const userId = (wallet as any).address || 'guest-user';
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+  // Require wallet
+  useEffect(() => {
+    if (!wallet) {
+      router.push('/onboarding');
+      return;
+    }
+  }, [wallet, router]);
+
   const commitChoice = async () => {
-    if (selectedSector === null) return;
+    if (selectedSector === null || !wallet?.address) return;
     setPhase('committing');
     setIsLoading(true);
     setError('');
@@ -47,7 +56,7 @@ export default function PrecogExplorerPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId,
+          userId: wallet.address,
           chosenSector: selectedSector,
           verified: !!(wallet as any).isVerified,
         }),
@@ -63,7 +72,7 @@ export default function PrecogExplorerPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId,
+          userId: wallet.address,
           commitmentId: data.commitmentId,
           chosenSector: selectedSector,
         }),

@@ -202,7 +202,7 @@ class WalletService {
     }
   }
 
-  async submitMidnightTransaction(transactionData: {
+  async submitCardanoTransaction(transactionData: {
     commitmentId: string;
     score: number;
     scoreData: string;

@@ -1,0 +1,160 @@
+{
+  "preamble": {
+    "title": "cognosis/on-chain-lottery",
+    "description": "Permissionless lottery with Cardano VRF for provably fair winner selection",
+    "version": "0.1.0",
+    "plutusVersion": "v3",
+    "compiler": {
+      "name": "Aiken",
+      "version": "v1.1.21+42babe5"
+    },
+    "license": "Apache-2.0"
+  },
+  "validators": [
+    {
+      "title": "lottery.lottery.spend",
+      "datum": {
+        "title": "datum",
+        "schema": {
+          "$ref": "#/definitions/lottery~1LotteryDatum"
+        }
+      },
+      "redeemer": {
+        "title": "redeemer",
+        "schema": {
+          "$ref": "#/definitions/lottery~1LotteryRedeemer"
+        }
+      },
+      "compiledCode": "59040701010029800aba2aba1aba0aab9faab9eaab9dab9a488888896600264653001300800198041804800cdc3a400530080024888966002600460106ea800e26466453001159800980098059baa0028cc004c03cc030dd50014c02cdd5003cdc4240009112cc004c01000a26644b3001300a301037540031325980099b89375a602a60246ea8018cdc09bad3015301237540046eb4c004c048dd500344c8c966002600c0031325980098039bad30013015375401313232598009806180b1baa0018992cc004c8cc004004dd61802980c9baa0112259800800c528456600264b30013375e603c60366ea8004012266e24dd69803980d9baa00f323322330020020012259800800c00e2646644b3001337229101000028acc004cdc7a441000028800c01901f44cc014014c09401101f1bae301e001375a603e002604200280f8c8c8cc004004dd59806980f1baa0042259800800c00e2646644b3001337229101000028acc004cdc7a441000028800c01902044cc014014c0980110201bae301f001375660400026044002810052f5bded8c02900045282032301d0018a51899801001180f000a030406d15980098051b8d375c603601314a31640591640586004660326004660326034602e6ea8c068c05cdd5000a5eb80cc065300103d87a80004bd70459015194c004c00400666e18dd6980d180d8040024dd61802980b9baa00b48896600266e2000920008a60103d87a800089980180080120301112cc00400a298103d87a80008acc004c0380062600866036603800497ae08cc00400e603a005337000029000a006405c80d0dd2a400116404c460306032603200316404864660020026eb0c008c050dd5004112cc0040062900044cdc02400466004004603200280b08c058c05cc05cc05c0062c80808c054c0580062c8078c03cdd5005180918079baa3012300f375460246026602660266026602660266026601e6ea801e2b300130080028acc004c004dd6980918079baa00a8a518b201a8992cc004c8cc88cc008008004896600200314a115980099b8f375c602c00200714a31330020023017001404480a0dd6180a180a980a980a980a980a980a980a980a98089baa009375c60266028602860286028602860206ea80122b30013371290405d5b81800c56600266e240052080a0f6a7138a518b201c8b201c8b201c375a6024601e6ea802900d201a45900a4c02cdd5003cc03c00d22259800980200144c8c8cc8966002602e0070078b2028375a60280026eb8c050008c050004c03cdd5005456600260100051323259800980a80140162c8090dd6980980098079baa00a8acc004cdc3a40080051323259800980a80140162c8090dd6980980098079baa00a8b201a40348068601a601c0026e1d20003009375400716401c300800130033754011149a26cac8009",
+      "hash": "404a9f36de0c69034013c414b83be731257cfd8dce4a570449dd074b"
+    },
+    {
+      "title": "lottery.lottery.else",
+      "redeemer": {
+        "schema": {}
+      },
+      "compiledCode": "59040701010029800aba2aba1aba0aab9faab9eaab9dab9a488888896600264653001300800198041804800cdc3a400530080024888966002600460106ea800e26466453001159800980098059baa0028cc004c03cc030dd50014c02cdd5003cdc4240009112cc004c01000a26644b3001300a301037540031325980099b89375a602a60246ea8018cdc09bad3015301237540046eb4c004c048dd500344c8c966002600c0031325980098039bad30013015375401313232598009806180b1baa0018992cc004c8cc004004dd61802980c9baa0112259800800c528456600264b30013375e603c60366ea8004012266e24dd69803980d9baa00f323322330020020012259800800c00e2646644b3001337229101000028acc004cdc7a441000028800c01901f44cc014014c09401101f1bae301e001375a603e002604200280f8c8c8cc004004dd59806980f1baa0042259800800c00e2646644b3001337229101000028acc004cdc7a441000028800c01902044cc014014c0980110201bae301f001375660400026044002810052f5bded8c02900045282032301d0018a51899801001180f000a030406d15980098051b8d375c603601314a31640591640586004660326004660326034602e6ea8c068c05cdd5000a5eb80cc065300103d87a80004bd70459015194c004c00400666e18dd6980d180d8040024dd61802980b9baa00b48896600266e2000920008a60103d87a800089980180080120301112cc00400a298103d87a80008acc004c0380062600866036603800497ae08cc00400e603a005337000029000a006405c80d0dd2a400116404c460306032603200316404864660020026eb0c008c050dd5004112cc0040062900044cdc02400466004004603200280b08c058c05cc05cc05c0062c80808c054c0580062c8078c03cdd5005180918079baa3012300f375460246026602660266026602660266026601e6ea801e2b300130080028acc004c004dd6980918079baa00a8a518b201a8992cc004c8cc88cc008008004896600200314a115980099b8f375c602c00200714a31330020023017001404480a0dd6180a180a980a980a980a980a980a980a980a98089baa009375c60266028602860286028602860206ea80122b30013371290405d5b81800c56600266e240052080a0f6a7138a518b201c8b201c8b201c375a6024601e6ea802900d201a45900a4c02cdd5003cc03c00d22259800980200144c8c8cc8966002602e0070078b2028375a60280026eb8c050008c050004c03cdd5005456600260100051323259800980a80140162c8090dd6980980098079baa00a8acc004cdc3a40080051323259800980a80140162c8090dd6980980098079baa00a8b201a40348068601a601c0026e1d20003009375400716401c300800130033754011149a26cac8009",
+      "hash": "404a9f36de0c69034013c414b83be731257cfd8dce4a570449dd074b"
+    }
+  ],
+  "definitions": {
+    "ByteArray": {
+      "title": "ByteArray",
+      "dataType": "bytes"
+    },
+    "Int": {
+      "dataType": "integer"
+    },
+    "List<lottery/Participant>": {
+      "dataType": "list",
+      "items": {
+        "$ref": "#/definitions/lottery~1Participant"
+      }
+    },
+    "lottery/LotteryDatum": {
+      "title": "LotteryDatum",
+      "description": "Lottery pool datum",
+      "anyOf": [
+        {
+          "title": "LotteryDatum",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "drawing_frequency_ms",
+              "$ref": "#/definitions/Int"
+            },
+            {
+              "title": "last_drawing_time",
+              "$ref": "#/definitions/Int"
+            },
+            {
+              "title": "accumulated_ada",
+              "$ref": "#/definitions/Int"
+            },
+            {
+              "title": "participants",
+              "$ref": "#/definitions/List<lottery~1Participant>"
+            },
+            {
+              "title": "alpha_weight",
+              "$ref": "#/definitions/Int"
+            },
+            {
+              "title": "admin_pkh",
+              "$ref": "#/definitions/ByteArray"
+            }
+          ]
+        }
+      ]
+    },
+    "lottery/LotteryRedeemer": {
+      "title": "LotteryRedeemer",
+      "description": "Lottery redeemer actions",
+      "anyOf": [
+        {
+          "title": "Draw",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "vrf_proof",
+              "$ref": "#/definitions/ByteArray"
+            },
+            {
+              "title": "random_seed",
+              "$ref": "#/definitions/Int"
+            }
+          ]
+        },
+        {
+          "title": "Accumulate",
+          "dataType": "constructor",
+          "index": 1,
+          "fields": [
+            {
+              "title": "entry_fee",
+              "$ref": "#/definitions/Int"
+            }
+          ]
+        },
+        {
+          "title": "UpdateParams",
+          "dataType": "constructor",
+          "index": 2,
+          "fields": [
+            {
+              "title": "new_frequency_ms",
+              "$ref": "#/definitions/Int"
+            }
+          ]
+        }
+      ]
+    },
+    "lottery/Participant": {
+      "title": "Participant",
+      "description": "Lottery participant with weighted tickets",
+      "anyOf": [
+        {
+          "title": "Participant",
+          "dataType": "constructor",
+          "index": 0,
+          "fields": [
+            {
+              "title": "pkh",
+              "$ref": "#/definitions/ByteArray"
+            },
+            {
+              "title": "psy_earned",
+              "$ref": "#/definitions/Int"
+            },
+            {
+              "title": "tickets",
+              "$ref": "#/definitions/Int"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

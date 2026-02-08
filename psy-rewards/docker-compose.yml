@@ -1,0 +1,48 @@
+version: "3.8"
+
+services:
+  ogmios:
+    image: cardanosolutions/ogmios:latest
+    ports:
+      - "1337:1337"
+    volumes:
+      - /home/albert/cardano-preprod/socket:/ipc
+      - /home/albert/cardano-preprod:/config
+    command:
+      - --node-socket
+      - /ipc/node.socket
+      - --node-config
+      - /config/config.json
+      - --host
+      - 0.0.0.0
+      - --port
+      - "1337"
+    restart: unless-stopped
+
+  kupo:
+    image: cardanosolutions/kupo:latest
+    ports:
+      - "1442:1442"
+    volumes:
+      - /home/albert/cardano-preprod/socket:/ipc
+      - /home/albert/cardano-preprod:/config
+      - kupo-db:/db
+    command:
+      - --node-socket
+      - /ipc/node.socket
+      - --node-config
+      - /config/config.json
+      - --since
+      - origin
+      - --match
+      - "*"
+      - --workdir
+      - /db
+      - --host
+      - 0.0.0.0
+      - --port
+      - "1442"
+    restart: unless-stopped
+
+volumes:
+  kupo-db:

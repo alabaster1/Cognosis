@@ -9,6 +9,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useWalletStore } from '@/store/useWalletStore';
 import walletService from '@/services/walletService';
 import { Brain, User, LogOut, ChevronDown, Eye, Heart, Zap, Cloud, Target, Clock, Wifi, History, Settings, Coins, Award, HelpCircle, UserCircle, FileText, Radio, Grid3X3, RotateCcw, Palette, Spade, Sparkles, Gamepad2, Globe, Dices } from 'lucide-react';
+import WalletConnectModal from '@/components/wallet/WalletConnectModal';
 
 const experimentCategories = [
   {
@@ -90,6 +91,7 @@ export default function Header() {
   const { wallet, logout } = useWalletStore();
   const [showExperimentsDropdown, setShowExperimentsDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const experimentsRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
@@ -306,15 +308,25 @@ export default function Header() {
               </button>
             </div>
           ) : (
-            <Link
-              href="/onboarding"
+            <button
+              onClick={() => setShowWalletModal(true)}
               className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-[#060a0f] font-semibold rounded-lg transition-colors"
             >
               Get Started
-            </Link>
+            </button>
           )}
         </div>
       </nav>
+
+      {/* Wallet Connect Modal */}
+      <WalletConnectModal
+        isOpen={showWalletModal}
+        onClose={() => setShowWalletModal(false)}
+        onSuccess={() => {
+          setShowWalletModal(false);
+          // Could navigate to experiments or dashboard here
+        }}
+      />
     </header>
   );
 }

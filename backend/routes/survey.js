@@ -76,7 +76,7 @@ router.post('/baseline', authMiddleware, async (req, res) => {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 90);
 
-    // Create commitment hash for Midnight
+    // Create commitment hash for Cardano
     const profileData = {
       userId,
       ageRange,
