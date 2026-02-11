@@ -32,9 +32,14 @@ class WalletService {
 
     if (!cardano) return wallets;
 
-    if (cardano.nami) wallets.push('nami');
     if (cardano.eternl) wallets.push('eternl');
+    if (cardano.nufi) wallets.push('nufi');
     if (cardano.lace) wallets.push('lace');
+    if (cardano.vespr) wallets.push('vespr');
+    if (cardano.typhon) wallets.push('typhon');
+    if (cardano.okxwallet) wallets.push('okxwallet');
+    if (cardano.begin) wallets.push('begin');
+    if (cardano.nami) wallets.push('nami');
     if (cardano.flint) wallets.push('flint');
     if (cardano.yoroi) wallets.push('yoroi');
 
@@ -55,14 +60,14 @@ class WalletService {
       }
 
       // Enable wallet (opens popup for user approval)
-      this.walletApi = await provider.enable();
+      this.walletApi = await provider.enable() as CIP30WalletApi;
 
       // Get address
-      const addresses = await this.walletApi.getUsedAddresses();
+      const addresses = await this.walletApi!.getUsedAddresses();
       let address = addresses[0];
 
       if (!address) {
-        const unusedAddresses = await this.walletApi.getUnusedAddresses();
+        const unusedAddresses = await this.walletApi!.getUnusedAddresses();
         address = unusedAddresses[0];
       }
 
@@ -184,7 +189,7 @@ class WalletService {
     const messageHex = Array.from(encoder.encode(message))
       .map((b: number) => b.toString(16).padStart(2, '0'))
       .join('');
-    return await this.walletApi.signData(this.walletAddress, messageHex);
+    return await this.walletApi.signData(this.walletAddress!, messageHex);
   }
 
   async getBalance(): Promise<{ lovelace: string; formatted: string }> {

@@ -12,6 +12,7 @@ import {
   type LucidEvolution,
   getAddressDetails,
 } from "@lucid-evolution/lucid";
+import { slotToUnixTime } from "@lucid-evolution/utils";
 import { blake2b } from "@noble/hashes/blake2b";
 
 // ============================================================================
@@ -36,6 +37,9 @@ export const GAME_TYPE_INDEX = {
   RetroRoulette: 10,
   SynchronicityBingo: 11,
   GlobalConsciousness: 12,
+  Telepathy: 13,
+  PrecogExplorer: 14,
+  PKInfluence: 15,
 } as const;
 
 export type GameType = keyof typeof GAME_TYPE_INDEX;
@@ -70,6 +74,9 @@ export const GAME_BASELINES: Record<GameType, number> = {
   RetroRoulette: 50,
   SynchronicityBingo: 0, // Correlation
   GlobalConsciousness: 25,
+  Telepathy: 25,
+  PrecogExplorer: 25,
+  PKInfluence: 17,
 };
 
 /**
@@ -561,6 +568,7 @@ export async function claimHostTimeout(
   const stakeLovelace = datumFields[8] as bigint;
   const researchPct = datumFields[9] as bigint;
   const currentParticipants = datumFields[11] as bigint;
+  const revealDeadlineSlot = Number(datumFields[7] as bigint);
 
   const totalPool = stakeLovelace * (currentParticipants + 1n);
   const researchAmount = totalPool * researchPct / 100n;
@@ -569,6 +577,9 @@ export async function claimHostTimeout(
   const redeemer = buildClaimHostTimeoutRedeemer();
 
   const walletAddress = await lucid.wallet().address();
+
+  // validFrom must be AFTER reveal deadline for is_after_deadline check
+  const validFromPosix = slotToUnixTime("Preprod", revealDeadlineSlot + 2);
 
   const tx = await lucid
     .newTx()
@@ -584,7 +595,8 @@ export async function claimHostTimeout(
       type: "PlutusV3",
       script: PSI_VALIDATOR_SCRIPT,
     })
-    .validFrom(Date.now()) // Must be after reveal deadline
+    .validFrom(validFromPosix)
+    .validTo(Date.now() + 600_000)
     .complete();
 
   const signed = await tx.sign.withWallet().complete();
@@ -614,10 +626,14 @@ export async function claimParticipantTimeout(
 
   const hostPkh = datumFields[1] as string;
   const stakeLovelace = datumFields[8] as bigint;
+  const joinDeadlineSlot = Number(datumFields[6] as bigint);
 
   const redeemer = buildClaimParticipantTimeoutRedeemer();
 
   const walletAddress = await lucid.wallet().address();
+
+  // validFrom must be AFTER join deadline for is_after_deadline check
+  const validFromPosix = slotToUnixTime("Preprod", joinDeadlineSlot + 2);
 
   const tx = await lucid
     .newTx()
@@ -628,7 +644,8 @@ export async function claimParticipantTimeout(
       type: "PlutusV3",
       script: PSI_VALIDATOR_SCRIPT,
     })
-    .validFrom(Date.now()) // Must be after join deadline
+    .validFrom(validFromPosix)
+    .validTo(Date.now() + 600_000)
     .complete();
 
   const signed = await tx.sign.withWallet().complete();

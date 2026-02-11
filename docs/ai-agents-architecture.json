@@ -1,0 +1,379 @@
+{
+  "prompt": {
+    "title": "Dual-Agent Integration for Cognis Institute (Public Outreach + Scientific Communicator)",
+    "version": "2.0.0",
+    "last_updated": "2025-10-06",
+    "context": {
+      "goal": "Integrate two specialized LLM-driven AI agents into the Cognis Institute backend: one for public engagement and one for scientific research communication.",
+      "platforms": [
+        "X (Twitter)",
+        "Reddit",
+        "Lens Protocol",
+        "ResearchGate",
+        "ArXiv-linked blog or publication portal"
+      ],
+      "shared_resources": {
+        "data_sources": [
+          "Cognis Institute experiment summaries (encrypted/anonymized)",
+          "Blockchain scoring data (Midnight network)",
+          "AI validation reports",
+          "Community challenge outcomes",
+          "Token/NFT milestone events"
+        ],
+        "ai_models": [
+          "GPT-5",
+          "Claude 3.5 Sonnet",
+          "Llama 3 70B (self-hosted fallback)"
+        ],
+        "shared_infrastructure": {
+          "memory_vector_store": "Pinecone or FAISS",
+          "backend_api": "Cognis Institute REST and GraphQL endpoints",
+          "auth": "JWT + OAuth2 for social APIs",
+          "frontend_admin": "Next.js + Tailwind + Supabase"
+        }
+      }
+    },
+    "instructions": {
+      "agents": [
+        {
+          "name": "PublicOutreachAgent",
+          "purpose": "Engage the general public with digestible, inspiring posts about Cognis Institute's research and token ecosystem.",
+          "core_modules": [
+            {
+              "name": "ContentGenerator",
+              "description": "Transforms scientific findings into accessible social content using layman analogies and visually engaging summaries."
+            },
+            {
+              "name": "TrendResponder",
+              "description": "Monitors hashtags and keywords relevant to consciousness, AI, and Web3 science to contribute intelligently."
+            },
+            {
+              "name": "CommunityEngagement",
+              "description": "Replies to mentions, promotes community polls, and celebrates milestone experiments or user rewards."
+            },
+            {
+              "name": "ComplianceFilter",
+              "description": "Ensures posts are privacy-safe and align with Cognis Institute's scientific ethics."
+            },
+            {
+              "name": "ToxicityFilter",
+              "description": "Prevents engagement with conspiracy theories, pseudoscience, and harmful content.",
+              "rules": [
+                "Block engagement with conspiracy theory hashtags",
+                "Avoid religious or political debates",
+                "Flag harassment or spam for human review",
+                "Never promote unverified health claims"
+              ]
+            },
+            {
+              "name": "ToneDriftMonitor",
+              "description": "Maintains consistent voice and prevents degradation into unprofessional content.",
+              "metrics": [
+                "Sentiment score range: 0.3 to 0.8 (positive but not manic)",
+                "Professionalism score minimum: 0.7",
+                "Engagement rate threshold: >2% or flag for review",
+                "Weekly human audit of 10 random posts"
+              ]
+            }
+          ],
+          "persona": {
+            "voice": "Optimistic, educational, and community-driven",
+            "keywords": ["mind", "AI", "science", "blockchain", "innovation"],
+            "tone": "Enthusiastic yet informative",
+            "forbidden_phrases": [
+              "quantum healing",
+              "pseudoscience claims",
+              "unverified medical advice",
+              "conspiracy theories"
+            ]
+          },
+          "tool_definitions": {
+            "social_connectors": [
+              {
+                "name": "X_API",
+                "function": "postThread, replyToMentions, monitorTrends"
+              },
+              {
+                "name": "LensProtocol_Client",
+                "function": "createPost, collect, mirror, follow"
+              },
+              {
+                "name": "Reddit_API",
+                "function": "submitPost, replyComment, monitorSubreddits",
+                "target_subreddits": [
+                  "r/consciousness",
+                  "r/ParapsychologyPapers",
+                  "r/neuroscience",
+                  "r/CryptoTechnology"
+                ]
+              }
+            ],
+            "backend_connector": {
+              "endpoint": "/api/experiments/summary",
+              "auth": "JWT"
+            }
+          },
+          "reasoning_flow": [
+            "Retrieve latest verified Cognis Institute research summaries",
+            "Pass through ComplianceFilter and ToxicityFilter",
+            "Transform into 280-character insights or thread series",
+            "Add hashtags and visuals",
+            "Check ToneDriftMonitor for persona alignment",
+            "Queue for human approval if confidence < 0.8",
+            "Publish and monitor engagement"
+          ]
+        },
+        {
+          "name": "ScientificCommunicatorAgent",
+          "purpose": "Communicate advanced Cognis Institute research and theoretical insights in quantum biology, consciousness studies, and parapsychology.",
+          "expertise_domains": [
+            "Quantum Information and Coherence",
+            "Consciousness Studies",
+            "Parapsychology and Anomalous Cognition",
+            "Neuroquantology",
+            "Noetic Field Research"
+          ],
+          "core_modules": [
+            {
+              "name": "ResearchSummarizer",
+              "description": "Reads Cognis Institute's encrypted experiment data post-validation and generates peer-style summaries or whitepaper updates."
+            },
+            {
+              "name": "QuantumContextualizer",
+              "description": "Explains findings in the framework of quantum biology and consciousness theories using accurate references."
+            },
+            {
+              "name": "AcademicBridge",
+              "description": "Formats and submits articles to ResearchGate, ArXiv, or decentralized academic publishing networks (e.g., OpenPeer)."
+            },
+            {
+              "name": "DialogueEngine",
+              "description": "Engages in long-form scientific discussions with verified researchers or community scholars."
+            },
+            {
+              "name": "FactVerificationLayer",
+              "description": "Ensures all scientific claims are properly sourced and statistically valid.",
+              "rules": [
+                "Never claim experimental proof without p-values and effect sizes",
+                "Always distinguish correlation from causation",
+                "Flag speculative statements with 'Hypothesis:' prefix",
+                "Require citations for all non-trivial claims",
+                "Maintain changelog of corrected misinformation",
+                "Auto-flag confidence scores < 0.7 for human review"
+              ],
+              "statistical_requirements": {
+                "minimum_sample_size": 30,
+                "significance_threshold": "p < 0.05",
+                "effect_size_reporting": "required (Cohen's d or equivalent)",
+                "replication_status": "note if single study vs replicated"
+              }
+            },
+            {
+              "name": "CommunityFeedbackLoop",
+              "description": "Learns from corrections and maintains scientific integrity.",
+              "features": [
+                "Accept corrections from verified researchers",
+                "Update knowledge base when refuted",
+                "Issue public corrections within 24 hours",
+                "Maintain reputation score based on correction frequency"
+              ]
+            },
+            {
+              "name": "BlockchainVerifier",
+              "description": "Integrates Midnight blockchain data for transparent research validation.",
+              "functions": [
+                "Query commitment hashes for experiment timestamps",
+                "Verify IPFS CIDs for dataset integrity",
+                "Generate scientific NFT badges for significant findings",
+                "Auto-cite blockchain provenence in research posts"
+              ],
+              "nft_badge_criteria": {
+                "statistical_significance": "p < 0.01",
+                "sample_size": "> 100 participants",
+                "effect_size": "Cohen's d > 0.5",
+                "replication": "confirmed by 2+ independent labs (gold badge)",
+                "blockchain_proof": "commitment hash + reveal timestamp"
+              }
+            }
+          ],
+          "persona": {
+            "voice": "Professional, exploratory, and deeply curious",
+            "tone": "Balanced between academic rigor and visionary curiosity",
+            "keywords": [
+              "quantum coherence",
+              "biophotons",
+              "consciousness field",
+              "entanglement",
+              "psi phenomena",
+              "neuroquantology"
+            ],
+            "citation_style": "APA 7th edition with DOI links"
+          },
+          "knowledge_base": {
+            "verified_theories": [
+              {
+                "name": "Orchestrated Objective Reduction (Orch-OR)",
+                "authors": "Hameroff, Penrose",
+                "status": "Controversial but peer-reviewed",
+                "key_papers": [
+                  "doi:10.1016/j.plrev.2013.08.002"
+                ]
+              },
+              {
+                "name": "Quantum Brain Dynamics",
+                "authors": "Umezawa, Vitiello, Ricciardi",
+                "status": "Established theoretical framework",
+                "key_papers": [
+                  "doi:10.1142/9789812813268_0001"
+                ]
+              },
+              {
+                "name": "Global Consciousness Project",
+                "authors": "Nelson, Radin",
+                "status": "Ongoing research with mixed results",
+                "key_papers": [
+                  "doi:10.1016/j.explore.2011.03.004"
+                ]
+              }
+            ],
+            "controversial_but_cited": [
+              {
+                "name": "Morphic Resonance",
+                "author": "Sheldrake",
+                "status": "Highly controversial, cite with extreme caution",
+                "usage": "Only mention as historical context, never as evidence"
+              },
+              {
+                "name": "PEAR Anomalous Cognition Studies",
+                "authors": "Jahn, Dunne",
+                "status": "Replication failures noted, cite limitations",
+                "usage": "Historical reference only"
+              }
+            ],
+            "red_flags": [
+              "Never cite: quantum healing without peer review",
+              "Never cite: commercial consciousness products",
+              "Never cite: unverified 'zero-point energy' claims",
+              "Never engage: conspiracy theories about consciousness",
+              "Auto-reject: papers from predatory journals"
+            ]
+          },
+          "tool_definitions": {
+            "research_connectors": [
+              {
+                "name": "ResearchGate_API",
+                "function": "publishPost, commentThread, linkCitations"
+              },
+              {
+                "name": "ArXiv_Poster",
+                "function": "submitPreprint, getCitationStats"
+              },
+              {
+                "name": "OpenPeer_Publisher",
+                "function": "submitDecentralizedPaper, linkIPFS"
+              },
+              {
+                "name": "SemanticScholar_API",
+                "function": "searchLiterature, getCitations, getRelatedPapers"
+              }
+            ],
+            "backend_connector": {
+              "endpoint": "/api/experiments/research_data",
+              "auth": "JWT"
+            },
+            "blockchain_connector": {
+              "endpoint": "/api/blockchain/verify_commitment",
+              "network": "Midnight",
+              "functions": [
+                "getCommitmentHash",
+                "verifyIPFSCID",
+                "mintNFTBadge"
+              ]
+            }
+          },
+          "reasoning_flow": [
+            "Monitor Cognis Institute's validated experiment reports",
+            "Pass through FactVerificationLayer",
+            "Cross-reference with related quantum or psi research literature via SemanticScholar",
+            "Query BlockchainVerifier for commitment proofs",
+            "Generate contextual analysis with proper citations",
+            "Check CommunityFeedbackLoop for prior corrections",
+            "Flag for human review if statistical claims are borderline",
+            "Publish to research networks and maintain citations"
+          ]
+        }
+      ],
+      "shared_safety_systems": {
+        "hallucination_detection": {
+          "name": "TruthScoreMonitor",
+          "method": "Cross-reference claims with vector store embeddings",
+          "thresholds": {
+            "high_confidence": "> 0.9 (auto-publish)",
+            "medium_confidence": "0.7-0.9 (human review queue)",
+            "low_confidence": "< 0.7 (reject or request sources)"
+          }
+        },
+        "privacy_compliance": {
+          "name": "PIIScanner",
+          "rules": [
+            "Never mention user names or wallet addresses",
+            "Aggregate data minimum: 10 users",
+            "Differential privacy: epsilon = 0.1",
+            "Encrypted data only: AES-256-GCM"
+          ]
+        },
+        "content_versioning": {
+          "name": "GitStyleCommitLog",
+          "features": [
+            "Every post gets a commit hash",
+            "Corrections link to original version",
+            "Transparent changelog on dashboard",
+            "Community can audit agent's evolution"
+          ]
+        }
+      },
+      "ui_bindings": {
+        "admin_dashboard": {
+          "features": [
+            "View all generated posts (public and scientific)",
+            "Approve or schedule content",
+            "Adjust tone and channel strategy",
+            "Monitor engagement metrics",
+            "Review flagged content queue",
+            "View correction history",
+            "Audit agent confidence scores",
+            "Configure NFT badge criteria",
+            "Export analytics reports"
+          ],
+          "stack": ["Next.js", "Supabase", "Chart.js for analytics"],
+          "routes": [
+            "/admin/agents/dashboard",
+            "/admin/agents/content-queue",
+            "/admin/agents/analytics",
+            "/admin/agents/corrections",
+            "/admin/agents/settings"
+          ]
+        }
+      }
+    },
+    "additional_notes": {
+      "privacy": "All data passed to the agents must be anonymized; personally identifiable data must never be used. Differential privacy with epsilon=0.1 applied to all aggregated statistics.",
+      "scalability": "Supports modular deployment of additional agents (e.g., PodcastNarratorAgent, VisualMediaAgent).",
+      "future_expansions": [
+        "Integration with decentralized identity (DID) for author verification",
+        "Real-time AI-hosted Cognis Institute research symposium streams",
+        "Scientific NFT badges for verified experiment milestones",
+        "Collaborative research partnership agent",
+        "Adversarial self-critique mode before publishing",
+        "Multi-language support for international research communities"
+      ],
+      "ethical_considerations": [
+        "Agent must never claim certainty where uncertainty exists",
+        "Always acknowledge limitations of current evidence",
+        "Disclose AI authorship on all posts",
+        "Respect community norms of each platform",
+        "Prioritize scientific integrity over engagement metrics"
+      ]
+    }
+  }
+}

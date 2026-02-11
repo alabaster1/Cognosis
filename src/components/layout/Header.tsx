@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { useWalletStore } from '@/store/useWalletStore';
 import walletService from '@/services/walletService';
-import { Brain, User, LogOut, ChevronDown, Eye, Heart, Zap, Cloud, Target, Clock, Wifi, History, Settings, Coins, Award, HelpCircle, UserCircle, FileText, Radio, Grid3X3, RotateCcw, Palette, Spade, Sparkles, Gamepad2, Globe, Dices } from 'lucide-react';
+import { Brain, User, LogOut, ChevronDown, Eye, Heart, Zap, Target, Clock, Wifi, History, Settings, Coins, Award, HelpCircle, UserCircle, FileText, Radio, Grid3X3, RotateCcw, Palette, Spade, Sparkles, Gamepad2, Globe, Dices, Wallet } from 'lucide-react';
 import WalletConnectModal from '@/components/wallet/WalletConnectModal';
 
 const experimentCategories = [
@@ -310,9 +310,10 @@ export default function Header() {
           ) : (
             <button
               onClick={() => setShowWalletModal(true)}
-              className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-[#060a0f] font-semibold rounded-lg transition-colors"
+              className="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-[#060a0f] font-semibold rounded-lg transition-colors flex items-center gap-2"
             >
-              Get Started
+              <Wallet className="w-4 h-4" />
+              Connect Wallet
             </button>
           )}
         </div>

@@ -99,25 +99,19 @@ export default function ExperimentsPage() {
                 {category.experiments.map((exp) => {
                   // Only "Remote Viewing" category experiments are active
                   const isActive = category.category === 'Remote Viewing';
-                  const Element = isActive ? Link : 'div';
-                  
-                  return (
-                    <Element
-                      key={exp.id}
-                      {...(isActive ? { href: `/experiments/${exp.id}` } : {})}
-                      className={`p-6 bg-[#0f1520]/80 border border-[#1a2535] rounded-xl transition-all group relative ${
-                        isActive 
-                          ? 'hover:border-cyan-500/40 cursor-pointer' 
-                          : 'opacity-60 cursor-not-allowed'
-                      }`}
-                    >
-                      {/* Coming Soon Badge for inactive experiments */}
+                  const cardClasses = `p-6 bg-[#0f1520]/80 border border-[#1a2535] rounded-xl transition-all group relative ${
+                    isActive
+                      ? 'hover:border-cyan-500/40 cursor-pointer'
+                      : 'opacity-60 cursor-not-allowed'
+                  }`;
+
+                  const cardContent = (
+                    <>
                       {!isActive && (
                         <span className="absolute top-4 right-4 px-3 py-1 bg-amber-500/20 border border-amber-500/40 rounded-full text-amber-400 text-xs font-bold">
                           COMING SOON
                         </span>
                       )}
-                      {/* New Badge for active new experiments */}
                       {isActive && exp.isNew && (
                         <span className="absolute top-4 right-4 px-2 py-1 bg-emerald-400 text-[#060a0f] text-xs font-bold rounded">
                           NEW
@@ -131,7 +125,17 @@ export default function ExperimentsPage() {
                       ) : (
                         <p className="text-amber-400 text-xs mt-4 font-semibold">Full Integration Coming Soon</p>
                       )}
-                    </Element>
+                    </>
+                  );
+
+                  return isActive ? (
+                    <Link key={exp.id} href={`/experiments/${exp.id}`} className={cardClasses}>
+                      {cardContent}
+                    </Link>
+                  ) : (
+                    <div key={exp.id} className={cardClasses}>
+                      {cardContent}
+                    </div>
                   );
                 })}
               </div>

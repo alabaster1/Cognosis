@@ -1,51 +1,51 @@
 {
-  "name": "Cognis Institute",
+  "name": "cognosis-institute",
   "version": "1.0.0",
-  "description": "A privacy-preserving mobile application for conducting psi experiments (remote viewing, premonition, telepathy) with blockchain integrity verification and AI-powered scoring.",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs",
-    "test": "tests"
-  },
+  "private": true,
+  "description": "A privacy-preserving platform for conducting psi experiments with blockchain integrity verification and AI-powered scoring.",
   "scripts": {
+    "dev": "next dev --turbopack -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "eslint",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:backend": "cd backend && npm test",
-    "lint:web": "cd web && npm run lint",
     "prepare": "husky"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "@lucid-evolution/lucid": "^0.4.29",
-    "@tailwindcss/postcss": "^4.1.18",
     "@tanstack/react-query": "^5.90.20",
-    "@types/node": "^25.2.0",
-    "@types/react": "^19.2.10",
-    "@types/react-dom": "^19.2.3",
-    "autoprefixer": "^10.4.24",
     "axios": "^1.13.4",
     "bip39": "^3.1.0",
     "crypto-js": "^4.2.0",
     "framer-motion": "^12.30.0",
     "lucide-react": "^0.563.0",
     "next": "^16.1.6",
-    "postcss": "^8.5.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "recharts": "^3.7.0",
     "socket.io-client": "^4.8.3",
-    "tailwindcss": "^4.1.18",
-    "typescript": "^5.9.3",
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4.1.18",
+    "@types/crypto-js": "^4.2.2",
+    "@types/node": "^25.2.0",
+    "@types/react": "^19.2.10",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.4.24",
+    "eslint": "^9",
+    "eslint-config-next": "^15.5.9",
     "husky": "^9.1.7",
-    "lint-staged": "^15.2.10"
+    "lint-staged": "^15.2.10",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3"
   },
   "lint-staged": {
-    "web/src/**/*.{ts,tsx}": [
-      "cd web && npx eslint --fix"
+    "src/**/*.{ts,tsx}": [
+      "npx eslint --fix"
     ],
     "backend/**/*.js": [
       "cd backend && npx eslint --fix --no-error-on-unmatched-pattern"

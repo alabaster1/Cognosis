@@ -112,7 +112,18 @@ model Response {
   // Timestamps
   submittedAt       DateTime @default(now())
 
-  // AI Scoring
+  // Engagement Scoring (shown to users, drives gamification)
+  engagementScore   Float?   // Fast, encouraging feedback score
+  engagementRank    String?  // "Exceptional!", "Great job!", etc.
+
+  // Scientific Scoring (for analysis, never shown to users)
+  scientificScore   Float?   // Rigorous, blinded analysis score
+  scientificMethod  String?  // "embedding_v2", "llm_blind_v1", etc.
+  scorerVersion     String?  // AI model version used for scoring
+  blindingVerified  Boolean  @default(false) // Was user context stripped?
+  scientificScoredAt DateTime? // When scientific scoring occurred
+
+  // Legacy AI Scoring (for backward compatibility)
   aiScore           Float?
   aiScoreBreakdown  Json?    // Semantic, visual, symbolic, emotional scores
   scoredAt          DateTime?
@@ -140,21 +151,39 @@ model Commitment {
   // Commitment details
   commitmentHash    String   @unique
   nonce             String
-  metadataHash      String
+  metadataHash      String   @default("")
+
+  // Status tracking
+  status            String   @default("pending")
+  walletAddress     String?
 
   // Blockchain transaction info
   commitTxId        String?
   commitBlockHeight Int?
   commitTimestamp   DateTime?
+  blockchainTxHash  String?  // On-chain commit tx hash
 
   // Reveal info
   revealed          Boolean  @default(false)
   revealTxId        String?
   revealBlockHeight Int?
   revealTimestamp   DateTime?
+  revealAt          DateTime?
+
+  // Scoring
+  score             Float?
+  scoredAt          DateTime?
 
   // IPFS
   cid               String?
+
+  // Cardano on-chain session fields
+  cardanoSessionId  String?  @unique
+  scriptAddress     String?
+  stakeLovelace     BigInt?
+  psyRewardAmount   BigInt?
+  rewardTxHash      String?
+  metadata          Json?    // Script address, validator hash, deadline slots, datum CBOR
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -162,6 +191,8 @@ model Commitment {
   @@index([commitmentHash])
   @@index([userId])
   @@index([revealed])
+  @@index([status])
+  @@index([cardanoSessionId])
 }
 
 // Analytics - track system metrics

@@ -62,16 +62,19 @@ export interface CardanoProvider {
 
 /** Window.cardano interface */
 export interface CardanoWindow {
-  nami?: CardanoProvider;
   eternl?: CardanoProvider;
+  nufi?: CardanoProvider;
   lace?: CardanoProvider;
+  vespr?: CardanoProvider;
+  typhon?: CardanoProvider;
+  okxwallet?: CardanoProvider;
+  begin?: CardanoProvider;
+  nami?: CardanoProvider;
   flint?: CardanoProvider;
   yoroi?: CardanoProvider;
   [key: string]: CardanoProvider | undefined;
 }
 
-declare global {
-  interface Window {
-    cardano?: CardanoWindow;
-  }
-}
+// Window.cardano is already declared by @lucid-evolution/core-types.
+// Use our CardanoWindow type via assertion when needed:
+//   const cardano = window.cardano as unknown as CardanoWindow;

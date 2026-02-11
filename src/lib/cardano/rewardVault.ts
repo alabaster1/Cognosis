@@ -234,7 +234,7 @@ export async function claimRewardWithSettlement(
 
   // Determine recipient address from PKH
   const recipientAddress = credentialToAddress(
-    lucid.config().network,
+    lucid.config().network ?? "Preprod",
     { type: "Key", hash: recipientPkh }
   );
   const winnerAddress = await lucid.wallet().address();
@@ -362,7 +362,7 @@ export async function claimRewardWithScore(
 
   // Determine recipient address
   const recipientAddress = credentialToAddress(
-    lucid.config().network,
+    lucid.config().network ?? "Preprod",
     { type: "Key", hash: recipientPkh }
   );
   const winnerAddress = await lucid.wallet().address();

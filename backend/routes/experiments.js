@@ -702,7 +702,7 @@ router.post('/ai-telepathy/generate-target', optionalAuthMiddleware, async (req,
     // Fetch drand beacon for verifiable randomness
     const beacon = await drandService.getLatestBeacon();
 
-    // Generate dynamic targets using Gemini + drand
+    // Generate dynamic targets using OpenAI + drand
     const targetData = await randomTargetService.generateTelepathyTargetsDynamic(rounds, beacon);
     const targetJSON = JSON.stringify(targetData);
 

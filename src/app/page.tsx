@@ -15,7 +15,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import Header from '@/components/layout/Header';
-import { Brain, Lock, Sparkles, Globe, ArrowRight, Eye, Zap, Users, Shield, Clock, TrendingUp, Target } from 'lucide-react';
+import { Brain, Lock, Sparkles, Globe, ArrowRight, Eye, Zap, Users, Shield, TrendingUp, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface RVStats {
@@ -32,7 +32,8 @@ function useRVStats() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        const res = await fetch('/api/stats/remote-viewing');
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+        const res = await fetch(`${apiUrl}/api/stats/remote-viewing`);
         const data = await res.json();
         if (data.success) {
           setStats({
@@ -153,7 +154,7 @@ export default function HomePage() {
 
           {/* Subheadline */}
           <p className="text-xl md:text-2xl text-slate-400 mb-8 max-w-3xl mx-auto">
-            Can you sense a target you've never seen? Live data. Blockchain-verified. AI-scored.
+            Can you sense a target you&apos;ve never seen? Live data. Blockchain-verified. AI-scored.
           </p>
 
           {/* Stats Ticker - LIVE DATA */}
@@ -395,7 +396,7 @@ export default function HomePage() {
               <div className="flex items-start gap-3 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
                 <Target className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-slate-300">
-                  <strong className="text-emerald-300">Provably Fair:</strong> Cardano's VRF ensures truly random, verifiable lottery draws. No rigging possible.
+                  <strong className="text-emerald-300">Provably Fair:</strong> Cardano&apos;s VRF ensures truly random, verifiable lottery draws. No rigging possible.
                 </div>
               </div>
             </div>
@@ -533,6 +534,11 @@ export default function HomePage() {
           <Link href="/about" className="hover:text-cyan-400">
             Learn More
           </Link>
+        </p>
+        <p className="mt-3 text-sm">
+          <Link href="/terms" className="hover:text-cyan-400">Terms of Service</Link>
+          {' '}&bull;{' '}
+          <Link href="/privacy" className="hover:text-cyan-400">Privacy Policy</Link>
         </p>
       </footer>
     </div>

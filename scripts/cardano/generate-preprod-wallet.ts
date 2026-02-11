@@ -29,10 +29,10 @@ async function generateWallet() {
   );
 
   // Select wallet from seed
-  lucid.selectWalletFromSeed(seedPhrase);
+  lucid.selectWallet.fromSeed(seedPhrase);
 
   // Get address
-  const address = await lucid.wallet.address();
+  const address = await lucid.wallet().address();
 
   // Save to .env
   const envPath = "./backend/.env";

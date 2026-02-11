@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 /**
@@ -174,7 +175,7 @@ export default function DashboardPage() {
       setIsSubmittingToBlockchain(true);
 
       // Check if using Lace wallet for direct transaction submission
-      if (wallet?.type === 'lace') {
+      if (wallet?.type === 'cardano') {
         console.log('[Dashboard] Submitting via Lace wallet...');
 
         // Prepare transaction data for Cardano blockchain

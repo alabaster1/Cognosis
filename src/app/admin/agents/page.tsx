@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
-import { Bot, Sparkles, Shield, Brain, Activity, Database, CheckCircle, AlertCircle, Clock, Lock } from 'lucide-react';
+import { Bot, Sparkles, Shield, Brain, Activity, Database, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import { useWalletStore } from '@/store/useWalletStore';
 
 interface VectorStore {
@@ -55,7 +55,7 @@ interface Stats {
 
 export default function AgentsDashboard() {
   const router = useRouter();
-  const { wallet, token } = useWalletStore();
+  const { wallet } = useWalletStore();
   const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,19 +66,22 @@ export default function AgentsDashboard() {
 
   // Auth check - redirect if not authenticated
   useEffect(() => {
-    if (!wallet || !token) {
+    if (!wallet) {
       router.push('/onboarding?redirect=/admin/agents');
       return;
     }
     fetchAgentStatus();
     fetchStats();
-  }, [wallet, token, router]);
+  }, [wallet, router]);
 
   // Helper to get auth headers
-  const getAuthHeaders = () => ({
-    'Content-Type': 'application/json',
-    'Authorization': token ? `Bearer ${token}` : '',
-  });
+  const getAuthHeaders = () => {
+    const authToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': authToken ? `Bearer ${authToken}` : '',
+    };
+  };
 
   const fetchAgentStatus = async () => {
     try {

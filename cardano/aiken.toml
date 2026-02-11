@@ -1,0 +1,16 @@
+name = "psyapp/psi-research"
+version = "0.1.0"
+license = "MIT"
+description = "Unified Psi-Research Smart Contracts - Cryptographic verification for all experiment types"
+
+[repository]
+user = "psyapp"
+project = "psi-research"
+platform = "github"
+
+[[dependencies]]
+name = "aiken-lang/stdlib"
+version = "v2.2.0"
+source = "github"
+
+# Target Plutus version v3 for Cardano Conway era

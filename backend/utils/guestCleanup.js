@@ -8,7 +8,7 @@
  */
 
 const { PrismaClient } = require('@prisma/client');
-const logger = require('./logger');
+const { logger, maskWallet } = require('./logger');
 
 const prisma = new PrismaClient();
 
@@ -25,7 +25,7 @@ async function cleanupGuestData(ttlDays = DEFAULT_GUEST_TTL_DAYS) {
   const ttlMs = ttlDays * 24 * 60 * 60 * 1000;
   const cutoffDate = new Date(Date.now() - ttlMs);
 
-  logger.info(`[GuestCleanup] Starting cleanup for data older than ${ttlDays} days (before ${cutoffDate.toISOString()})`);
+  logger.info('GuestCleanup', `Starting cleanup for data older than ${ttlDays} days (before ${cutoffDate.toISOString()})`);
 
   try {
     // Find guest users
@@ -40,7 +40,7 @@ async function cleanupGuestData(ttlDays = DEFAULT_GUEST_TTL_DAYS) {
       },
     });
 
-    logger.info(`[GuestCleanup] Found ${guestUsers.length} guest users`);
+    logger.info('GuestCleanup', `Found ${guestUsers.length} guest users`);
 
     let deletedCommitments = 0;
     let deletedUsers = 0;
@@ -71,11 +71,11 @@ async function cleanupGuestData(ttlDays = DEFAULT_GUEST_TTL_DAYS) {
           where: { id: user.id },
         });
         deletedUsers += 1;
-        logger.debug(`[GuestCleanup] Deleted guest user: ${logger.maskWallet(user.walletAddress)}`);
+        logger.debug('GuestCleanup', `Deleted guest user: ${maskWallet(user.walletAddress)}`);
       }
     }
 
-    logger.info(`[GuestCleanup] Cleanup complete: ${deletedCommitments} commitments, ${deletedUsers} users deleted`);
+    logger.info('GuestCleanup', `Cleanup complete: ${deletedCommitments} commitments, ${deletedUsers} users deleted`);
 
     return { deletedCommitments, deletedUsers };
   } catch (error) {

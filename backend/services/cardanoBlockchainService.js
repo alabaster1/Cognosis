@@ -66,15 +66,37 @@ const axios = require('axios');
 const crypto = require('crypto');
 const { blake2b } = require('blakejs');
 const cbor = require('cbor');
+const fs = require('fs');
+const path = require('path');
+
+// Minimal bech32 encoding for Cardano addresses
+function bech32Encode(prefix, payload) {
+  // Try to use bech32 if available, otherwise return hex
+  try {
+    const { bech32 } = require('bech32');
+    const words = bech32.toWords(payload);
+    return bech32.encode(prefix, words, 108);
+  } catch {
+    // Fallback: return hex-encoded address
+    return payload.toString('hex');
+  }
+}
 
 // Contract configuration from compiled Aiken validators
+// These are the UNPARAMETERIZED hashes. After deployment, the parameterized
+// hashes from PREPROD_DEPLOYMENT.json override these.
 const CONTRACT_CONFIG = {
-  // From cardano/plutus.json - psi_experiment validator
+  // From cardano/plutus.json - psi_experiment validator (unparameterized)
   psiExperimentHash: '527ef13a62d111d0a2e88fe98effddcf99e03e6802ca72cd793e571f',
   // From cardano/plutus.json - research_pool validator
   researchPoolHash: 'ed56346131f1e24ac11ba6166c5bc3b2d2f48a393d66fede9f84f1ac',
-  // Research pool NFT minting policy
+  // Research pool NFT minting policy (unparameterized)
   researchPoolNftHash: '2373a59795ca192097e199ac89d73906670e2b91ac125bca1a8faea8',
+  // Reward vault validator
+  rewardVaultHash: '375d66fb31dc09a709ba3e05eaf9c82ea3d1898db30baf360bb5892a',
+  // PSY token (set after minting or from env)
+  psyPolicyId: process.env.PSY_POLICY_ID || '',
+  psyAssetName: '507379', // "Psy" in hex
 };
 
 // Game type enum matching Aiken types.ak
@@ -116,13 +138,50 @@ class CardanoBlockchainService {
     // Script addresses (derived from validator hashes + network)
     this.scriptAddresses = {};
 
+    // Deployed contract config (loaded from PREPROD_DEPLOYMENT.json or env)
+    this.deployedConfig = null;
+
     // In-memory cache for UTxOs (with TTL)
     this.utxoCache = new Map();
     this.cacheTtlMs = 30000; // 30 seconds
   }
 
+  /**
+   * Load deployed contract addresses from PREPROD_DEPLOYMENT.json
+   */
+  loadDeploymentConfig() {
+    try {
+      const deploymentPath = path.resolve(__dirname, '../../scripts/cardano/PREPROD_DEPLOYMENT.json');
+      const data = JSON.parse(fs.readFileSync(deploymentPath, 'utf-8'));
+      this.deployedConfig = data;
+
+      // Override CONTRACT_CONFIG with deployed (parameterized) hashes
+      if (data.psiExperiment?.scriptHash) {
+        CONTRACT_CONFIG.psiExperimentHash = data.psiExperiment.scriptHash;
+      }
+      if (data.researchPool?.scriptHash) {
+        CONTRACT_CONFIG.researchPoolHash = data.researchPool.scriptHash;
+      }
+      if (data.rewardVault?.scriptHash) {
+        CONTRACT_CONFIG.rewardVaultHash = data.rewardVault.scriptHash;
+      }
+      if (data.rewardVault?.psyPolicyId) {
+        CONTRACT_CONFIG.psyPolicyId = data.rewardVault.psyPolicyId;
+      }
+
+      console.log('[CardanoService] Loaded deployment config from PREPROD_DEPLOYMENT.json');
+      return true;
+    } catch {
+      console.log('[CardanoService] No PREPROD_DEPLOYMENT.json found, using defaults');
+      return false;
+    }
+  }
+
   async initialize() {
     if (this.initialized) return;
+
+    // Try to load deployment config
+    this.loadDeploymentConfig();
 
     if (!this.blockfrostApiKey) {
       console.warn('[CardanoService] No Blockfrost API key - running in mock mode');
@@ -136,11 +195,20 @@ class CardanoBlockchainService {
       const response = await this.blockfrostRequest('/');
       console.log(`[CardanoService] Connected to Blockfrost (${this.network})`);
 
-      // Derive script addresses from validator hashes
-      this.scriptAddresses = {
-        psiExperiment: this.hashToScriptAddress(CONTRACT_CONFIG.psiExperimentHash),
-        researchPool: this.hashToScriptAddress(CONTRACT_CONFIG.researchPoolHash),
-      };
+      // Use deployed addresses if available, otherwise derive from hashes
+      if (this.deployedConfig?.psiExperiment?.address) {
+        this.scriptAddresses = {
+          psiExperiment: this.deployedConfig.psiExperiment.address,
+          researchPool: this.deployedConfig.researchPool.address,
+          rewardVault: this.deployedConfig.rewardVault?.address || '',
+        };
+      } else {
+        this.scriptAddresses = {
+          psiExperiment: this.hashToScriptAddress(CONTRACT_CONFIG.psiExperimentHash),
+          researchPool: this.hashToScriptAddress(CONTRACT_CONFIG.researchPoolHash),
+          rewardVault: this.hashToScriptAddress(CONTRACT_CONFIG.rewardVaultHash),
+        };
+      }
 
       console.log('[CardanoService] Script addresses:', this.scriptAddresses);
       this.initialized = true;
@@ -189,15 +257,18 @@ class CardanoBlockchainService {
   /**
    * Convert script hash to bech32 script address
    * For preprod/testnet, uses network tag 0x70 (script, no staking)
+   * Returns proper bech32 addr_test1... address
    */
   hashToScriptAddress(scriptHash) {
-    // Network prefix: 0x70 for testnet script addresses (no staking credential)
+    // Network byte: 0x70 = script credential, no staking (testnet)
+    //               0x71 = script credential, no staking (mainnet)
     const networkByte = this.network === 'mainnet' ? 0x71 : 0x70;
     const hashBytes = Buffer.from(scriptHash, 'hex');
     const addressBytes = Buffer.concat([Buffer.from([networkByte]), hashBytes]);
 
-    // For now return hex - frontend Lucid can convert to bech32
-    return addressBytes.toString('hex');
+    // Encode as bech32
+    const prefix = this.network === 'mainnet' ? 'addr' : 'addr_test';
+    return bech32Encode(prefix, addressBytes);
   }
 
   /**
@@ -463,15 +534,67 @@ class CardanoBlockchainService {
         psiExperiment: {
           hash: CONTRACT_CONFIG.psiExperimentHash,
           address: this.scriptAddresses.psiExperiment,
+          script: this.deployedConfig?.psiExperiment?.validatorScript || '',
         },
         researchPool: {
           hash: CONTRACT_CONFIG.researchPoolHash,
           address: this.scriptAddresses.researchPool,
+          script: this.deployedConfig?.researchPool?.validatorScript || '',
         },
+        rewardVault: {
+          hash: CONTRACT_CONFIG.rewardVaultHash,
+          address: this.scriptAddresses.rewardVault,
+          script: this.deployedConfig?.rewardVault?.validatorScript || '',
+        },
+      },
+      psyToken: {
+        policyId: CONTRACT_CONFIG.psyPolicyId,
+        assetName: CONTRACT_CONFIG.psyAssetName,
+        unit: CONTRACT_CONFIG.psyPolicyId ? CONTRACT_CONFIG.psyPolicyId + CONTRACT_CONFIG.psyAssetName : '',
       },
       gameTypes: GameType,
       sessionStates: SessionState,
     };
+  }
+
+  /**
+   * Query reward vault UTxO via Blockfrost
+   * @returns {Promise<Object|null>} Vault state including PSY balance
+   */
+  async getVaultState() {
+    await this.initialize();
+
+    if (this.mockMode || !this.scriptAddresses.rewardVault) {
+      return null;
+    }
+
+    try {
+      const utxos = await this.getScriptUtxos(this.scriptAddresses.rewardVault);
+      if (!utxos || utxos.length === 0) return null;
+
+      const vaultUtxo = utxos[0];
+      const psyUnit = CONTRACT_CONFIG.psyPolicyId + CONTRACT_CONFIG.psyAssetName;
+
+      // Find PSY token amount in the UTxO
+      let psyBalance = '0';
+      if (vaultUtxo.amount) {
+        const psyAsset = vaultUtxo.amount.find(a => a.unit === psyUnit);
+        if (psyAsset) psyBalance = psyAsset.quantity;
+      }
+
+      return {
+        address: this.scriptAddresses.rewardVault,
+        psyBalance,
+        psyUnit,
+        lovelace: vaultUtxo.amount?.find(a => a.unit === 'lovelace')?.quantity || '0',
+        txHash: vaultUtxo.tx_hash,
+        outputIndex: vaultUtxo.output_index,
+        hasDatum: !!vaultUtxo.inline_datum,
+      };
+    } catch (error) {
+      console.error('[CardanoService] Vault query error:', error.message);
+      return null;
+    }
   }
 
   /**

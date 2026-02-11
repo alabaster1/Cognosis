@@ -10,6 +10,12 @@ coverage/
 build/
 dist/
 
+# Next.js
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
 # Environment variables
 .env
 .env.local
@@ -19,7 +25,6 @@ dist/
 config/.env
 ai/.env
 backend/.env
-web/.env.local
 
 # Logs
 logs/

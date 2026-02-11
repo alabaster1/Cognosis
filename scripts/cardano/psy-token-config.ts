@@ -14,12 +14,11 @@ export const PSY_TOKEN_CONFIG = {
     unit: "d137118335bd9618c1b5be5612691baf7a5c13c159b00d44fb69f177507379",
   },
   preprod: {
-    // To be filled after minting on preprod
-    policyId: "", // Will be generated during minting
-    assetName: "507379", // Same hex name as mainnet
+    policyId: "4207d2740c0d32476f2c7026d6454ec0bc878230dfc9492e5de77ed8",
+    assetName: "507379",
     assetNameDecoded: "Psy",
-    fingerprint: "", // Will be generated
-    unit: "", // Will be policyId + assetName
+    fingerprint: "",
+    unit: "4207d2740c0d32476f2c7026d6454ec0bc878230dfc9492e5de77ed8507379",
   }
 };
 

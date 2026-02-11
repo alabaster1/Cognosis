@@ -20,7 +20,6 @@ const {
   readLimiter,
 } = require('./middleware/rateLimit');
 const socketService = require('./services/socketService');
-const guestCleanup = require('./utils/guestCleanup');
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -138,11 +137,6 @@ httpServer.listen(PORT, async () => {
     socketService.cleanupSessions();
   }, 60 * 60 * 1000);
 
-  // Schedule guest data cleanup (runs daily, TTL configurable via GUEST_DATA_TTL_DAYS env var)
-  if (process.env.ENABLE_GUEST_CLEANUP !== 'false') {
-    guestCleanup.scheduleCleanup(24); // Run every 24 hours
-    console.log(`🧹 Guest data cleanup scheduled (TTL: ${guestCleanup.DEFAULT_GUEST_TTL_DAYS} days)`);
-  }
 
   console.log('========================================');
   console.log('Ready to accept requests');

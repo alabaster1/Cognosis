@@ -1,0 +1,97 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: cognosis-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cognosis}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cognosis_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-cognosis}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cognosis}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (for caching and session management)
+  redis:
+    image: redis:7-alpine
+    container_name: cognosis-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Backend API Server
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cognosis-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cognosis}:${POSTGRES_PASSWORD:-cognosis_dev_password}@postgres:5432/${POSTGRES_DB:-cognosis}
+      JWT_SECRET: ${JWT_SECRET:-dev_jwt_secret_change_in_production}
+      AI_SERVICE_URL: http://ai:8001
+      NODE_ENV: ${NODE_ENV:-development}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # AI Service (FastAPI)
+  ai:
+    build:
+      context: ./ai
+      dockerfile: Dockerfile
+    container_name: cognosis-ai
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      PORT: 8001
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cognosis}:${POSTGRES_PASSWORD:-cognosis_dev_password}@postgres:5432/${POSTGRES_DB:-cognosis}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # PgAdmin (Optional - for database management UI)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: cognosis-pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@localhost}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin_dev_password}
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  pgadmin_data:
+    driver: local

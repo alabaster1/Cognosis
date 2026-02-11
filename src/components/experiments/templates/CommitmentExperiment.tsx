@@ -85,9 +85,9 @@ export default function CommitmentExperiment({ config }: CommitmentExperimentPro
         : defaultMetadataBuilder(config, fieldValues, prediction);
 
       const result = await experimentService.createCommitment({
-        experimentType: config.experimentType,
+        experimentType: config.experimentType as import('@/types').ExperimentType,
         prediction: prediction,
-        metadata,
+        metadata: metadata as unknown as import('@/types').ExperimentMetadata,
       });
 
       setCommitmentId(result.commitmentId);
