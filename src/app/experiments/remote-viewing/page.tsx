@@ -22,7 +22,7 @@ import rvCardanoService from '@/services/rvCardanoService';
 import type { RVStartResult, RVScoreResult, RVSettleResult } from '@/services/rvCardanoService';
 import {
   Eye, Lock, Loader2, Target, CheckCircle, XCircle, ArrowRight,
-  Wallet, ExternalLink, Coins, Shield,
+  Wallet, ExternalLink, Coins, Shield, BarChart3,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -48,6 +48,16 @@ interface ScoringResult {
   scoringMethod?: string;
   drandRound?: number;
   randomnessSource?: string;
+  scoringDetails?: {
+    scores?: Record<string, number>;
+    correspondences?: string[];
+    mismatches?: string[];
+    analysis?: string;
+    statisticalContext?: string;
+    scorerVersion?: string;
+    durationMs?: number;
+  };
+  userImpressions?: string;
 }
 
 export default function RemoteViewingPage() {
@@ -57,7 +67,6 @@ export default function RemoteViewingPage() {
 
   const [step, setStep] = useState<Step>('intro');
   const [commitmentId, setCommitmentId] = useState('');
-  const [description, setDescription] = useState('');
   const [impressions, setImpressions] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -139,7 +148,7 @@ export default function RemoteViewingPage() {
     try {
       // Connect to rvCardanoService (uses wallet already connected via store)
       await rvCardanoService.initialize();
-      const walletName = wallet?.type || 'lace';
+      const walletName = wallet?.providerName || 'lace';
       await rvCardanoService.connectWallet(walletName);
 
       // Start experiment: generates target on backend, user signs commit tx
@@ -170,7 +179,7 @@ export default function RemoteViewingPage() {
   };
 
   const handleSubmitViewing = async () => {
-    if (!description.trim() && !impressions.trim()) {
+    if (!impressions.trim()) {
       setError('Please provide your remote viewing impressions');
       return;
     }
@@ -180,7 +189,6 @@ export default function RemoteViewingPage() {
 
     try {
       const userResponse = {
-        description: description.trim(),
         impressions: impressions.trim(),
         timestamp: new Date().toISOString(),
       };
@@ -189,17 +197,46 @@ export default function RemoteViewingPage() {
         // Verified: score via Cardano backend endpoint
         const scoreResult = await rvCardanoService.submitAndScore(
           cardanoSession.sessionId,
-          { description: userResponse.description, impressions: userResponse.impressions }
+          { impressions: userResponse.impressions }
         );
         setCardanoScore(scoreResult);
 
-        // Also get the full scoring result from experiment service for display
-        const scoringResult = await experimentService.revealRemoteViewing({
-          commitmentId: cardanoSession.sessionId,
-          userResponse,
-          verified: true,
+        // Build results from the Cardano score response for display
+        const targetInfo = scoreResult.target || {};
+        const details = scoreResult.scoringDetails;
+
+        // Build hits from AI correspondences
+        const hits = (details?.correspondences || []).map((c: string) => ({
+          element: c,
+          confidence: 'AI Match',
+          explanation: '',
+        }));
+
+        // Build misses from AI mismatches
+        const misses = (details?.mismatches || []).map((m: string) => ({
+          element: m,
+          importance: 'AI Analysis',
+          explanation: '',
+        }));
+
+        setResults({
+          target: {
+            name: targetInfo.description?.substring(0, 60) || 'RV Target',
+            description: targetInfo.description || '',
+            imageUrl: targetInfo.imageUrl || null,
+            imageSource: targetInfo.source || '',
+            features: targetInfo.tags || [],
+            hash: targetInfo.hash || cardanoSession.targetHash,
+          },
+          score: scoreResult.score,
+          accuracy: scoreResult.score >= 50 ? 'above_chance' : 'below_chance',
+          hits,
+          misses,
+          feedback: details?.analysis || `AI Score: ${scoreResult.score}/100. Sign the settlement transaction to claim your PSY reward.`,
+          scoringMethod: scoreResult.scoringMethod || details?.scorerVersion || 'deterministic-fallback',
+          scoringDetails: details || undefined,
+          userImpressions: userResponse.impressions,
         });
-        setResults(scoringResult);
       } else {
         // Guest: standard backend scoring
         const scoringResult = await experimentService.revealRemoteViewing({
@@ -207,7 +244,10 @@ export default function RemoteViewingPage() {
           userResponse,
           verified: wallet?.isVerified || false,
         });
-        setResults(scoringResult);
+        setResults({
+          ...scoringResult,
+          userImpressions: userResponse.impressions,
+        });
       }
 
       setStep('results');
@@ -230,7 +270,8 @@ export default function RemoteViewingPage() {
       const result = await rvCardanoService.settleAndClaim(
         cardanoSession.sessionId,
         cardanoScore.score,
-        cardanoSession.nonce
+        cardanoSession.nonce,
+        cardanoSession.commitTxHash
       );
       setSettleResult(result);
       console.log('[RV Cardano] Settle tx:', result.txHash);
@@ -592,32 +633,20 @@ export default function RemoteViewingPage() {
               </div>
             )}
 
-            <div className="space-y-6 mb-8">
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Visual Impressions
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="What do you see? Shapes, colors, structures, landscapes..."
-                  rows={6}
-                  className="w-full px-4 py-3 bg-[#0f1520] border border-[#1a2535] rounded-lg focus:border-cyan-500 focus:outline-none resize-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Other Sensory Impressions
-                </label>
-                <textarea
-                  value={impressions}
-                  onChange={(e) => setImpressions(e.target.value)}
-                  placeholder="Feelings, textures, sounds, temperatures, emotional tones..."
-                  rows={6}
-                  className="w-full px-4 py-3 bg-[#0f1520] border border-[#1a2535] rounded-lg focus:border-cyan-500 focus:outline-none resize-none"
-                />
-              </div>
+            <div className="mb-8">
+              <label className="block text-sm font-medium mb-2">
+                Your Impressions
+              </label>
+              <textarea
+                value={impressions}
+                onChange={(e) => setImpressions(e.target.value)}
+                placeholder="Describe everything that comes to mind — shapes, colors, textures, sounds, feelings, emotions, spatial layouts, movements, temperatures..."
+                rows={10}
+                className="w-full px-4 py-3 bg-[#0f1520] border border-[#1a2535] rounded-lg focus:border-cyan-500 focus:outline-none resize-none"
+              />
+              <p className="text-xs text-slate-500 mt-2">
+                Write freely. The AI will automatically identify spatial, sensory, emotional, and symbolic aspects from your text.
+              </p>
             </div>
 
             <div className="bg-cyan-900/20 border border-cyan-500/30 rounded-lg p-4 mb-6 flex items-start gap-3">
@@ -776,7 +805,32 @@ export default function RemoteViewingPage() {
               </div>
               <h2 className="text-3xl font-bold mb-2">Results</h2>
               <p className="text-xl text-slate-400 capitalize">Accuracy: {results.accuracy}</p>
+              {results.scoringMethod && (
+                <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#2a3a50] bg-[#0f1520] text-sm text-slate-300">
+                  <span className="text-slate-500">Scoring Method:</span>
+                  <span className="font-semibold text-cyan-300">
+                    {results.scoringMethod === 'psi-score-ai'
+                      ? 'PsiScoreAI'
+                      : results.scoringMethod === 'openai-fallback'
+                      ? 'OpenAI Fallback'
+                      : results.scoringMethod === 'deterministic-fallback'
+                      ? 'Deterministic Fallback'
+                      : results.scoringMethod}
+                  </span>
+                </div>
+              )}
             </div>
+
+            {/* Your Impressions */}
+            {results.userImpressions && (
+              <div className="bg-[#0f1520]/80 border border-[#1a2535] rounded-2xl p-6 mb-8">
+                <h3 className="text-lg font-bold mb-3 flex items-center gap-2 text-slate-300">
+                  <Eye className="w-5 h-5 text-cyan-400" />
+                  Your Impressions
+                </h3>
+                <p className="text-slate-300 whitespace-pre-wrap">{results.userImpressions}</p>
+              </div>
+            )}
 
             {/* PSY Reward Preview (verified mode) */}
             {blockchainMode && cardanoScore && (
@@ -786,12 +840,9 @@ export default function RemoteViewingPage() {
                     <Coins className="w-5 h-5" />
                     PSY Reward
                   </h3>
-                  <span className="text-2xl font-bold text-amber-400">
-                    {cardanoScore.psyReward} PSY
-                  </span>
                 </div>
                 <p className="text-sm text-amber-500 mb-4">
-                  Based on your accuracy score of {cardanoScore.score}%. Sign the settlement transaction to claim your reward.
+                  Score: {cardanoScore.score}/100. Sign the settlement transaction to claim your PSY participation reward from the vault.
                 </p>
                 <button
                   onClick={handleSettleAndClaim}
@@ -806,7 +857,7 @@ export default function RemoteViewingPage() {
                   ) : (
                     <>
                       <Coins className="w-5 h-5" />
-                      Claim {cardanoScore.psyReward} PSY
+                      Claim PSY Reward
                     </>
                   )}
                 </button>
@@ -845,11 +896,18 @@ export default function RemoteViewingPage() {
               {/* Target Image */}
               {(results.target as Record<string, unknown>)?.imageUrl && (
                 <div className="mb-6 rounded-xl overflow-hidden border border-[#1a2535]">
-                  <img
-                    src={(results.target as Record<string, unknown>).imageUrl as string}
-                    alt={(results.target as Record<string, unknown>).name as string || 'Target'}
-                    className="w-full h-64 object-cover"
-                  />
+                  <a
+                    href={(results.target as Record<string, unknown>).imageUrl as string}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block cursor-zoom-in"
+                  >
+                    <img
+                      src={(results.target as Record<string, unknown>).imageUrl as string}
+                      alt={(results.target as Record<string, unknown>).name as string || 'Target'}
+                      className="w-full h-64 object-cover hover:opacity-90 transition-opacity"
+                    />
+                  </a>
                   {(results.target as Record<string, unknown>).imagePhotographer && (
                     <p className="text-xs text-slate-500 px-3 py-1.5 bg-[#060a0f]/80">
                       Photo by {(results.target as Record<string, unknown>).imagePhotographer as string} via {(results.target as Record<string, unknown>).imageSource as string || 'Pexels'}
@@ -903,6 +961,72 @@ export default function RemoteViewingPage() {
                 )}
               </div>
             </div>
+
+            {/* Score Breakdown (AI Dimensions) */}
+            {results.scoringDetails?.scores && (
+              <div className="bg-[#0f1520]/80 border border-[#1a2535] rounded-2xl p-8 mb-8">
+                <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                  <BarChart3 className="w-6 h-6 text-purple-400" />
+                  Score Breakdown
+                </h3>
+                <div className="space-y-4">
+                  {[
+                    { label: 'Spatial', keys: ['spatial_correlation', 'spatial_score'], weight: '25%', color: 'cyan' },
+                    { label: 'Semantic', keys: ['semantic_alignment', 'semantic_score'], weight: '25%', color: 'blue' },
+                    { label: 'Emotional', keys: ['emotional_resonance', 'emotional_score'], weight: '20%', color: 'pink' },
+                    { label: 'Sensory', keys: ['sensory_accuracy', 'sensory_score'], weight: '15%', color: 'amber' },
+                    { label: 'Symbolic', keys: ['symbolic_correspondence', 'symbolic_score'], weight: '15%', color: 'purple' },
+                  ].map(({ label, keys, weight, color }) => {
+                    const scores = results.scoringDetails?.scores;
+                    const rawVal = scores ? (keys.map(k => scores[k]).find(v => v != null) ?? null) : null;
+                    const val = rawVal != null ? Math.round(Number(rawVal) * 100) : null;
+                    if (val == null) return null;
+                    return (
+                      <div key={label}>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm font-medium text-slate-300">{label}</span>
+                          <span className="text-xs text-slate-500">{weight} weight</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${
+                                color === 'cyan' ? 'bg-cyan-500' :
+                                color === 'blue' ? 'bg-blue-500' :
+                                color === 'pink' ? 'bg-pink-500' :
+                                color === 'amber' ? 'bg-amber-500' :
+                                'bg-purple-500'
+                              }`}
+                              style={{ width: `${val}%` }}
+                            />
+                          </div>
+                          <span className="text-sm font-bold w-10 text-right">{val}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {results.scoringDetails?.statisticalContext && (
+                  <div className="text-xs text-slate-500 mt-4 pt-4 border-t border-slate-800 flex flex-wrap gap-x-4 gap-y-1">
+                    {typeof results.scoringDetails.statisticalContext === 'string' ? (
+                      <span>{results.scoringDetails.statisticalContext}</span>
+                    ) : (
+                      <>
+                        {results.scoringDetails.statisticalContext.z_score != null && (
+                          <span>Z-Score: {results.scoringDetails.statisticalContext.z_score}</span>
+                        )}
+                        {results.scoringDetails.statisticalContext.effect_size_interpretation && (
+                          <span>Effect: {results.scoringDetails.statisticalContext.effect_size_interpretation}</span>
+                        )}
+                        {results.scoringDetails.statisticalContext.percentile != null && (
+                          <span>Percentile: {results.scoringDetails.statisticalContext.percentile}th</span>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Hits */}
             {results.hits && results.hits.length > 0 && (
@@ -983,7 +1107,13 @@ export default function RemoteViewingPage() {
                   </div>
                 </div>
                 <p className="text-xs text-slate-500 mt-3">
-                  Scoring: {results.scoringMethod === 'embedding' ? 'Semantic Embedding' : 'LLM-based'}
+                  Scoring: {results.scoringMethod === 'psi-score-ai'
+                    ? 'PsiScoreAI'
+                    : results.scoringMethod === 'openai-fallback'
+                    ? 'OpenAI fallback'
+                    : results.scoringMethod === 'deterministic-fallback'
+                    ? 'Deterministic fallback'
+                    : 'Unknown'}
                 </p>
               </div>
             )}

@@ -27,6 +27,7 @@ const enhancedExperiments = [
   {
     category: 'Remote Viewing',
     experiments: [
+      { id: 'remote-viewing', name: 'Remote Viewing (MVP)', icon: Eye, color: 'cyan', description: 'Primary MVP flow: commit, view, score, and settle reward', isNew: true },
       { id: 'rv-crv-protocol', name: 'CRV Protocol (AI-Guided)', icon: Scan, color: 'indigo', description: '6-stage Controlled Remote Viewing with AI expert guidance' },
       { id: 'remote-viewing-images', name: 'Remote Viewing: Images', icon: Eye, color: 'violet', description: '5-phase visual perception protocol with sketch canvas' },
       { id: 'remote-viewing-locations', name: 'Remote Viewing: Locations', icon: MapPin, color: 'green', description: 'Geographic sensing with terrain and climate analysis' },
@@ -97,8 +98,8 @@ export default function ExperimentsPage() {
               <h2 className="text-2xl font-bold mb-6 text-cyan-400">{category.category}</h2>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {category.experiments.map((exp) => {
-                  // Only "Remote Viewing" category experiments are active
-                  const isActive = category.category === 'Remote Viewing';
+                  // MVP scope: only the base Remote Viewing flow is active
+                  const isActive = exp.id === 'remote-viewing';
                   const cardClasses = `p-6 bg-[#0f1520]/80 border border-[#1a2535] rounded-xl transition-all group relative ${
                     isActive
                       ? 'hover:border-cyan-500/40 cursor-pointer'

@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ExternalLink, Check } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -109,7 +110,8 @@ export default function WalletConnectModal({ isOpen, onClose, onSuccess }: Walle
 
   if (!isOpen) return null;
 
-  return (
+  // Portal to document.body to escape header's backdrop-filter containing block
+  return createPortal(
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         {/* Backdrop */}
@@ -262,6 +264,7 @@ export default function WalletConnectModal({ isOpen, onClose, onSuccess }: Walle
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

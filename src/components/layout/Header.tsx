@@ -8,81 +8,16 @@ import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import { useWalletStore } from '@/store/useWalletStore';
 import walletService from '@/services/walletService';
-import { Brain, User, LogOut, ChevronDown, Eye, Heart, Zap, Target, Clock, Wifi, History, Settings, Coins, Award, HelpCircle, UserCircle, FileText, Radio, Grid3X3, RotateCcw, Palette, Spade, Sparkles, Gamepad2, Globe, Dices, Wallet } from 'lucide-react';
+import { Brain, User, LogOut, ChevronDown, Eye, History, Settings, Coins, Award, HelpCircle, UserCircle, FileText, Radio, Wallet } from 'lucide-react';
 import WalletConnectModal from '@/components/wallet/WalletConnectModal';
 
 const experimentCategories = [
   {
-    id: 'game-like',
-    name: 'Game-Like Experiments',
-    icon: Gamepad2,
-    experiments: [
-      { id: 'pattern-oracle', name: 'Pattern Oracle', icon: Grid3X3, isNew: true },
-      { id: 'timeline-racer', name: 'Timeline Racer', icon: Zap, isNew: true },
-      { id: 'emotion-echo', name: 'Emotion Echo', icon: Palette, isNew: true },
-      { id: 'psi-poker', name: 'Psi Poker', icon: Spade, isNew: true },
-      { id: 'synchronicity-bingo', name: 'Synchronicity Bingo', icon: Sparkles, isNew: true },
-    ],
-  },
-  {
-    id: 'multiplayer',
-    name: 'Multiplayer & Global',
-    icon: Globe,
-    experiments: [
-      { id: 'quantum-coin-arena', name: 'Quantum Coin Arena', icon: Coins, isNew: true },
-      { id: 'mind-pulse', name: 'Mind Pulse', icon: Radio, isNew: true },
-      { id: 'multi-party-telepathy', name: 'Multi-Party Telepathy', icon: Wifi },
-      { id: 'global-consciousness', name: 'Global Consciousness', icon: Globe },
-    ],
-  },
-  {
     id: 'remote-viewing',
-    name: 'Remote Viewing',
+    name: 'MVP Experiment',
     icon: Eye,
     experiments: [
-      { id: 'rv-crv-protocol', name: 'CRV Protocol', icon: Eye },
-      { id: 'remote-viewing-images', name: 'RV: Images', icon: Eye },
-      { id: 'remote-viewing-locations', name: 'RV: Locations', icon: Eye },
-      { id: 'remote-viewing-objects', name: 'RV: Objects', icon: Eye },
-    ],
-  },
-  {
-    id: 'telepathy',
-    name: 'Telepathy & Empathy',
-    icon: Heart,
-    experiments: [
-      { id: 'telepathy-emotions', name: 'Telepathy: Emotions', icon: Heart },
-      { id: 'ai-telepathy', name: 'AI Telepathy', icon: Heart },
-      { id: 'telepathy', name: 'Classic Telepathy', icon: Heart },
-    ],
-  },
-  {
-    id: 'precognition',
-    name: 'Precognition',
-    icon: Zap,
-    experiments: [
-      { id: 'card-prediction', name: 'Card Prediction', icon: Target },
-      { id: 'event-forecasting', name: 'Event Forecasting', icon: Zap },
-      { id: 'precognition', name: 'General Precognition', icon: Zap },
-    ],
-  },
-  {
-    id: 'time-causality',
-    name: 'Time & Causality',
-    icon: Clock,
-    experiments: [
-      { id: 'retro-roulette', name: 'Retro Roulette', icon: RotateCcw, isNew: true },
-      { id: 'time-loop', name: 'Time-Loop Detection', icon: Clock },
-      { id: 'retrocausality', name: 'Retrocausality', icon: Clock },
-    ],
-  },
-  {
-    id: 'psychokinesis',
-    name: 'Psychokinesis',
-    icon: Dices,
-    experiments: [
-      { id: 'dice-influence', name: 'Dice Influence (PK)', icon: Dices },
-      { id: 'psychokinesis', name: 'General PK', icon: Target },
+      { id: 'remote-viewing', name: 'Remote Viewing', icon: Eye, isNew: true },
     ],
   },
 ];
@@ -151,8 +86,8 @@ export default function Header() {
                   href="/experiments"
                   className="block px-4 py-3 hover:bg-[#1a2535] transition-colors border-b border-[#1a2535]"
                 >
-                  <div className="font-semibold">All Experiments</div>
-                  <div className="text-xs text-slate-500">Browse all categories</div>
+                  <div className="font-semibold">MVP Experiments</div>
+                  <div className="text-xs text-slate-500">Remote Viewing is active in MVP</div>
                 </Link>
                 {experimentCategories.map((category) => (
                   <div key={category.id} className="border-b border-[#1a2535] last:border-0">
@@ -197,10 +132,6 @@ export default function Header() {
           </Link>
           <Link href="/dashboard" className="hover:text-cyan-400 transition-colors">
             Dashboard
-          </Link>
-          <Link href="/tokenomics" className="flex items-center gap-1 hover:text-cyan-400 transition-colors">
-            <Coins className="w-4 h-4" />
-            Tokenomics
           </Link>
           <Link href="/about" className="hover:text-cyan-400 transition-colors">
             About

@@ -14,6 +14,7 @@ import {
 } from "@lucid-evolution/lucid";
 import { slotToUnixTime } from "@lucid-evolution/utils";
 import { blake2b } from "@noble/hashes/blake2b";
+import { blockfrostAwaitTx } from "./awaitTx";
 
 // ============================================================================
 // TYPES
@@ -235,6 +236,39 @@ export function buildPsiDatum(
 }
 
 /**
+ * Build PsiDatum with explicit session state (for single-player scored experiments)
+ */
+export function buildPsiDatumWithState(
+  gameType: GameType,
+  targetHash: string,
+  hostPkh: string,
+  stakeLovelace: bigint,
+  commitSlot: bigint,
+  joinDeadlineSlot: bigint,
+  revealDeadlineSlot: bigint,
+  maxParticipants: number = 1,
+  sessionState: SessionState = "AwaitingParticipant"
+): Data {
+  return new Constr(0, [
+    targetHash,
+    hostPkh,
+    new Constr(1, []), // participant_pkh: None
+    new Constr(GAME_TYPE_INDEX[gameType], []),
+    new Constr(SESSION_STATE_INDEX[sessionState], []),
+    commitSlot,
+    joinDeadlineSlot,
+    revealDeadlineSlot,
+    stakeLovelace,
+    5n, // research_pool_pct
+    BigInt(maxParticipants),
+    0n, // current_participants
+    [], // participant_guesses
+    new Constr(1, []), // ipfs_cid: None
+    new Constr(1, []), // ai_score: None
+  ]);
+}
+
+/**
  * Update datum when participant joins
  */
 export function buildJoinedDatum(
@@ -386,7 +420,7 @@ export async function createSession(
   const signed = await tx.sign.withWallet().complete();
   const txHash = await signed.submit();
 
-  await lucid.awaitTx(txHash);
+  await blockfrostAwaitTx(txHash);
 
   return {
     txHash,
@@ -462,7 +496,7 @@ export async function joinSession(
   const signed = await tx.sign.withWallet().complete();
   const txHash = await signed.submit();
 
-  await lucid.awaitTx(txHash);
+  await blockfrostAwaitTx(txHash);
 
   return {
     txHash,
@@ -535,7 +569,7 @@ export async function revealTarget(
   const signed = await tx.sign.withWallet().complete();
   const txHash = await signed.submit();
 
-  await lucid.awaitTx(txHash);
+  await blockfrostAwaitTx(txHash);
 
   return txHash;
 }
@@ -602,7 +636,7 @@ export async function claimHostTimeout(
   const signed = await tx.sign.withWallet().complete();
   const txHash = await signed.submit();
 
-  await lucid.awaitTx(txHash);
+  await blockfrostAwaitTx(txHash);
 
   return txHash;
 }
@@ -651,7 +685,7 @@ export async function claimParticipantTimeout(
   const signed = await tx.sign.withWallet().complete();
   const txHash = await signed.submit();
 
-  await lucid.awaitTx(txHash);
+  await blockfrostAwaitTx(txHash);
 
   return txHash;
 }

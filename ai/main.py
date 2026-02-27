@@ -21,7 +21,7 @@ from agents.evals import AgentEvaluator
 from agents.rv_expert import RVExpertAgent
 from agents.psi_score_ai import PsiScoreAI
 
-load_dotenv()
+load_dotenv(override=True)
 
 app = FastAPI(
     title="Cognosis AI Service",

@@ -41,6 +41,7 @@ export type ExperimentStatus = 'draft' | 'committed' | 'revealed' | 'verified';
 export interface WalletInfo {
   address: string;
   type: WalletType;
+  providerName?: string; // CIP-30 provider key, e.g. 'lace', 'eternl'
   network: 'testnet' | 'mainnet' | 'preprod';
   isVerified: boolean;
 }

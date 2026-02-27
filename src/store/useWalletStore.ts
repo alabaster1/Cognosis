@@ -31,6 +31,7 @@ export const useWalletStore = create<WalletState>((set) => ({
       const wallet: WalletInfo = {
         address: result.address,
         type: result.type,
+        providerName: result.providerName,
         network: result.network as 'testnet' | 'mainnet' | 'preprod',
         isVerified: true,
       };
@@ -49,6 +50,7 @@ export const useWalletStore = create<WalletState>((set) => ({
       const wallet: WalletInfo = {
         address: result.address,
         type: result.type,
+        providerName: result.providerName,
         network: result.network as 'testnet' | 'mainnet' | 'preprod',
         isVerified: true,
       };

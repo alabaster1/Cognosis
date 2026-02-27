@@ -49,7 +49,7 @@ class WalletService {
   /**
    * Connect to a CIP-30 Cardano wallet
    */
-  async connectCardanoWallet(walletName: string): Promise<{ address: string; type: WalletType; network: string }> {
+  async connectCardanoWallet(walletName: string): Promise<{ address: string; type: WalletType; providerName: string; network: string }> {
     try {
       console.log(`[WalletService] Connecting to ${walletName} wallet...`);
 
@@ -79,13 +79,14 @@ class WalletService {
       await this.authenticateWithBackend(address);
 
       // Save wallet locally
-      await this.saveWallet(address, 'cardano');
+      await this.saveWallet(address, 'cardano', walletName.toLowerCase());
 
       console.log('[WalletService] Connected and authenticated:', this.getShortenedAddress(address));
 
       return {
         address,
         type: 'cardano',
+        providerName: walletName.toLowerCase(),
         network: 'preprod',
       };
     } catch (error) {
@@ -98,7 +99,7 @@ class WalletService {
   /**
    * Legacy: Connect Lace (redirects to Cardano connection)
    */
-  async connectLaceWallet(): Promise<{ address: string; type: WalletType; network: string }> {
+  async connectLaceWallet(): Promise<{ address: string; type: WalletType; providerName: string; network: string }> {
     return this.connectCardanoWallet('lace');
   }
 
@@ -142,9 +143,10 @@ class WalletService {
     console.log('[WalletService] Backend authentication successful');
   }
 
-  private async saveWallet(address: string, type: WalletType): Promise<void> {
+  private async saveWallet(address: string, type: WalletType, providerName?: string): Promise<void> {
     localStorage.setItem('walletAddress', address);
     localStorage.setItem('walletType', type);
+    if (providerName) localStorage.setItem('walletProvider', providerName);
     this.walletAddress = address;
     this.walletType = type;
   }
@@ -170,6 +172,7 @@ class WalletService {
     return {
       address,
       type: this.walletType || 'cardano',
+      providerName: localStorage.getItem('walletProvider') || undefined,
       network: 'preprod',
       isVerified: true,
     };
@@ -240,6 +243,7 @@ class WalletService {
   async logout(): Promise<void> {
     localStorage.removeItem('walletAddress');
     localStorage.removeItem('walletType');
+    localStorage.removeItem('walletProvider');
     localStorage.removeItem('authToken');
     this.walletAddress = null;
     this.walletType = null;

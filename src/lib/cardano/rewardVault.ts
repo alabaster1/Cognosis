@@ -9,8 +9,8 @@ import {
   UTxO,
   type LucidEvolution,
   getAddressDetails,
-  credentialToAddress,
 } from "@lucid-evolution/lucid";
+import { blockfrostAwaitTx } from "./awaitTx";
 
 import {
   PSI_VALIDATOR_SCRIPT,
@@ -30,6 +30,7 @@ export interface RewardVaultData {
   psyPolicyId: string;
   psyAssetName: string;
   baseReward: bigint;
+  bonusPool: bigint;
   decayFactor: bigint;
   totalClaims: bigint;
   experimentScriptHash: string;
@@ -85,6 +86,7 @@ export function buildRewardVaultDatum(
   psyPolicyId: string,
   psyAssetName: string,
   baseReward: bigint,
+  bonusPool: bigint,
   decayFactor: bigint,
   totalClaims: bigint,
   experimentScriptHash: string,
@@ -94,10 +96,11 @@ export function buildRewardVaultDatum(
     psyPolicyId,         // [0] psy_policy_id: ByteArray
     psyAssetName,        // [1] psy_asset_name: ByteArray
     baseReward,          // [2] base_reward: Int
-    decayFactor,         // [3] decay_factor: Int
-    totalClaims,         // [4] total_claims: Int
-    experimentScriptHash, // [5] experiment_script_hash: ByteArray
-    adminPkh,            // [6] admin_pkh: ByteArray
+    bonusPool,           // [3] bonus_pool: Int
+    decayFactor,         // [4] decay_factor: Int
+    totalClaims,         // [5] total_claims: Int
+    experimentScriptHash, // [6] experiment_script_hash: ByteArray
+    adminPkh,            // [7] admin_pkh: ByteArray
   ]);
 }
 
@@ -108,8 +111,8 @@ export function buildRewardVaultDatum(
 /**
  * Build ClaimReward redeemer
  */
-export function buildClaimRewardRedeemer(participantPkh: string): Data {
-  return new Constr(0, [participantPkh]); // ClaimReward { participant_pkh }
+export function buildClaimRewardRedeemer(participantPkh: string, score: bigint): Data {
+  return new Constr(0, [participantPkh, score]); // ClaimReward { participant, score }
 }
 
 /**
@@ -122,8 +125,8 @@ export function buildTopUpRedeemer(): Data {
 /**
  * Build UpdateParams redeemer
  */
-export function buildUpdateParamsRedeemer(baseReward: bigint, decayFactor: bigint): Data {
-  return new Constr(2, [baseReward, decayFactor]); // UpdateParams { base_reward, decay_factor }
+export function buildUpdateParamsRedeemer(baseReward: bigint, bonusPool: bigint, decayFactor: bigint): Data {
+  return new Constr(2, [baseReward, bonusPool, decayFactor]); // UpdateParams { new_base_reward, new_bonus_pool, new_decay_factor }
 }
 
 // ============================================================================
@@ -131,18 +134,36 @@ export function buildUpdateParamsRedeemer(baseReward: bigint, decayFactor: bigin
 // ============================================================================
 
 /**
- * Calculate reward amount using exponential decay formula
- * reward = base_reward / (1 + decay_factor * total_claims)
- * Mirrors the on-chain calculation for UI display
+ * Calculate base reward using hyperbolic decay formula
+ * reward = base_reward * decay_factor / (decay_factor + total_claims)
+ * Mirrors the on-chain calculate_reward
  */
 export function calculateReward(
   baseReward: bigint,
   decayFactor: bigint,
   totalClaims: bigint
 ): bigint {
-  const denominator = 1n + decayFactor * totalClaims;
-  if (denominator === 0n) return baseReward;
-  return baseReward / denominator;
+  return baseReward * decayFactor / (decayFactor + totalClaims);
+}
+
+/**
+ * Calculate scored reward with cubic bonus and hyperbolic decay
+ *   score_bonus = bonus_pool * score^3 / 1_000_000
+ *   scored_reward = base_reward + score_bonus
+ *   total = scored_reward * decay_factor / (decay_factor + total_claims)
+ *
+ * score: 0-100
+ */
+export function calculateScoredReward(
+  baseReward: bigint,
+  bonusPool: bigint,
+  decayFactor: bigint,
+  totalClaims: bigint,
+  score: bigint
+): bigint {
+  const scoreBonus = bonusPool * score * score * score / 1_000_000n;
+  const scoredReward = baseReward + scoreBonus;
+  return scoredReward * decayFactor / (decayFactor + totalClaims);
 }
 
 // ============================================================================
@@ -159,7 +180,8 @@ export async function claimRewardWithSettlement(
   vaultUtxo: UTxO,
   target: string,
   nonce: string,
-  recipientPkh: string
+  recipientPkh: string,
+  score: number = 0
 ): Promise<RewardClaimResult> {
   if (!REWARD_VAULT_SCRIPT || !PSI_VALIDATOR_SCRIPT) {
     throw new Error("Validator scripts not initialized");
@@ -191,11 +213,13 @@ export async function claimRewardWithSettlement(
   const vaultDatum = Data.from(vaultUtxo.datum) as Constr<Data>;
   const vaultFields = vaultDatum.fields;
   const baseReward = vaultFields[2] as bigint;
-  const decayFactor = vaultFields[3] as bigint;
-  const totalClaims = vaultFields[4] as bigint;
+  const bonusPool = vaultFields[3] as bigint;
+  const decayFactor = vaultFields[4] as bigint;
+  const totalClaims = vaultFields[5] as bigint;
 
-  // Calculate reward
-  const reward = calculateReward(baseReward, decayFactor, totalClaims);
+  // Calculate scored reward (cubic bonus + hyperbolic decay)
+  const scoreBigInt = BigInt(Math.max(0, Math.min(100, Math.round(score))));
+  const reward = calculateScoredReward(baseReward, bonusPool, decayFactor, totalClaims, scoreBigInt);
   if (reward <= 0n) {
     throw new Error("Calculated reward is zero - vault may be depleted");
   }
@@ -206,10 +230,11 @@ export async function claimRewardWithSettlement(
     vaultFields[0] as string,
     vaultFields[1] as string,
     baseReward,
+    bonusPool,
     decayFactor,
     newTotalClaims,
-    vaultFields[5] as string,
-    vaultFields[6] as string
+    vaultFields[6] as string,
+    vaultFields[7] as string
   );
 
   // Calculate continuing vault value (subtract reward tokens)
@@ -230,14 +255,10 @@ export async function claimRewardWithSettlement(
 
   // Build redeemers
   const revealRedeemer = buildRevealRedeemer(target, nonce);
-  const claimRedeemer = buildClaimRewardRedeemer(recipientPkh);
+  const claimRedeemer = buildClaimRewardRedeemer(recipientPkh, scoreBigInt);
 
-  // Determine recipient address from PKH
-  const recipientAddress = credentialToAddress(
-    lucid.config().network ?? "Preprod",
-    { type: "Key", hash: recipientPkh }
-  );
-  const winnerAddress = await lucid.wallet().address();
+  // Use wallet address directly (includes staking credential)
+  const walletAddress = await lucid.wallet().address();
 
   // Build composite transaction
   const tx = await lucid
@@ -249,14 +270,14 @@ export async function claimRewardWithSettlement(
     .collectFrom([vaultUtxo], Data.to(claimRedeemer))
     .attach.SpendingValidator({ type: "PlutusV3", script: REWARD_VAULT_SCRIPT })
     // Settlement outputs
-    .pay.ToAddress(winnerAddress, { lovelace: winnerAmount })
+    .pay.ToAddress(walletAddress, { lovelace: winnerAmount })
     .pay.ToContract(
       RESEARCH_POOL_ADDRESS,
       { kind: "inline", value: Data.to(new Constr(0, [])) },
       { lovelace: researchAmount }
     )
-    // Reward output to recipient
-    .pay.ToAddress(recipientAddress, { [psyUnit]: reward })
+    // Reward output to recipient (use wallet address so staking key is included)
+    .pay.ToAddress(walletAddress, { [psyUnit]: reward })
     // Continuing vault UTxO
     .pay.ToContract(
       REWARD_VAULT_ADDRESS,
@@ -269,7 +290,7 @@ export async function claimRewardWithSettlement(
   const signed = await tx.sign.withWallet().complete();
   const txHash = await signed.submit();
 
-  await lucid.awaitTx(txHash);
+  await blockfrostAwaitTx(txHash);
 
   return {
     txHash,
@@ -320,11 +341,13 @@ export async function claimRewardWithScore(
   const vaultDatum = Data.from(vaultUtxo.datum) as Constr<Data>;
   const vaultFields = vaultDatum.fields;
   const baseReward = vaultFields[2] as bigint;
-  const decayFactor = vaultFields[3] as bigint;
-  const totalClaims = vaultFields[4] as bigint;
+  const bonusPool = vaultFields[3] as bigint;
+  const decayFactor = vaultFields[4] as bigint;
+  const totalClaims = vaultFields[5] as bigint;
 
-  // Calculate reward
-  const reward = calculateReward(baseReward, decayFactor, totalClaims);
+  // Calculate scored reward (cubic bonus + hyperbolic decay)
+  const scoreBigInt = BigInt(Math.max(0, Math.min(100, Math.round(score))));
+  const reward = calculateScoredReward(baseReward, bonusPool, decayFactor, totalClaims, scoreBigInt);
   if (reward <= 0n) {
     throw new Error("Calculated reward is zero - vault may be depleted");
   }
@@ -335,10 +358,11 @@ export async function claimRewardWithScore(
     vaultFields[0] as string,
     vaultFields[1] as string,
     baseReward,
+    bonusPool,
     decayFactor,
     newTotalClaims,
-    vaultFields[5] as string,
-    vaultFields[6] as string
+    vaultFields[6] as string,
+    vaultFields[7] as string
   );
 
   // Calculate continuing vault value
@@ -358,14 +382,12 @@ export async function claimRewardWithScore(
 
   // Build redeemers
   const scoreRedeemer = buildSubmitScoreRedeemer(score, oracleSignature);
-  const claimRedeemer = buildClaimRewardRedeemer(recipientPkh);
+  const claimRedeemer = buildClaimRewardRedeemer(recipientPkh, scoreBigInt);
 
-  // Determine recipient address
-  const recipientAddress = credentialToAddress(
-    lucid.config().network ?? "Preprod",
-    { type: "Key", hash: recipientPkh }
-  );
-  const winnerAddress = await lucid.wallet().address();
+  // Use wallet address directly (includes staking credential)
+  // credentialToAddress with just payment key creates enterprise addresses
+  // which wallets can't see
+  const walletAddress = await lucid.wallet().address();
 
   // Build composite transaction
   const tx = await lucid
@@ -377,14 +399,14 @@ export async function claimRewardWithScore(
     .collectFrom([vaultUtxo], Data.to(claimRedeemer))
     .attach.SpendingValidator({ type: "PlutusV3", script: REWARD_VAULT_SCRIPT })
     // Settlement outputs
-    .pay.ToAddress(winnerAddress, { lovelace: winnerAmount })
+    .pay.ToAddress(walletAddress, { lovelace: winnerAmount })
     .pay.ToContract(
       RESEARCH_POOL_ADDRESS,
       { kind: "inline", value: Data.to(new Constr(0, [])) },
       { lovelace: researchAmount }
     )
     // Reward output to recipient
-    .pay.ToAddress(recipientAddress, { [psyUnit]: reward })
+    .pay.ToAddress(walletAddress, { [psyUnit]: reward })
     // Continuing vault UTxO
     .pay.ToContract(
       REWARD_VAULT_ADDRESS,
@@ -397,7 +419,7 @@ export async function claimRewardWithScore(
   const signed = await tx.sign.withWallet().complete();
   const txHash = await signed.submit();
 
-  await lucid.awaitTx(txHash);
+  await blockfrostAwaitTx(txHash);
 
   return {
     txHash,
@@ -460,7 +482,7 @@ export async function topUpVault(
   const signed = await tx.sign.withWallet().complete();
   const txHash = await signed.submit();
 
-  await lucid.awaitTx(txHash);
+  await blockfrostAwaitTx(txHash);
 
   return txHash;
 }
@@ -472,6 +494,7 @@ export async function updateVaultParams(
   lucid: LucidEvolution,
   vaultUtxo: UTxO,
   newBaseReward: bigint,
+  newBonusPool: bigint,
   newDecayFactor: bigint
 ): Promise<string> {
   if (!REWARD_VAULT_SCRIPT || !REWARD_VAULT_ADDRESS) {
@@ -499,16 +522,17 @@ export async function updateVaultParams(
     fields[0] as string,    // psy_policy_id
     fields[1] as string,    // psy_asset_name
     newBaseReward,           // updated base_reward
+    newBonusPool,            // updated bonus_pool
     newDecayFactor,          // updated decay_factor
-    fields[4] as bigint,    // total_claims (unchanged)
-    fields[5] as string,    // experiment_script_hash
-    fields[6] as string     // admin_pkh
+    fields[5] as bigint,    // total_claims (unchanged)
+    fields[6] as string,    // experiment_script_hash
+    fields[7] as string     // admin_pkh
   );
 
   // Vault value stays the same
   const vaultAssets: Record<string, bigint> = { ...vaultUtxo.assets };
 
-  const redeemer = buildUpdateParamsRedeemer(newBaseReward, newDecayFactor);
+  const redeemer = buildUpdateParamsRedeemer(newBaseReward, newBonusPool, newDecayFactor);
 
   const tx = await lucid
     .newTx()
@@ -525,7 +549,7 @@ export async function updateVaultParams(
   const signed = await tx.sign.withWallet().complete();
   const txHash = await signed.submit();
 
-  await lucid.awaitTx(txHash);
+  await blockfrostAwaitTx(txHash);
 
   return txHash;
 }
@@ -548,10 +572,11 @@ export function parseVaultData(utxo: UTxO): RewardVaultData | null {
       psyPolicyId: fields[0] as string,
       psyAssetName: fields[1] as string,
       baseReward: fields[2] as bigint,
-      decayFactor: fields[3] as bigint,
-      totalClaims: fields[4] as bigint,
-      experimentScriptHash: fields[5] as string,
-      adminPkh: fields[6] as string,
+      bonusPool: fields[3] as bigint,
+      decayFactor: fields[4] as bigint,
+      totalClaims: fields[5] as bigint,
+      experimentScriptHash: fields[6] as string,
+      adminPkh: fields[7] as string,
     };
   } catch (e) {
     console.error("Failed to parse vault data:", e);
@@ -582,17 +607,20 @@ export async function getVaultData(lucid: LucidEvolution): Promise<{
 }
 
 /**
- * Calculate what the next reward claim would receive
+ * Calculate what the next reward claim would receive for a given score
+ * score defaults to 0 (participation only) for previewing minimum reward
  */
-export async function getNextReward(lucid: LucidEvolution): Promise<bigint> {
+export async function getNextReward(lucid: LucidEvolution, score: bigint = 0n): Promise<bigint> {
   const vault = await getVaultData(lucid);
   if (!vault) {
     throw new Error("No vault UTxO found");
   }
 
-  return calculateReward(
+  return calculateScoredReward(
     vault.data.baseReward,
+    vault.data.bonusPool,
     vault.data.decayFactor,
-    vault.data.totalClaims
+    vault.data.totalClaims,
+    score
   );
 }

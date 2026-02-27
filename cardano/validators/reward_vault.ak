@@ -4,7 +4,7 @@ use cardano/assets.{flatten}
 use cardano/transaction.{InlineDatum, Output, OutputReference, Transaction}
 use psi_research/reward_types.{
   ClaimReward, RewardRedeemer, RewardVaultDatum, TopUp, UpdateParams,
-  calculate_reward,
+  calculate_scored_reward,
 }
 use psi_research/utils.{verify_signed_by}
 
@@ -28,17 +28,28 @@ validator reward_vault {
       // ================================================================
       // CLAIM REWARD: Participant claims Psy tokens during settlement
       // ================================================================
-      ClaimReward { participant } -> {
+      ClaimReward { participant, score } -> {
         // 1. Settlement proof: a psi_experiment script input is being spent
         expect has_experiment_input(tx, d.experiment_script_hash)
 
-        // 2. Calculate reward using hyperbolic decay
-        let reward = calculate_reward(d.base_reward, d.decay_factor, d.total_claims)
+        // 2. Validate score range (0-100)
+        expect score >= 0
+        expect score <= 100
 
-        // 3. Reward must be > 0 (reject if decayed to zero)
+        // 3. Calculate scored reward with cubic bonus and hyperbolic decay
+        let reward =
+          calculate_scored_reward(
+            d.base_reward,
+            d.bonus_pool,
+            d.decay_factor,
+            d.total_claims,
+            score,
+          )
+
+        // 4. Reward must be > 0 (reject if decayed to zero)
         expect reward > 0
 
-        // 4. Verify participant receives the reward tokens
+        // 5. Verify participant receives the reward tokens
         expect
           verify_token_payment(
             tx,
@@ -48,7 +59,7 @@ validator reward_vault {
             reward,
           )
 
-        // 5. Verify continuing vault output with updated datum
+        // 6. Verify continuing vault output with updated datum
         verify_claim_continuation(tx, own_ref, d, reward)
       }
 
@@ -64,14 +75,15 @@ validator reward_vault {
       }
 
       // ================================================================
-      // UPDATE PARAMS: Admin adjusts decay parameters
+      // UPDATE PARAMS: Admin adjusts decay/bonus parameters
       // ================================================================
-      UpdateParams { new_base_reward, new_decay_factor } -> {
+      UpdateParams { new_base_reward, new_bonus_pool, new_decay_factor } -> {
         // Admin must sign
         expect verify_signed_by(tx, d.admin_pkh)
 
         // New values must be positive
         expect new_base_reward > 0
+        expect new_bonus_pool >= 0
         expect new_decay_factor > 0
 
         // Verify continuation with updated params only
@@ -80,6 +92,7 @@ validator reward_vault {
           own_ref,
           d,
           new_base_reward,
+          new_bonus_pool,
           new_decay_factor,
         )
       }
@@ -212,7 +225,7 @@ fn verify_claim_continuation(
             )
 
           // Verify datum: only total_claims changes
-          new_datum.psy_policy_id == old_datum.psy_policy_id && new_datum.psy_asset_name == old_datum.psy_asset_name && new_datum.base_reward == old_datum.base_reward && new_datum.decay_factor == old_datum.decay_factor && new_datum.total_claims == old_datum.total_claims + 1 && new_datum.experiment_script_hash == old_datum.experiment_script_hash && new_datum.admin_pkh == old_datum.admin_pkh && // Verify tokens reduced by exactly the reward amount
+          new_datum.psy_policy_id == old_datum.psy_policy_id && new_datum.psy_asset_name == old_datum.psy_asset_name && new_datum.base_reward == old_datum.base_reward && new_datum.bonus_pool == old_datum.bonus_pool && new_datum.decay_factor == old_datum.decay_factor && new_datum.total_claims == old_datum.total_claims + 1 && new_datum.experiment_script_hash == old_datum.experiment_script_hash && new_datum.admin_pkh == old_datum.admin_pkh && // Verify tokens reduced by exactly the reward amount
           output_tokens == input_tokens - reward
         }
         _ -> False
@@ -264,6 +277,7 @@ fn verify_update_continuation(
   own_ref: OutputReference,
   old_datum: RewardVaultDatum,
   new_base_reward: Int,
+  new_bonus_pool: Int,
   new_decay_factor: Int,
 ) -> Bool {
   when find_continuing_output(tx, own_ref) is {
@@ -287,8 +301,8 @@ fn verify_update_continuation(
               old_datum.psy_asset_name,
             )
 
-          // Only base_reward and decay_factor change
-          new_datum.psy_policy_id == old_datum.psy_policy_id && new_datum.psy_asset_name == old_datum.psy_asset_name && new_datum.base_reward == new_base_reward && new_datum.decay_factor == new_decay_factor && new_datum.total_claims == old_datum.total_claims && new_datum.experiment_script_hash == old_datum.experiment_script_hash && new_datum.admin_pkh == old_datum.admin_pkh && // Value must remain unchanged
+          // Only base_reward, bonus_pool, and decay_factor change
+          new_datum.psy_policy_id == old_datum.psy_policy_id && new_datum.psy_asset_name == old_datum.psy_asset_name && new_datum.base_reward == new_base_reward && new_datum.bonus_pool == new_bonus_pool && new_datum.decay_factor == new_decay_factor && new_datum.total_claims == old_datum.total_claims && new_datum.experiment_script_hash == old_datum.experiment_script_hash && new_datum.admin_pkh == old_datum.admin_pkh && // Value must remain unchanged
           output_tokens == input_tokens
         }
         _ -> False

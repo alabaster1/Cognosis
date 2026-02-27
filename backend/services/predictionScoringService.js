@@ -33,6 +33,124 @@ class PredictionScoringService {
     return JSON.parse(content);
   }
 
+  summarizeAxiosError(error) {
+    if (!error) return 'Unknown error';
+    const status = error.response?.status;
+    const statusText = error.response?.statusText;
+    const responseData = error.response?.data;
+    const code = error.code;
+    const message = error.message || 'Request failed';
+
+    const dataText = responseData
+      ? (typeof responseData === 'string' ? responseData : JSON.stringify(responseData))
+      : '';
+
+    const parts = [message];
+    if (code) parts.push(`code=${code}`);
+    if (status) parts.push(`status=${status}${statusText ? ` ${statusText}` : ''}`);
+    if (dataText) parts.push(`data=${dataText.substring(0, 300)}`);
+    return parts.join(' | ');
+  }
+
+  scoreRemoteViewingBasic(impressions, targetData) {
+    const userText = typeof impressions === 'string'
+      ? impressions
+      : (impressions?.impressions || JSON.stringify(impressions || {}));
+    const targetText = [
+      targetData?.description || '',
+      ...(Array.isArray(targetData?.tags) ? targetData.tags : []),
+    ].join(' ');
+
+    const userWords = userText
+      .toLowerCase()
+      .split(/\W+/)
+      .filter((w) => w.length >= 4);
+    const targetWords = new Set(
+      targetText
+        .toLowerCase()
+        .split(/\W+/)
+        .filter((w) => w.length >= 4)
+    );
+
+    const correspondences = [...new Set(userWords.filter((w) => targetWords.has(w)))];
+    const baseline = 35;
+    const score = Math.min(85, baseline + correspondences.length * 8);
+
+    return {
+      score,
+      scoringMethod: 'deterministic-fallback',
+      details: {
+        scores: {
+          overall_score: score / 100,
+          semantic_similarity: correspondences.length ? 0.5 : 0.35,
+          structural_alignment: correspondences.length ? 0.55 : 0.4,
+          confidence: 0.4,
+        },
+        statisticalContext: 'Deterministic fallback used (keyword overlap)',
+        analysis: correspondences.length
+          ? `Found ${correspondences.length} keyword correspondences with target metadata.`
+          : 'No strong keyword overlap; fallback baseline score applied.',
+        correspondences,
+        mismatches: [],
+        scorerVersion: 'fallback-basic-v1',
+        durationMs: 0,
+      },
+    };
+  }
+
+  async scoreRemoteViewingWithOpenAI(impressions, targetData) {
+    const openai = this.getClient();
+    const impressionText = typeof impressions === 'string'
+      ? impressions
+      : (impressions?.impressions || JSON.stringify(impressions || {}));
+
+    const prompt = `You are an expert remote viewing evaluator.
+Score the participant impressions against the target metadata.
+
+TARGET DESCRIPTION:
+${targetData?.description || ''}
+
+TARGET TAGS:
+${JSON.stringify(targetData?.tags || [])}
+
+PARTICIPANT IMPRESSIONS:
+${impressionText}
+
+Return JSON only:
+{
+  "overallScore": <integer 0-100>,
+  "analysis": "<brief technical analysis>",
+  "correspondences": ["<matching element>"],
+  "mismatches": ["<missing/incorrect element>"]
+}`;
+
+    const result = await openai.chat.completions.create({
+      model: process.env.OPENAI_SCORING_MODEL || 'gpt-4o-mini',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.2,
+      max_tokens: 500,
+    });
+
+    const parsed = this.parseJsonResponse(result.choices[0].message.content || '{}');
+    const score = Math.min(100, Math.max(0, Math.round(Number(parsed.overallScore) || 0)));
+
+    return {
+      score,
+      scoringMethod: 'openai-fallback',
+      details: {
+        scores: {
+          overall_score: score / 100,
+        },
+        statisticalContext: 'OpenAI fallback scoring (AI service unavailable)',
+        analysis: parsed.analysis || 'OpenAI fallback analysis',
+        correspondences: Array.isArray(parsed.correspondences) ? parsed.correspondences : [],
+        mismatches: Array.isArray(parsed.mismatches) ? parsed.mismatches : [],
+        scorerVersion: 'openai-fallback-v1',
+        durationMs: 0,
+      },
+    };
+  }
+
   /**
    * Score precognition predictions against actual events
    * @param {string} prediction - User's prediction made before the event
@@ -357,6 +475,61 @@ Return ONLY valid JSON without markdown code blocks.`;
       throw new Error(`Failed to score global consciousness: ${error.message}`);
     }
   }
+  /**
+   * Score remote viewing session using PsiScoreAI multi-dimensional analysis
+   * Calls the AI service at /rv/score with blinded data (no user context)
+   * @param {string} sessionId - Session identifier
+   * @param {Object} impressions - Participant's impressions (description, sensory data, etc.)
+   * @param {Object} targetData - Target information (description, imageUrl, tags, etc.)
+   * @param {string} targetHash - Commitment hash of the target
+   * @returns {Object} { score: 0-100, details: { scores, analysis, correspondences, mismatches } }
+   */
+  async scoreRemoteViewing(sessionId, impressions, targetData, targetHash) {
+    try {
+      const response = await axios.post(`${AI_SERVICE_URL}/rv/score`, {
+        session_id: sessionId,
+        user_id: 'blinded',  // Scientific blinding: no user identity sent
+        impressions,
+        target_data: targetData,
+        target_hash: targetHash,
+      }, { timeout: 30000 });
+
+      const result = response.data;
+
+      // overall_score is 0.0-1.0 from PsiScoreAI, scale to 0-100 integer for on-chain
+      const overallFloat = result.scores?.overall_score ?? 0;
+      const score = Math.min(100, Math.max(0, Math.round(overallFloat * 100)));
+
+      return {
+        score,
+        scoringMethod: 'psi-score-ai',
+        details: {
+          scores: result.scores,
+          statisticalContext: result.statistical_context,
+          analysis: result.detailed_analysis,
+          correspondences: result.correspondences,
+          mismatches: result.mismatches,
+          scorerVersion: result.scorer_version,
+          durationMs: result.duration_ms,
+        },
+      };
+    } catch (error) {
+      const detail = this.summarizeAxiosError(error);
+      console.warn('[PredictionScoring] RV scoring service unavailable:', detail);
+
+      // First fallback: use direct OpenAI scoring if API key is available.
+      try {
+        return await this.scoreRemoteViewingWithOpenAI(impressions, targetData);
+      } catch (openAiError) {
+        const openAiMessage = openAiError?.message || 'OpenAI fallback failed';
+        console.warn('[PredictionScoring] OpenAI fallback unavailable:', openAiMessage);
+      }
+
+      // Final fallback: deterministic keyword baseline (never throws).
+      return this.scoreRemoteViewingBasic(impressions, targetData);
+    }
+  }
+
   /**
    * Score image-based experiments using CLIP similarity and Psi-Coefficient
    * @param {string} targetImageUrl - URL/CID of the target image

@@ -162,8 +162,14 @@ class CardanoService {
     const signedTx = await tx.sign.withWallet().complete();
     const submittedTxHash = await signedTx.submit();
 
-    // Wait for confirmation (optional - can be async)
-    await this.lucid.awaitTx(submittedTxHash);
+    // Wait for confirmation (custom poller - Lucid's awaitTx hits /cbor which 404s on preprod)
+    const { blockfrostAwaitTx } = await import("@/lib/cardano/awaitTx");
+    const confirmed = await blockfrostAwaitTx(submittedTxHash);
+    if (!confirmed) {
+      throw new Error(
+        "Transaction was submitted but not indexed on preprod before timeout. Please retry."
+      );
+    }
 
     return {
       guess,

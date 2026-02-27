@@ -110,11 +110,12 @@ async function deployRewardVault() {
   }
 
   // Build initial RewardVaultDatum
-  // RewardVaultDatum = Constr(0, [psy_policy_id, psy_asset_name, base_reward, decay_factor, total_claims, experiment_script_hash, admin_pkh])
+  // RewardVaultDatum = Constr(0, [psy_policy_id, psy_asset_name, base_reward, bonus_pool, decay_factor, total_claims, experiment_script_hash, admin_pkh])
   const vaultDatum = new Constr(0, [
     psyPolicyId,                             // psy_policy_id
     PSY_ASSET_NAME_HEX,                      // psy_asset_name: "Psy"
-    1000n,                                   // base_reward: 1000 PSY (scaled for on-chain integer math)
+    100n,                                    // base_reward: 100 PSY (participation floor)
+    900n,                                    // bonus_pool: 900 PSY (cubic bonus for high scores)
     10000n,                                  // decay_factor: 10000 (slow decay)
     0n,                                      // total_claims: 0
     deployment.psiExperiment.scriptHash,      // experiment_script_hash

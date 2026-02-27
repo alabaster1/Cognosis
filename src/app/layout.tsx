@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Space_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import CognosisOracleChatbox from "@/components/oracle/CognosisOracleChatbox";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -40,7 +41,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} ${spaceMono.variable} ${instrumentSerif.variable} font-sans antialiased bg-[#060a0f] text-[#e0e8f0]`}>
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <CognosisOracleChatbox />
+        </Providers>
       </body>
     </html>
   );

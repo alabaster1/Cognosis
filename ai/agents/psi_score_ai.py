@@ -1,6 +1,11 @@
 """
 PsiScoreAI - Specialized Remote Viewing Scoring Agent
 Multi-dimensional analysis of RV session data using AI (Gemini Vision)
+
+All dimension scorers accept raw free-text impressions and extract
+the relevant aspects (spatial, sensory, emotional, etc.) automatically.
+This avoids requiring structured CRV stage data and reduces analytical
+overlay for untrained viewers.
 """
 
 from typing import Dict, List, Any, Optional
@@ -18,11 +23,11 @@ class PsiScoreAI:
     """
     Objective scoring and statistical analysis of remote viewing sessions
 
-    Scoring Dimensions:
+    Scoring Dimensions (all derived from raw text):
     - Spatial correlation (geometric/structural accuracy)
     - Semantic alignment (concept/meaning similarity)
     - Emotional resonance (affective tone matching)
-    - Stage-specific accuracy (performance by CRV stage)
+    - Sensory accuracy (texture, temperature, sound, color)
     - Symbolic correspondence (archetypal/metaphoric accuracy)
     """
 
@@ -30,7 +35,7 @@ class PsiScoreAI:
         self.llm = llm_provider or get_default_provider()
         self.model = self.llm.get_default_model()
         self.name = "PsiScoreAI"
-        self.version = "1.0.0"
+        self.version = "1.1.0"
         self.total_scorings = 0
 
         # Embeddings handled via LLM API
@@ -40,48 +45,40 @@ class PsiScoreAI:
 
 Your role is to analyze participant impressions against targets and provide multi-dimensional scoring.
 
+The participant provides free-form text describing their impressions. You must extract and evaluate
+the relevant aspects for each scoring dimension from their raw text.
+
 SCORING DIMENSIONS:
 1. **Spatial Correlation** (0-1): Geometric and structural accuracy
-   - Shape, size, orientation
-   - Spatial relationships
-   - Dimensional properties
+   - Extract any mentions of: shapes, sizes, orientation, layout, distances, spatial relationships
+   - Compare against target's spatial properties
 
 2. **Semantic Alignment** (0-1): Conceptual and meaning similarity
-   - Category matching (natural vs manufactured)
+   - Overall thematic and conceptual match
+   - Category matching (natural vs manufactured, indoor vs outdoor)
    - Function/purpose alignment
-   - Thematic coherence
 
 3. **Emotional Resonance** (0-1): Affective tone matching
-   - Mood/atmosphere
-   - Emotional qualities
-   - Aesthetic impact
+   - Extract any mentions of: mood, atmosphere, feelings, aesthetic qualities
+   - Compare emotional tone against what the target naturally evokes
 
-4. **Sensory Accuracy** (0-1): Stage 2 specific
-   - Texture, temperature
-   - Sounds, smells
-   - Tactile qualities
+4. **Sensory Accuracy** (0-1): Multi-sensory accuracy
+   - Extract any mentions of: colors, textures, temperatures, sounds, smells, tactile qualities
+   - Compare against target's sensory properties
 
 5. **Symbolic Correspondence** (0-1): Metaphoric/archetypal accuracy
-   - Symbolic representations
-   - Archetypal patterns
-   - Metaphoric accuracy
+   - Symbolic representations and metaphors in the impressions
+   - Archetypal patterns that match the target's essence
+   - Conceptual associations that indirectly describe the target
 
 ANALYSIS PRINCIPLES:
 - Objective and data-driven
-- Multi-dimensional assessment
-- Statistical baselines for context
-- No confirmation bias
-- Transparent methodology
+- Be generous in recognizing indirect or metaphoric matches (RV often produces symbolic rather than literal impressions)
+- No confirmation bias, but also don't penalize for extra impressions that don't match
+- Score each dimension independently
+- A score of 0.5 represents moderate/partial correspondence, not "average"
 
-OUTPUT REQUIREMENTS:
-- Numerical scores (0-1) for each dimension
-- Overall composite score
-- Confidence intervals
-- Specific correspondences identified
-- Mismatches noted
-- Statistical context (comparison to chance)
-
-Be rigorous, objective, and scientifically precise."""
+OUTPUT: Always respond with valid JSON only."""
 
     async def score_session(
         self,
@@ -92,53 +89,32 @@ Be rigorous, objective, and scientifically precise."""
         target_hash: str
     ) -> Dict[str, Any]:
         """
-        Score a complete RV session
-
-        Args:
-            session_id: Session identifier
-            user_id: Participant ID
-            impressions: Participant's impressions (text, sketches, stage data)
-            target_data: The actual target information (now revealed for scoring)
-            target_hash: Hash of the target (for verification)
-
-        Returns:
-            Multi-dimensional scoring results
+        Score a complete RV session using raw text impressions.
         """
         start_time = datetime.utcnow()
         self.total_scorings += 1
 
-        # Extract text impressions
+        # Extract all text into a single string
         text_impressions = self._extract_text_impressions(impressions)
         target_description = target_data.get("description", "")
+        target_tags = target_data.get("tags", [])
 
-        # Calculate individual scores
-        spatial_score = await self._score_spatial_correlation(
-            impressions,
-            target_data
-        )
+        # Build a rich target description for scoring
+        target_context = target_description
+        if target_tags:
+            target_context += f" (tags: {', '.join(target_tags)})"
 
-        semantic_score = await self._score_semantic_alignment(
-            text_impressions,
-            target_description
-        )
+        if not text_impressions:
+            text_impressions = "(no impressions provided)"
 
-        emotional_score = await self._score_emotional_resonance(
-            impressions.get("stage_4_data", {}),
-            target_data.get("emotional_qualities", {})
-        )
+        # Score all dimensions using raw text
+        spatial_score = await self._score_spatial(text_impressions, target_context)
+        semantic_score = await self._score_semantic(text_impressions, target_context)
+        emotional_score = await self._score_emotional(text_impressions, target_context)
+        sensory_score = await self._score_sensory(text_impressions, target_context)
+        symbolic_score = await self._score_symbolic(text_impressions, target_context)
 
-        sensory_score = await self._score_sensory_accuracy(
-            impressions.get("stage_2_data", {}),
-            target_data.get("sensory_properties", {})
-        )
-
-        symbolic_score = await self._score_symbolic_correspondence(
-            impressions,
-            target_data
-        )
-
-        # Calculate overall composite score
-        # Weighted average based on RV research consensus
+        # Weighted composite
         weights = {
             "spatial": 0.25,
             "semantic": 0.25,
@@ -155,21 +131,21 @@ Be rigorous, objective, and scientifically precise."""
             symbolic_score * weights["symbolic"]
         )
 
-        # Statistical analysis
+        scores = {
+            "spatial": spatial_score,
+            "semantic": semantic_score,
+            "emotional": emotional_score,
+            "sensory": sensory_score,
+            "symbolic": symbolic_score,
+            "overall": overall_score
+        }
+
+        # Statistical context
         statistical_context = self._calculate_statistical_context(overall_score)
 
-        # Generate detailed analysis
-        detailed_analysis = await self._generate_detailed_analysis(
-            impressions,
-            target_data,
-            {
-                "spatial": spatial_score,
-                "semantic": semantic_score,
-                "emotional": emotional_score,
-                "sensory": sensory_score,
-                "symbolic": symbolic_score,
-                "overall": overall_score
-            }
+        # Detailed analysis + correspondences/mismatches (single LLM call)
+        analysis_result = await self._generate_analysis(
+            text_impressions, target_context, scores
         )
 
         end_time = datetime.utcnow()
@@ -188,251 +164,231 @@ Be rigorous, objective, and scientifically precise."""
                 "overall_score": round(overall_score, 3)
             },
             "statistical_context": statistical_context,
-            "detailed_analysis": detailed_analysis,
-            "correspondences": self._identify_correspondences(impressions, target_data),
-            "mismatches": self._identify_mismatches(impressions, target_data),
+            "detailed_analysis": analysis_result.get("analysis", ""),
+            "correspondences": analysis_result.get("correspondences", []),
+            "mismatches": analysis_result.get("mismatches", []),
             "duration_ms": duration_ms,
             "scored_at": datetime.utcnow().isoformat(),
             "scorer_version": self.version
         }
 
-    async def _score_spatial_correlation(
-        self,
-        impressions: Dict[str, Any],
-        target_data: Dict[str, Any]
-    ) -> float:
-        """Score geometric and structural accuracy"""
-        # Extract spatial descriptors
-        participant_spatial = impressions.get("stage_3_data", {})
-        target_spatial = target_data.get("spatial_properties", {})
+    # =========================================================================
+    # DIMENSION SCORERS - All work with raw text
+    # =========================================================================
 
-        scoring_prompt = f"""Analyze spatial correlation between impression and target:
+    async def _score_spatial(self, impressions: str, target: str) -> float:
+        """Score spatial/structural accuracy from raw text"""
+        prompt = f"""Extract any spatial or structural elements from these remote viewing impressions,
+then score how well they match the target.
 
-PARTICIPANT'S SPATIAL IMPRESSIONS:
-{json.dumps(participant_spatial, indent=2)}
+IMPRESSIONS: "{impressions}"
 
-TARGET'S SPATIAL PROPERTIES:
-{json.dumps(target_spatial, indent=2)}
+TARGET: "{target}"
 
-Score the spatial correlation on 0-1 scale:
-- 1.0 = Highly accurate spatial match
-- 0.5 = Moderate correspondence
-- 0.0 = No spatial correlation
+Look for: shapes, sizes, layout, orientation, distances, structures, open/enclosed spaces,
+heights, widths, geometric forms, spatial relationships.
 
-Consider: shapes, sizes, orientations, dimensions, spatial relationships.
+Score 0-1:
+- 1.0 = Strong spatial match (shapes, layout, structures align)
+- 0.5 = Partial match (some spatial elements correspond)
+- 0.0 = No spatial correspondence
 
-Respond with JSON: {{"score": float, "reasoning": "brief explanation"}}"""
+JSON: {{"score": float, "extracted": "spatial elements found in impressions"}}"""
 
-        response = await self.llm.chat_completion(
-            messages=[
-                {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": scoring_prompt}
-            ],
-            model=self.model,
-            temperature=0.1  # Low temperature for consistent scoring
-        )
+        return await self._llm_score(prompt)
 
-        try:
-            result = json.loads(response["content"])
-            return float(result.get("score", 0.0))
-        except json.JSONDecodeError:
+    async def _score_semantic(self, impressions: str, target: str) -> float:
+        """Score conceptual/meaning similarity from raw text"""
+        if not impressions or impressions == "(no impressions provided)":
             return 0.0
 
-    async def _score_semantic_alignment(
-        self,
-        participant_text: str,
-        target_description: str
-    ) -> float:
-        """Score conceptual and meaning similarity"""
-        if not participant_text or not target_description:
-            return 0.0
+        prompt = f"""Score the overall conceptual and thematic similarity between these
+remote viewing impressions and the target.
 
-        # Use embeddings if available
-        if self.embedding_model:
-            participant_embedding = self.embedding_model.encode(participant_text)
-            target_embedding = self.embedding_model.encode(target_description)
+IMPRESSIONS: "{impressions}"
 
-            # Cosine similarity
-            similarity = float(np.dot(participant_embedding, target_embedding) /
-                             (np.linalg.norm(participant_embedding) * np.linalg.norm(target_embedding)))
+TARGET: "{target}"
 
-            # Normalize to 0-1 range (cosine similarity is -1 to 1)
-            return (similarity + 1) / 2
-        else:
-            # Use LLM for semantic scoring
-            scoring_prompt = f"""Score semantic alignment between impressions and target:
+Consider: category match (natural/manufactured, indoor/outdoor), thematic overlap,
+conceptual associations, function/purpose alignment.
 
-IMPRESSIONS: "{participant_text}"
-
-TARGET: "{target_description}"
-
-Rate semantic similarity 0-1:
-- 1.0 = Concepts closely match
+Score 0-1:
+- 1.0 = Strong conceptual match
 - 0.5 = Some thematic overlap
 - 0.0 = No semantic connection
 
 JSON: {{"score": float}}"""
 
+        return await self._llm_score(prompt)
+
+    async def _score_emotional(self, impressions: str, target: str) -> float:
+        """Score emotional/atmospheric accuracy from raw text"""
+        prompt = f"""Extract any emotional or atmospheric elements from these remote viewing
+impressions, then score how well the emotional tone matches what the target naturally evokes.
+
+IMPRESSIONS: "{impressions}"
+
+TARGET: "{target}"
+
+Look for: mood words, atmosphere descriptions, feelings, aesthetic qualities, emotional tones
+(peaceful, energetic, mysterious, warm, cold, inviting, desolate, etc.)
+
+Score 0-1:
+- 1.0 = Emotional tone strongly matches the target's natural feel
+- 0.5 = Partial emotional correspondence
+- 0.0 = No emotional match
+
+JSON: {{"score": float, "extracted": "emotional elements found"}}"""
+
+        return await self._llm_score(prompt)
+
+    async def _score_sensory(self, impressions: str, target: str) -> float:
+        """Score sensory accuracy from raw text"""
+        prompt = f"""Extract any sensory details from these remote viewing impressions,
+then score how well they match the target.
+
+IMPRESSIONS: "{impressions}"
+
+TARGET: "{target}"
+
+Look for: colors, textures, temperatures, sounds, smells, tastes, tactile qualities,
+light/dark, wet/dry, smooth/rough, loud/quiet, visual details.
+
+Score 0-1:
+- 1.0 = Strong sensory match
+- 0.5 = Some sensory elements correspond
+- 0.0 = No sensory correspondence
+
+JSON: {{"score": float, "extracted": "sensory elements found"}}"""
+
+        return await self._llm_score(prompt)
+
+    async def _score_symbolic(self, impressions: str, target: str) -> float:
+        """Score symbolic/metaphoric accuracy from raw text"""
+        prompt = f"""Analyze any symbolic, metaphoric, or archetypal elements in these
+remote viewing impressions and score how well they correspond to the target
+(even indirectly or metaphorically).
+
+IMPRESSIONS: "{impressions}"
+
+TARGET: "{target}"
+
+RV often produces symbolic rather than literal matches. For example, "flowing"
+might correspond to water, "reaching upward" to mountains or tall buildings.
+
+Score 0-1:
+- 1.0 = Strong symbolic/metaphoric correspondence
+- 0.5 = Some symbolic connection
+- 0.0 = No symbolic correspondence
+
+JSON: {{"score": float, "extracted": "symbolic elements found"}}"""
+
+        return await self._llm_score(prompt)
+
+    async def _llm_score(self, prompt: str) -> float:
+        """Helper: call LLM with a scoring prompt, extract score float"""
+        try:
             response = await self.llm.chat_completion(
-                messages=[{"role": "user", "content": scoring_prompt}],
+                messages=[
+                    {"role": "system", "content": self.system_prompt},
+                    {"role": "user", "content": prompt}
+                ],
                 model=self.model,
                 temperature=0.1
             )
-
-            try:
-                result = json.loads(response["content"])
-                return float(result.get("score", 0.0))
-            except json.JSONDecodeError:
-                return 0.0
-
-    async def _score_emotional_resonance(
-        self,
-        participant_emotions: Dict[str, Any],
-        target_emotions: Dict[str, Any]
-    ) -> float:
-        """Score affective tone matching"""
-        if not participant_emotions or not target_emotions:
+            content = response["content"].strip()
+            # Strip markdown code fences if present
+            if content.startswith("```"):
+                content = content.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+            result = json.loads(content)
+            return max(0.0, min(1.0, float(result.get("score", 0.0))))
+        except (json.JSONDecodeError, ValueError, KeyError):
             return 0.0
 
-        prompt = f"""Score emotional resonance:
+    # =========================================================================
+    # ANALYSIS
+    # =========================================================================
 
-PARTICIPANT: {json.dumps(participant_emotions)}
-TARGET: {json.dumps(target_emotions)}
-
-Rate 0-1 how well emotions match.
-JSON: {{"score": float}}"""
-
-        response = await self.llm.chat_completion(
-            messages=[{"role": "user", "content": prompt}],
-            model=self.model,
-            temperature=0.1
-        )
-
-        try:
-            result = json.loads(response["content"])
-            return float(result.get("score", 0.0))
-        except json.JSONDecodeError:
-            return 0.0
-
-    async def _score_sensory_accuracy(
+    async def _generate_analysis(
         self,
-        participant_sensory: Dict[str, Any],
-        target_sensory: Dict[str, Any]
-    ) -> float:
-        """Score Stage 2 sensory accuracy"""
-        if not participant_sensory or not target_sensory:
-            return 0.0
-
-        # Similar LLM-based scoring
-        prompt = f"""Score sensory accuracy (textures, temperatures, sounds, smells):
-
-PARTICIPANT: {json.dumps(participant_sensory)}
-TARGET: {json.dumps(target_sensory)}
-
-Rate 0-1.
-JSON: {{"score": float}}"""
-
-        response = await self.llm.chat_completion(
-            messages=[{"role": "user", "content": prompt}],
-            model=self.model,
-            temperature=0.1
-        )
-
-        try:
-            result = json.loads(response["content"])
-            return float(result.get("score", 0.0))
-        except json.JSONDecodeError:
-            return 0.0
-
-    async def _score_symbolic_correspondence(
-        self,
-        impressions: Dict[str, Any],
-        target_data: Dict[str, Any]
-    ) -> float:
-        """Score metaphoric/archetypal accuracy"""
-        # Extract symbolic elements
-        symbols = impressions.get("symbols", [])
-        target_symbols = target_data.get("symbolic_elements", [])
-
-        if not symbols and not target_symbols:
-            return 0.5  # Neutral if no symbolic data
-
-        prompt = f"""Score symbolic/archetypal correspondence:
-
-IMPRESSIONS: {json.dumps(symbols)}
-TARGET: {json.dumps(target_symbols)}
-
-Rate 0-1.
-JSON: {{"score": float}}"""
-
-        response = await self.llm.chat_completion(
-            messages=[{"role": "user", "content": prompt}],
-            model=self.model,
-            temperature=0.1
-        )
-
-        try:
-            result = json.loads(response["content"])
-            return float(result.get("score", 0.0))
-        except json.JSONDecodeError:
-            return 0.5
-
-    async def _generate_detailed_analysis(
-        self,
-        impressions: Dict[str, Any],
-        target_data: Dict[str, Any],
+        impressions: str,
+        target: str,
         scores: Dict[str, float]
-    ) -> str:
-        """Generate comprehensive analysis of the session"""
-        analysis_prompt = f"""Generate detailed analysis of this RV session:
+    ) -> Dict[str, Any]:
+        """Generate detailed analysis, correspondences, and mismatches in one call"""
+        prompt = f"""Analyze this remote viewing session and provide a detailed assessment.
 
-SCORES:
+PARTICIPANT'S IMPRESSIONS: "{impressions}"
+
+TARGET: "{target}"
+
+DIMENSION SCORES:
 {json.dumps(scores, indent=2)}
 
-Provide:
-1. Overall assessment (2 sentences)
-2. Strongest correspondences (2-3 specific examples)
-3. Areas of divergence (1-2 examples)
-4. Statistical context (how does overall score compare to chance baseline of 0.20?)
+Provide your analysis as JSON with these exact keys:
+{{
+  "analysis": "2-3 sentence overall assessment. Mention strongest and weakest dimensions.",
+  "correspondences": ["specific match 1", "specific match 2", ...],
+  "mismatches": ["specific divergence 1", "specific divergence 2", ...]
+}}
 
-Keep under 150 words. Be specific and scientific."""
+For correspondences, list specific elements from the impressions that match the target.
+For mismatches, list impressions that don't correspond to the target.
+Keep each item concise (under 15 words). Include 2-5 items per list."""
 
-        response = await self.llm.chat_completion(
-            messages=[
-                {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": analysis_prompt}
-            ],
-            model=self.model,
-            temperature=0.5,
-            max_tokens=300
-        )
+        try:
+            response = await self.llm.chat_completion(
+                messages=[
+                    {"role": "system", "content": self.system_prompt},
+                    {"role": "user", "content": prompt}
+                ],
+                model=self.model,
+                temperature=0.3,
+                max_tokens=500
+            )
+            content = response["content"].strip()
+            if content.startswith("```"):
+                content = content.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+            return json.loads(content)
+        except (json.JSONDecodeError, ValueError):
+            return {
+                "analysis": f"Overall score: {scores['overall']:.0%}. Analysis generation failed.",
+                "correspondences": [],
+                "mismatches": []
+            }
 
-        return response["content"]
+    # =========================================================================
+    # HELPERS
+    # =========================================================================
 
     def _extract_text_impressions(self, impressions: Dict[str, Any]) -> str:
-        """Extract all text impressions into single string"""
+        """Extract all text impressions into a single string from any input format"""
         texts = []
 
+        # Handle simple format: {description, impressions}
+        if "description" in impressions:
+            texts.append(str(impressions["description"]))
+        if "impressions" in impressions:
+            texts.append(str(impressions["impressions"]))
+
+        # Handle structured CRV format (backwards compat)
         for stage in range(1, 7):
             stage_data = impressions.get(f"stage_{stage}_data", {})
-            if "text" in stage_data:
+            if isinstance(stage_data, dict) and "text" in stage_data:
                 texts.append(stage_data["text"])
 
-        return " ".join(texts)
+        # Handle raw text field
+        if "text" in impressions:
+            texts.append(str(impressions["text"]))
+
+        return " ".join(t for t in texts if t and t.strip())
 
     def _calculate_statistical_context(self, overall_score: float) -> Dict[str, Any]:
         """Calculate statistical significance and context"""
-        # Chance baseline for multi-dimensional RV scoring
-        # Research suggests ~20% baseline for random guessing
         chance_baseline = 0.20
-
-        # Simple z-score calculation (would be more sophisticated in production)
-        # Assuming standard deviation of 0.15 based on RV literature
         std_dev = 0.15
         z_score = (overall_score - chance_baseline) / std_dev
-
-        # Effect size (Cohen's d)
-        cohens_d = (overall_score - chance_baseline) / std_dev
+        cohens_d = z_score  # Same formula for single observation
 
         return {
             "chance_baseline": chance_baseline,
@@ -444,7 +400,6 @@ Keep under 150 words. Be specific and scientific."""
         }
 
     def _interpret_effect_size(self, cohens_d: float) -> str:
-        """Interpret Cohen's d effect size"""
         if cohens_d < 0.2:
             return "negligible"
         elif cohens_d < 0.5:
@@ -455,8 +410,6 @@ Keep under 150 words. Be specific and scientific."""
             return "large"
 
     def _score_to_percentile(self, score: float) -> float:
-        """Convert score to approximate percentile (simplified)"""
-        # This would use actual distribution data in production
         if score < 0.20:
             return 25
         elif score < 0.40:
@@ -468,32 +421,9 @@ Keep under 150 words. Be specific and scientific."""
         else:
             return 95
 
-    def _identify_correspondences(
-        self,
-        impressions: Dict[str, Any],
-        target_data: Dict[str, Any]
-    ) -> List[str]:
-        """Identify specific matches between impressions and target"""
-        correspondences = []
-
-        # This would be more sophisticated in production
-        # For now, placeholder logic
-        correspondences.append("Stage 2 sensory data showed texture correspondence")
-
-        return correspondences
-
-    def _identify_mismatches(
-        self,
-        impressions: Dict[str, Any],
-        target_data: Dict[str, Any]
-    ) -> List[str]:
-        """Identify specific divergences"""
-        mismatches = []
-
-        # Placeholder
-        mismatches.append("Indoor/outdoor classification diverged")
-
-        return mismatches
+    # =========================================================================
+    # IMAGE COMPARISON (unchanged)
+    # =========================================================================
 
     async def score_image_similarity(
         self,
@@ -501,22 +431,10 @@ Keep under 150 words. Be specific and scientific."""
         choice_image_url: str,
         distractor_image_urls: Optional[List[str]] = None
     ) -> Dict[str, Any]:
-        """
-        Score image similarity using Gemini Vision API.
-
-        Args:
-            target_image_url: URL to the target image
-            choice_image_url: URL to the user's chosen image
-            distractor_image_urls: URLs of distractor images for Psi-Coefficient
-
-        Returns:
-            Similarity scores including Psi-Coefficient if distractors provided
-        """
-        # Validate URLs
+        """Score image similarity using Gemini Vision API."""
         if not self._validate_image_url(target_image_url) or not self._validate_image_url(choice_image_url):
             return {"error": "Invalid image URL", "similarity": 0.0}
 
-        # Use Gemini to compare images
         similarity = await self._compare_images_with_gemini(target_image_url, choice_image_url)
 
         result = {
@@ -534,24 +452,19 @@ Keep under 150 words. Be specific and scientific."""
 
     def _validate_image_url(self, url: str) -> bool:
         """SECURITY: Validate that image URL is from allowed sources only"""
-        # Only allow HTTPS URLs and specific trusted IPFS gateways
-        ALLOWED_PREFIXES = [
-            'https://',
-        ]
-        # Block internal/local URLs (SSRF prevention)
         BLOCKED_PATTERNS = [
             'localhost', '127.0.0.1', '0.0.0.0',
             '10.', '172.16.', '172.17.', '172.18.', '172.19.',
             '172.20.', '172.21.', '172.22.', '172.23.', '172.24.',
             '172.25.', '172.26.', '172.27.', '172.28.', '172.29.',
             '172.30.', '172.31.', '192.168.',
-            'metadata.google', '169.254.',  # Cloud metadata endpoints
+            'metadata.google', '169.254.',
         ]
         url_lower = url.lower()
         for blocked in BLOCKED_PATTERNS:
             if blocked in url_lower:
                 return False
-        return any(url.startswith(prefix) for prefix in ALLOWED_PREFIXES)
+        return url.startswith('https://')
 
     async def _fetch_image_as_base64(self, image_url: str) -> Optional[str]:
         """Fetch image from URL and convert to base64"""
@@ -559,11 +472,9 @@ Keep under 150 words. Be specific and scientific."""
             if not self._validate_image_url(image_url):
                 print(f"[PsiScoreAI] SECURITY: Rejected invalid/blocked URL: {image_url[:50]}")
                 return None
-
             async with httpx.AsyncClient() as client:
                 resp = await client.get(image_url, timeout=30.0)
                 resp.raise_for_status()
-                # SECURITY: Validate content type
                 content_type = resp.headers.get('content-type', '')
                 if not content_type.startswith('image/'):
                     print(f"[PsiScoreAI] SECURITY: Rejected non-image content type: {content_type}")
@@ -574,63 +485,45 @@ Keep under 150 words. Be specific and scientific."""
             return None
 
     async def _compare_images_with_gemini(self, image1_url: str, image2_url: str) -> float:
-        """Use Gemini Vision to compare two images and return similarity score (0-1)"""
+        """Use Gemini Vision to compare two images"""
         try:
             prompt = """Compare these two images and rate their visual similarity on a scale from 0 to 1.
+Consider: visual elements, composition, theme, semantic meaning.
+Respond with ONLY JSON: {"similarity": 0.XX, "reasoning": "brief explanation"}"""
 
-Consider:
-- Visual elements (shapes, colors, objects)
-- Composition and layout
-- Overall theme/concept
-- Semantic meaning
-
-Respond with ONLY a JSON object: {"similarity": 0.XX, "reasoning": "brief explanation"}
-
-Be objective and precise. A score of 1.0 means nearly identical, 0.5 means moderate similarity, 0.0 means completely different."""
-
-            # Use LLM with image URLs for vision
             response = await self.llm.chat_completion_with_images(
                 messages=[{"role": "user", "content": prompt}],
                 image_urls=[image1_url, image2_url],
                 model=self.model,
                 temperature=0.1
             )
-
             result = json.loads(response["content"])
             return float(result.get("similarity", 0.0))
         except Exception as e:
             print(f"[PsiScoreAI] Error comparing images with Gemini: {e}")
-            # Fallback to text-based comparison if vision fails
             return await self._compare_images_fallback(image1_url, image2_url)
 
     async def _compare_images_fallback(self, image1_url: str, image2_url: str) -> float:
         """Fallback: describe images and compare descriptions"""
         try:
-            # Get descriptions of both images
             desc1 = await self._describe_image(image1_url)
             desc2 = await self._describe_image(image2_url)
-
             if not desc1 or not desc2:
                 return 0.0
 
-            # Compare descriptions
-            prompt = f"""Compare these two image descriptions and rate their similarity (0-1):
-
+            prompt = f"""Compare these two image descriptions and rate similarity (0-1):
 Image 1: {desc1}
 Image 2: {desc2}
-
-Respond with JSON: {{"similarity": 0.XX}}"""
+JSON: {{"similarity": 0.XX}}"""
 
             response = await self.llm.chat_completion(
                 messages=[{"role": "user", "content": prompt}],
                 model=self.model,
                 temperature=0.1
             )
-
             result = json.loads(response["content"])
             return float(result.get("similarity", 0.0))
-        except Exception as e:
-            print(f"[PsiScoreAI] Fallback comparison failed: {e}")
+        except Exception:
             return 0.0
 
     async def _describe_image(self, image_url: str) -> Optional[str]:
@@ -643,8 +536,7 @@ Respond with JSON: {{"similarity": 0.XX}}"""
                 temperature=0.3
             )
             return response["content"]
-        except Exception as e:
-            print(f"[PsiScoreAI] Error describing image: {e}")
+        except Exception:
             return None
 
     async def calculate_psi_coefficient(
@@ -653,28 +545,9 @@ Respond with JSON: {{"similarity": 0.XX}}"""
         response_image_url: str,
         distractor_image_urls: List[str]
     ) -> Dict[str, Any]:
-        """
-        Calculate the Psi-Coefficient using Gemini Vision:
-        Ψ = (Sim(R,T) - Mean(Sim(R,D₁...₃))) / σ
-
-        Where:
-            R = Response (user's choice)
-            T = Target
-            D₁...₃ = Distractor images
-            σ = Std deviation of all Sim(R, D) values
-
-        Args:
-            target_image_url: The correct target image
-            response_image_url: The user's chosen/drawn response
-            distractor_image_urls: List of distractor image URLs
-
-        Returns:
-            Psi-Coefficient with statistical context
-        """
-        # Calculate similarity between response and target
+        """Calculate Psi-Coefficient: Ψ = (Sim(R,T) - Mean(Sim(R,D))) / σ"""
         sim_rt = await self._compare_images_with_gemini(response_image_url, target_image_url)
 
-        # Calculate similarities between response and each distractor
         distractor_sims = []
         for d_url in distractor_image_urls:
             if self._validate_image_url(d_url):
@@ -686,8 +559,6 @@ Respond with JSON: {{"similarity": 0.XX}}"""
 
         mean_distractor_sim = float(np.mean(distractor_sims))
         std_distractor_sim = float(np.std(distractor_sims)) if len(distractor_sims) > 1 else 0.1
-
-        # Avoid division by zero
         if std_distractor_sim < 0.001:
             std_distractor_sim = 0.1
 
@@ -700,11 +571,10 @@ Respond with JSON: {{"similarity": 0.XX}}"""
             "std_distractors": round(std_distractor_sim, 4),
             "distractor_similarities": [round(s, 4) for s in distractor_sims],
             "interpretation": self._interpret_psi(psi),
-            "significant": abs(psi) > 1.96  # 95% confidence
+            "significant": abs(psi) > 1.96
         }
 
     def _interpret_psi(self, psi: float) -> str:
-        """Interpret the Psi-Coefficient value"""
         if psi > 2.58:
             return "highly_significant_hit"
         elif psi > 1.96:
@@ -721,7 +591,6 @@ Respond with JSON: {{"similarity": 0.XX}}"""
             return "significant_miss"
 
     def get_status(self) -> Dict[str, Any]:
-        """Get PsiScoreAI status"""
         return {
             "name": self.name,
             "version": self.version,

@@ -46,6 +46,24 @@ export interface RVScoreResult {
   score: number;
   psyReward: number;
   redeemerCbor: string;
+  scoringMethod?: string;
+  target?: {
+    imageUrl?: string;
+    description: string;
+    source?: string;
+    tags?: string[];
+    hash: string;
+    type: string;
+  };
+  scoringDetails?: {
+    scores?: Record<string, number>;
+    correspondences?: string[];
+    mismatches?: string[];
+    analysis?: string;
+    statisticalContext?: string;
+    scorerVersion?: string;
+    durationMs?: number;
+  };
 }
 
 export interface RVSettleResult {
@@ -79,6 +97,15 @@ const BLOCKFROST_API_KEY = process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY || "";
 class RVCardanoService {
   private lucid: LucidEvolution | null = null;
   private contractsInitialized = false;
+
+  private getAuthHeaders(): Record<string, string> {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("authToken");
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+    }
+    return headers;
+  }
 
   /**
    * Initialize Lucid with Blockfrost
@@ -203,7 +230,7 @@ class RVCardanoService {
     // 1. Call backend to generate target and get datum
     const startResponse = await fetch(`${API_URL}/api/cardano/rv/start`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: this.getAuthHeaders(),
       body: JSON.stringify({ walletAddress, stakeLovelace }),
     });
     const startData = await startResponse.json();
@@ -219,14 +246,18 @@ class RVCardanoService {
     const hostPkh = paymentCredential!.hash;
     const currentSlot = BigInt(session.currentSlot);
 
-    const datum = psi.buildPsiDatum(
+    // For single-player scored experiments (RV), create datum in InProgress state
+    // so SubmitScore redeemer can be used directly without Join/Reveal flow
+    const datum = psi.buildPsiDatumWithState(
       "RemoteViewing",
       session.targetHash,
       hostPkh,
       BigInt(stakeLovelace),
       currentSlot,
       BigInt(session.joinDeadlineSlot),
-      BigInt(session.revealDeadlineSlot)
+      BigInt(session.revealDeadlineSlot),
+      1,
+      "InProgress"
     );
 
     const tx = await this.lucid
@@ -242,13 +273,19 @@ class RVCardanoService {
     const signed = await tx.sign.withWallet().complete();
     const txHash = await signed.submit();
 
-    // 4. Wait for confirmation
-    await this.lucid.awaitTx(txHash);
+    // 4. Wait for confirmation (custom poller - Lucid's awaitTx hits /cbor which 404s on preprod)
+    const { blockfrostAwaitTx } = await import("@/lib/cardano/awaitTx");
+    const confirmed = await blockfrostAwaitTx(txHash);
+    if (!confirmed) {
+      throw new Error(
+        "Transaction was submitted but not indexed on preprod before timeout. Please check Cardanoscan and retry."
+      );
+    }
 
     // 5. Confirm with backend
     await fetch(`${API_URL}/api/cardano/rv/confirm-commit`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: this.getAuthHeaders(),
       body: JSON.stringify({
         sessionId: session.sessionId,
         txHash,
@@ -271,11 +308,11 @@ class RVCardanoService {
    */
   async submitAndScore(
     sessionId: string,
-    impressions: { description: string; impressions: string }
+    impressions: { impressions: string }
   ): Promise<RVScoreResult> {
     const response = await fetch(`${API_URL}/api/cardano/rv/score`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: this.getAuthHeaders(),
       body: JSON.stringify({ sessionId, impressions }),
     });
 
@@ -289,6 +326,9 @@ class RVCardanoService {
       score: data.score,
       psyReward: data.psyReward,
       redeemerCbor: data.redeemerCbor,
+      scoringMethod: data.scoringMethod,
+      target: data.target,
+      scoringDetails: data.scoringDetails || undefined,
     };
   }
 
@@ -301,7 +341,8 @@ class RVCardanoService {
   async settleAndClaim(
     sessionId: string,
     score: number,
-    _nonce: string
+    _nonce: string,
+    commitTxHash?: string
   ): Promise<RVSettleResult> {
     if (!this.lucid) throw new Error("Lucid not initialized");
 
@@ -313,9 +354,17 @@ class RVCardanoService {
       throw new Error("Contracts not initialized");
     }
 
-    // sessionId format is "txHash#outputIndex" from startExperiment
-    const [commitTxHash, outputIndexStr] = sessionId.split("#");
-    const outputIndex = parseInt(outputIndexStr ?? "0", 10);
+    // Use explicit commitTxHash if provided, otherwise try parsing sessionId
+    let txHashForLookup: string;
+    let outputIndex: number;
+    if (commitTxHash) {
+      txHashForLookup = commitTxHash;
+      outputIndex = 0;
+    } else {
+      const [h, o] = sessionId.split("#");
+      txHashForLookup = h;
+      outputIndex = parseInt(o ?? "0", 10);
+    }
 
     const walletAddress = await this.lucid.wallet().address();
     const { paymentCredential } = getAddressDetails(walletAddress);
@@ -327,7 +376,7 @@ class RVCardanoService {
 
     // First try: exact match on original commit tx
     sessionUtxo = sessionUtxos.find(
-      (u) => u.txHash === commitTxHash && u.outputIndex === outputIndex
+      (u) => u.txHash === txHashForLookup && u.outputIndex === outputIndex
     );
 
     // Second try: match by host PKH in datum (for cases where UTxO was recreated)
@@ -371,7 +420,7 @@ class RVCardanoService {
     // Confirm settlement with backend
     await fetch(`${API_URL}/api/cardano/rv/confirm-settle`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: this.getAuthHeaders(),
       body: JSON.stringify({
         sessionId,
         txHash: result.txHash,

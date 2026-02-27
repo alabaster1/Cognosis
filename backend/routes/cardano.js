@@ -11,6 +11,12 @@ const router = express.Router();
 const cardanoService = require('../services/cardanoBlockchainService');
 const { authMiddleware, optionalAuthMiddleware } = require('../auth');
 const { getPrismaClient } = require('../db');
+const targetService = require('../services/targetService');
+const predictionScoringService = require('../services/predictionScoringService');
+
+function logRejectedTransition(route, reason, context = {}) {
+  console.warn(`[Cardano] Rejected ${route}: ${reason}`, context);
+}
 
 /**
  * GET /api/cardano/config
@@ -131,7 +137,7 @@ router.post('/sessions/create', optionalAuthMiddleware, async (req, res) => {
  * POST /api/cardano/sessions/:sessionId/confirm
  * Confirm transaction was submitted successfully
  */
-router.post('/sessions/:sessionId/confirm', optionalAuthMiddleware, async (req, res) => {
+router.post('/sessions/:sessionId/confirm', authMiddleware, async (req, res) => {
   try {
     const { sessionId } = req.params;
     const { txHash, blockHeight } = req.body;
@@ -143,7 +149,48 @@ router.post('/sessions/:sessionId/confirm', optionalAuthMiddleware, async (req, 
       });
     }
 
+    if (!/^[a-f0-9]{64}$/i.test(txHash)) {
+      return res.status(400).json({
+        success: false,
+        error: 'txHash must be a 64-character hex string',
+      });
+    }
+
     const prisma = getPrismaClient();
+    const session = await prisma.commitment.findUnique({
+      where: { id: sessionId },
+      select: { id: true, userId: true, status: true },
+    });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: 'Session not found',
+      });
+    }
+
+    if (session.userId !== req.user.userId) {
+      logRejectedTransition('/sessions/:sessionId/confirm', 'ownership_mismatch', {
+        sessionId,
+        actorUserId: req.user.userId,
+      });
+      return res.status(403).json({
+        success: false,
+        error: 'Not authorized for this session',
+      });
+    }
+
+    if (session.status !== 'pending_tx') {
+      logRejectedTransition('/sessions/:sessionId/confirm', 'invalid_status', {
+        sessionId,
+        status: session.status,
+      });
+      return res.status(409).json({
+        success: false,
+        error: `Cannot confirm session from status '${session.status}'`,
+      });
+    }
+
     await prisma.commitment.update({
       where: { id: sessionId },
       data: {
@@ -199,6 +246,28 @@ router.post('/sessions/:sessionId/reveal', authMiddleware, async (req, res) => {
       return res.status(404).json({
         success: false,
         error: 'Session not found',
+      });
+    }
+
+    if (session.userId !== req.user.userId) {
+      logRejectedTransition('/sessions/:sessionId/reveal', 'ownership_mismatch', {
+        sessionId,
+        actorUserId: req.user.userId,
+      });
+      return res.status(403).json({
+        success: false,
+        error: 'Not authorized for this session',
+      });
+    }
+
+    if (session.status !== 'committed') {
+      logRejectedTransition('/sessions/:sessionId/reveal', 'invalid_status', {
+        sessionId,
+        status: session.status,
+      });
+      return res.status(409).json({
+        success: false,
+        error: `Cannot reveal session from status '${session.status}'`,
       });
     }
 
@@ -267,12 +336,35 @@ router.post('/sessions/:sessionId/score', authMiddleware, async (req, res) => {
       });
     }
 
+    if (session.userId !== req.user.userId) {
+      logRejectedTransition('/sessions/:sessionId/score', 'ownership_mismatch', {
+        sessionId,
+        actorUserId: req.user.userId,
+      });
+      return res.status(403).json({
+        success: false,
+        error: 'Not authorized for this session',
+      });
+    }
+
+    if (!['committed', 'revealed'].includes(session.status)) {
+      logRejectedTransition('/sessions/:sessionId/score', 'invalid_status', {
+        sessionId,
+        status: session.status,
+      });
+      return res.status(409).json({
+        success: false,
+        error: `Cannot score session from status '${session.status}'`,
+      });
+    }
+
     // Update session with score
     await prisma.commitment.update({
       where: { id: sessionId },
       data: {
         score: score,
         scoredAt: new Date(),
+        status: 'scored',
       },
     });
 
@@ -303,9 +395,6 @@ router.get('/sessions/:sessionId', optionalAuthMiddleware, async (req, res) => {
     const prisma = getPrismaClient();
     const session = await prisma.commitment.findUnique({
       where: { id: sessionId },
-      include: {
-        experiment: true,
-      },
     });
 
     if (!session) {
@@ -354,7 +443,7 @@ router.get('/sessions/:sessionId', optionalAuthMiddleware, async (req, res) => {
 router.get('/sessions', authMiddleware, async (req, res) => {
   try {
     const prisma = getPrismaClient();
-    const sessions = await prisma.commitment.findMany({
+    const rawSessions = await prisma.commitment.findMany({
       where: {
         userId: req.user.userId,
       },
@@ -367,10 +456,21 @@ router.get('/sessions', authMiddleware, async (req, res) => {
         commitmentHash: true,
         blockchainTxHash: true,
         score: true,
+        rewardTxHash: true,
+        psyRewardAmount: true,
+        stakeLovelace: true,
         createdAt: true,
+        updatedAt: true,
         revealAt: true,
       },
     });
+
+    // Convert BigInt fields to strings for JSON serialization safety.
+    const sessions = rawSessions.map((session) => ({
+      ...session,
+      psyRewardAmount: session.psyRewardAmount?.toString() ?? null,
+      stakeLovelace: session.stakeLovelace?.toString() ?? null,
+    }));
 
     res.json({
       success: true,
@@ -416,7 +516,7 @@ router.get('/slot', async (req, res) => {
  * POST /api/cardano/rv/start
  * Server generates target + hash, returns datum for client to build commit tx
  */
-router.post('/rv/start', optionalAuthMiddleware, async (req, res) => {
+router.post('/rv/start', authMiddleware, async (req, res) => {
   try {
     const { walletAddress, stakeLovelace } = req.body;
 
@@ -427,47 +527,66 @@ router.post('/rv/start', optionalAuthMiddleware, async (req, res) => {
       });
     }
 
+    if (req.user?.walletAddress !== walletAddress) {
+      // CIP-30 providers may expose wallet address in different encodings (hex vs bech32).
+      // We enforce ownership by authenticated userId below, but do not hard-fail on string mismatch.
+      console.warn('[Cardano/RV] walletAddress differs from auth wallet encoding', {
+        authWallet: req.user?.walletAddress?.slice(0, 18),
+        bodyWallet: walletAddress?.slice(0, 18),
+      });
+    }
+
+    // Fetch a real target image for the RV experiment
+    const target = await targetService.getRandomTarget();
+    console.log('[Cardano/RV] Target selected:', target.source, '-', target.description?.substring(0, 50));
+
     // Create session with RemoteViewing game type
     const sessionData = await cardanoService.createExperimentSession({
       hostWalletAddress: walletAddress,
       gameType: 'remote-viewing',
-      targetValue: `rv_target_${Date.now()}_${require('crypto').randomBytes(8).toString('hex')}`,
+      targetValue: target.imageUrl || target.description,
       stakeLovelace: stakeLovelace || 2000000,
       joinDeadlineMinutes: 120,    // 2 hours for RV
       revealDeadlineMinutes: 1440, // 24 hours for scoring
       maxParticipants: 1,
     });
 
-    // Store in database
+    // Resolve userId for authenticated wallet
     const prisma = getPrismaClient();
-    try {
-      await prisma.commitment.create({
-        data: {
-          id: sessionData.sessionId,
-          experimentType: 'remote-viewing',
-          commitmentHash: sessionData.targetHash,
-          nonce: sessionData.nonce,
-          status: 'pending_tx',
-          userId: req.user?.userId || 'guest',
-          walletAddress,
-          revealAt: new Date(Date.now() + 1440 * 60 * 1000),
-          cardanoSessionId: sessionData.sessionId,
-          scriptAddress: sessionData.scriptAddress || null,
-          stakeLovelace: stakeLovelace ? BigInt(stakeLovelace) : 2000000n,
-          metadataHash: '',
-          metadata: {
-            scriptAddress: sessionData.scriptAddress,
-            validatorHash: sessionData.validatorHash,
-            stakeLovelace: sessionData.stakeLovelace,
-            joinDeadlineSlot: sessionData.joinDeadlineSlot,
-            revealDeadlineSlot: sessionData.revealDeadlineSlot,
-            datumCbor: sessionData.datumCbor,
+    const userId = req.user.userId;
+
+    // Store in database
+    await prisma.commitment.create({
+      data: {
+        id: sessionData.sessionId,
+        experimentType: 'remote-viewing',
+        commitmentHash: sessionData.targetHash,
+        nonce: sessionData.nonce,
+        metadataHash: '',
+        status: 'pending_tx',
+        userId,
+        walletAddress,
+        revealAt: new Date(Date.now() + 1440 * 60 * 1000),
+        cardanoSessionId: sessionData.sessionId,
+        scriptAddress: sessionData.scriptAddress || null,
+        stakeLovelace: stakeLovelace ? BigInt(stakeLovelace) : 2000000n,
+        metadata: {
+          scriptAddress: sessionData.scriptAddress,
+          validatorHash: sessionData.validatorHash,
+          stakeLovelace: sessionData.stakeLovelace,
+          joinDeadlineSlot: sessionData.joinDeadlineSlot,
+          revealDeadlineSlot: sessionData.revealDeadlineSlot,
+          datumCbor: sessionData.datumCbor,
+          target: {
+            imageUrl: target.imageUrl,
+            description: target.description,
+            source: target.source,
+            tags: target.tags,
+            metadata: target.metadata,
           },
         },
-      });
-    } catch (dbError) {
-      console.warn('[Cardano/RV] Database storage warning:', dbError.message);
-    }
+      },
+    });
 
     res.json({
       success: true,
@@ -494,7 +613,7 @@ router.post('/rv/start', optionalAuthMiddleware, async (req, res) => {
  * POST /api/cardano/rv/confirm-commit
  * Client sends txHash after signing, backend stores it
  */
-router.post('/rv/confirm-commit', optionalAuthMiddleware, async (req, res) => {
+router.post('/rv/confirm-commit', authMiddleware, async (req, res) => {
   try {
     const { sessionId, txHash } = req.body;
 
@@ -505,7 +624,42 @@ router.post('/rv/confirm-commit', optionalAuthMiddleware, async (req, res) => {
       });
     }
 
+    if (!/^[a-f0-9]{64}$/i.test(txHash)) {
+      return res.status(400).json({
+        success: false,
+        error: 'txHash must be a 64-character hex string',
+      });
+    }
+
     const prisma = getPrismaClient();
+    const session = await prisma.commitment.findUnique({
+      where: { id: sessionId },
+      select: { id: true, userId: true, status: true },
+    });
+
+    if (!session) {
+      return res.status(404).json({ success: false, error: 'Session not found' });
+    }
+
+    if (session.userId !== req.user.userId) {
+      logRejectedTransition('/rv/confirm-commit', 'ownership_mismatch', {
+        sessionId,
+        actorUserId: req.user.userId,
+      });
+      return res.status(403).json({ success: false, error: 'Not authorized for this session' });
+    }
+
+    if (session.status !== 'pending_tx') {
+      logRejectedTransition('/rv/confirm-commit', 'invalid_status', {
+        sessionId,
+        status: session.status,
+      });
+      return res.status(409).json({
+        success: false,
+        error: `Cannot confirm commit from status '${session.status}'`,
+      });
+    }
+
     await prisma.commitment.update({
       where: { id: sessionId },
       data: {
@@ -530,7 +684,7 @@ router.post('/rv/confirm-commit', optionalAuthMiddleware, async (req, res) => {
  * POST /api/cardano/rv/score
  * Client submits impressions, backend scores with AI, returns score + redeemer data
  */
-router.post('/rv/score', optionalAuthMiddleware, async (req, res) => {
+router.post('/rv/score', authMiddleware, async (req, res) => {
   try {
     const { sessionId, impressions } = req.body;
 
@@ -550,28 +704,89 @@ router.post('/rv/score', optionalAuthMiddleware, async (req, res) => {
       return res.status(404).json({ success: false, error: 'Session not found' });
     }
 
-    // TODO: Call AI scoring service here
-    // For now, generate a score based on impressions length as placeholder
-    const score = Math.min(100, Math.max(0, Math.floor(Math.random() * 60 + 20)));
+    if (session.userId !== req.user.userId) {
+      logRejectedTransition('/rv/score', 'ownership_mismatch', {
+        sessionId,
+        actorUserId: req.user.userId,
+      });
+      return res.status(403).json({ success: false, error: 'Not authorized for this session' });
+    }
+
+    if (!['committed', 'revealed'].includes(session.status)) {
+      logRejectedTransition('/rv/score', 'invalid_status', {
+        sessionId,
+        status: session.status,
+      });
+      return res.status(409).json({
+        success: false,
+        error: `Cannot score session in status '${session.status}'`,
+      });
+    }
+
+    // Score with AI service (PsiScoreAI multi-dimensional analysis)
+    // Falls back to random placeholder if AI service is unavailable
+    const targetData = session.metadata?.target || {};
+    let score;
+    let scoringDetails = null;
+    let scoringMethod = 'deterministic-fallback';
+
+    try {
+      const aiResult = await predictionScoringService.scoreRemoteViewing(
+        sessionId,
+        impressions,
+        {
+          description: targetData.description || '',
+          imageUrl: targetData.imageUrl || '',
+          tags: targetData.tags || [],
+          source: targetData.source || '',
+        },
+        session.commitmentHash || ''
+      );
+      score = aiResult.score;
+      scoringDetails = aiResult.details;
+      scoringMethod = aiResult.scoringMethod || scoringMethod;
+      console.log(`[Cardano/RV] AI score for ${sessionId}: ${score}/100`);
+    } catch (aiError) {
+      console.warn(`[Cardano/RV] AI scoring unavailable, using deterministic fallback: ${aiError.message}`);
+      const fallbackResult = predictionScoringService.scoreRemoteViewingBasic(
+        impressions,
+        {
+          description: targetData.description || '',
+          tags: targetData.tags || [],
+        }
+      );
+      score = fallbackResult.score;
+      scoringDetails = fallbackResult.details;
+      scoringMethod = fallbackResult.scoringMethod || scoringMethod;
+    }
 
     // Build the SubmitScore redeemer for the on-chain settlement
     const redeemerCbor = cardanoService.buildSubmitScoreRedeemer(score, '');
 
-    // Calculate PSY reward using exponential curve
-    // reward = base + (max - base) * (score/100)^2.5
-    const baseReward = 100;
-    const maxReward = 400;
-    const normScore = score / 100;
-    const psyReward = Math.floor(baseReward + (maxReward - baseReward) * Math.pow(normScore, 2.5));
+    // PSY reward is determined on-chain by the vault's hyperbolic decay formula:
+    // reward = base_reward * decay_factor / (decay_factor + total_claims)
+    // The backend doesn't know the exact vault state, so we report that the
+    // actual amount will be determined by the vault. The frontend reads the
+    // real amount from the vault UTxO datum when building the settle tx.
+    const psyReward = null; // Actual amount determined on-chain
 
-    // Update session with score
+    // Update session with score and AI details
+    const updateData = {
+      score,
+      scoredAt: new Date(),
+      status: 'scored',
+    };
+    // Store scoring details in metadata if available
+    if (scoringDetails) {
+      updateData.metadata = {
+        ...session.metadata,
+        scoringMethod,
+        scoringDetails,
+      };
+    }
     await prisma.commitment.update({
       where: { id: sessionId },
-      data: {
-        score,
-        scoredAt: new Date(),
-        status: 'scored',
-      },
+      data: updateData,
     });
 
     res.json({
@@ -581,6 +796,16 @@ router.post('/rv/score', optionalAuthMiddleware, async (req, res) => {
       psyReward,
       redeemerCbor,
       scriptAddress: session.metadata?.scriptAddress || session.scriptAddress,
+      target: {
+        imageUrl: targetData.imageUrl || null,
+        description: targetData.description || 'Target image',
+        source: targetData.source || 'Unknown',
+        tags: targetData.tags || [],
+        hash: session.commitmentHash,
+        type: 'remote-viewing',
+      },
+      scoringMethod,
+      scoringDetails: scoringDetails || null,
     });
   } catch (error) {
     console.error('[Cardano/RV] Score error:', error);
@@ -592,7 +817,7 @@ router.post('/rv/score', optionalAuthMiddleware, async (req, res) => {
  * POST /api/cardano/rv/confirm-settle
  * Client sends settle txHash after signing, backend records reward
  */
-router.post('/rv/confirm-settle', optionalAuthMiddleware, async (req, res) => {
+router.post('/rv/confirm-settle', authMiddleware, async (req, res) => {
   try {
     const { sessionId, txHash, psyRewardAmount } = req.body;
 
@@ -603,7 +828,53 @@ router.post('/rv/confirm-settle', optionalAuthMiddleware, async (req, res) => {
       });
     }
 
+    if (!/^[a-f0-9]{64}$/i.test(txHash)) {
+      return res.status(400).json({
+        success: false,
+        error: 'txHash must be a 64-character hex string',
+      });
+    }
+
+    if (
+      psyRewardAmount !== undefined &&
+      psyRewardAmount !== null &&
+      !/^\d+$/.test(String(psyRewardAmount))
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: 'psyRewardAmount must be a non-negative integer',
+      });
+    }
+
     const prisma = getPrismaClient();
+    const session = await prisma.commitment.findUnique({
+      where: { id: sessionId },
+      select: { id: true, userId: true, status: true },
+    });
+
+    if (!session) {
+      return res.status(404).json({ success: false, error: 'Session not found' });
+    }
+
+    if (session.userId !== req.user.userId) {
+      logRejectedTransition('/rv/confirm-settle', 'ownership_mismatch', {
+        sessionId,
+        actorUserId: req.user.userId,
+      });
+      return res.status(403).json({ success: false, error: 'Not authorized for this session' });
+    }
+
+    if (session.status !== 'scored') {
+      logRejectedTransition('/rv/confirm-settle', 'invalid_status', {
+        sessionId,
+        status: session.status,
+      });
+      return res.status(409).json({
+        success: false,
+        error: `Cannot settle session in status '${session.status}'`,
+      });
+    }
+
     await prisma.commitment.update({
       where: { id: sessionId },
       data: {

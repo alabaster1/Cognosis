@@ -28,6 +28,7 @@ export {
 
   // Datum builders
   buildPsiDatum,
+  buildPsiDatumWithState,
   buildJoinedDatum,
 
   // Redeemer builders

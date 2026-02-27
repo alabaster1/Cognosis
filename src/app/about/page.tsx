@@ -6,7 +6,6 @@ import { motion, useScroll, useTransform, useInView } from 'framer-motion';
 import {
   Brain,
   Shield,
-  Zap,
   Eye,
   Globe,
   Sparkles,
@@ -21,8 +20,6 @@ import {
   Clock,
   Layers,
   Target,
-  Award,
-  Coins,
   Server,
 } from 'lucide-react';
 
@@ -386,51 +383,6 @@ export default function AboutPage() {
                     <p className="text-xs text-slate-500 leading-relaxed">{domain.description}</p>
                   </div>
                 </motion.div>
-              </SectionReveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Incentive System */}
-      <section className="py-24 md:py-32 px-6 relative">
-        <div className="absolute inset-0 border-y border-[#1a2535] bg-[#080c12]" />
-        <div className="relative z-10 max-w-5xl mx-auto">
-          <SectionReveal>
-            <div className="text-center mb-16">
-              <p className="text-sm uppercase tracking-[0.3em] text-[#ffb020] mb-3" style={{ fontFamily: "'Space Mono', monospace" }}>
-                Tokenomics
-              </p>
-              <h2 className="text-3xl md:text-5xl font-bold text-[#e0e8f0]" style={{ fontFamily: "'Instrument Serif', serif" }}>
-                Incentive &amp; Discovery
-              </h2>
-            </div>
-          </SectionReveal>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: Coins,
-                title: 'PsyTokens',
-                description: 'Earn tokens by participating in validated experiments, achieving accuracy thresholds, or contributing data for meta-analysis.',
-              },
-              {
-                icon: Award,
-                title: 'Proof-of-Intuition NFTs',
-                description: 'High-performing users mint NFTs representing verified performance in specific cognitive domains.',
-              },
-              {
-                icon: Zap,
-                title: 'Staking & Proposals',
-                description: 'Researchers and developers stake tokens to propose new experiment types or integrate external tools.',
-              },
-            ].map((item, i) => (
-              <SectionReveal key={item.title}>
-                <div className="p-6 rounded-xl border border-[#1a2535] bg-[#0a0e14]/60">
-                  <item.icon className="w-8 h-8 text-[#ffb020] mb-4" />
-                  <h3 className="text-lg font-semibold text-[#e0e8f0] mb-2">{item.title}</h3>
-                  <p className="text-sm text-slate-400 leading-relaxed">{item.description}</p>
-                </div>
               </SectionReveal>
             ))}
           </div>
