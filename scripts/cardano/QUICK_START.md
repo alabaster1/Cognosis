@@ -25,7 +25,7 @@ export WALLET_SEED_PHRASE="word1 word2 word3 ... word24"
 ```bash
 cd /home/albert/Cognosis/scripts/cardano
 
-export BLOCKFROST_API_KEY=preprodCyWBDPxnHFvRweDTTmk1JXktv3IuKpNL
+export BLOCKFROST_API_KEY=your_blockfrost_preprod_project_id
 export WALLET_SEED_PHRASE="<your 24 words>"
 
 npx tsx mint-preprod-psy.ts 10000000000

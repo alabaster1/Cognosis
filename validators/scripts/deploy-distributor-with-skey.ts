@@ -7,7 +7,7 @@ import { Lucid, Blockfrost, Data, Constr } from "@lucid-evolution/lucid";
 import * as fs from "fs";
 import * as path from "path";
 
-const PREPROD_BLOCKFROST_KEY = process.env.BLOCKFROST_API_KEY || "preprodCyWBDPxnHFvRweDTTmk1JXktv3IuKpNL";
+const PREPROD_BLOCKFROST_KEY = process.env.BLOCKFROST_API_KEY;
 const ORACLE_SKEY_PATH = "/home/albert/cardano-preprod/oracle/payment.skey";
 
 // Load compiled contract
@@ -20,6 +20,9 @@ const DISTRIBUTOR_SCRIPT = DISTRIBUTOR_VALIDATOR.compiledCode;
 const DISTRIBUTOR_HASH = DISTRIBUTOR_VALIDATOR.hash;
 
 async function deployDistributor() {
+  if (!PREPROD_BLOCKFROST_KEY) {
+    throw new Error("BLOCKFROST_API_KEY is required");
+  }
   console.log("💰 Deploying PSY Rewards Distributor to Preprod\n");
 
   // Load signing key

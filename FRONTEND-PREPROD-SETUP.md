@@ -71,7 +71,7 @@ Create `.env.local` (if not exists):
 
 ```bash
 # Blockfrost Preprod API Key
-NEXT_PUBLIC_BLOCKFROST_API_KEY=preprodCyWBDPxnHFvRweDTTmk1JXktv3IuKpNL
+NEXT_PUBLIC_BLOCKFROST_API_KEY=your_blockfrost_preprod_project_id
 
 # Optional: Oracle backend URL (for status checks)
 NEXT_PUBLIC_ORACLE_URL=http://localhost:3001

@@ -10,7 +10,7 @@ import { homedir } from "os";
 import PSY_REWARD_CONFIG from "./psy-reward-config.js";
 
 const seedPhrase = readFileSync(`${homedir()}/.eternl-wallet/seed.txt`, 'utf-8').trim();
-const PREPROD_KEY = "preprodCyWBDPxnHFvRweDTTmk1JXktv3IuKpNL";
+const PREPROD_KEY = process.env.BLOCKFROST_API_KEY;
 const PSY_POLICY_ID = process.env.PSY_POLICY_ID || "bfbc85f5efcac03780fa4b32ee03522a410d525a5bb5cbb5938bca25";
 
 // Vault parameters
@@ -35,6 +35,9 @@ const RewardVaultDatum = Data.Object({
 type RewardVaultDatum = Data.Static<typeof RewardVaultDatum>;
 
 async function initializeVault() {
+  if (!PREPROD_KEY) {
+    throw new Error("BLOCKFROST_API_KEY is required");
+  }
   console.log("🔧 Initializing PSY Reward Vault on Preprod...\n");
 
   const lucid = await Lucid(

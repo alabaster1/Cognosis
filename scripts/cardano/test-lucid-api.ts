@@ -6,8 +6,13 @@
 import { Lucid, Blockfrost } from "@lucid-evolution/lucid";
 
 async function testLucidAPI() {
+  const blockfrostApiKey = process.env.BLOCKFROST_API_KEY;
+  if (!blockfrostApiKey) {
+    throw new Error("BLOCKFROST_API_KEY is required");
+  }
+
   const lucid = await Lucid(
-    new Blockfrost("https://cardano-preprod.blockfrost.io/api/v0", "preprodCyWBDPxnHFvRweDTTmk1JXktv3IuKpNL"),
+    new Blockfrost("https://cardano-preprod.blockfrost.io/api/v0", blockfrostApiKey),
     "Preprod"
   );
 

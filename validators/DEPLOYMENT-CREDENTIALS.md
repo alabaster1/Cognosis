@@ -10,7 +10,7 @@
 
 **Found in:** `backend/oracle/.env`
 ```
-BLOCKFROST_PROJECT_ID=preprodCyWBDPxnHFvRweDTTmk1JXktv3IuKpNL
+BLOCKFROST_PROJECT_ID=your_blockfrost_preprod_project_id
 ```
 
 **Note:** This is the Blockfrost API key for preprod testnet.
@@ -35,7 +35,7 @@ BLOCKFROST_PROJECT_ID=preprodCyWBDPxnHFvRweDTTmk1JXktv3IuKpNL
 If you have a preprod test wallet:
 
 ```bash
-export BLOCKFROST_API_KEY="preprodCyWBDPxnHFvRweDTTmk1JXktv3IuKpNL"
+export BLOCKFROST_API_KEY="your_blockfrost_preprod_project_id"
 export WALLET_SEED_PHRASE="your 24 word seed phrase here"
 
 cd ~/Cognosis/validators/scripts
@@ -52,7 +52,7 @@ Generate a new preprod test wallet:
 # Get testnet ADA from faucet: https://docs.cardano.org/cardano-testnet/tools/faucet
 
 # Then export credentials
-export BLOCKFROST_API_KEY="preprodCyWBDPxnHFvRweDTTmk1JXktv3IuKpNL"
+export BLOCKFROST_API_KEY="your_blockfrost_preprod_project_id"
 export WALLET_SEED_PHRASE="newly generated 24 word phrase"
 ```
 
@@ -61,7 +61,7 @@ export WALLET_SEED_PHRASE="newly generated 24 word phrase"
 Create `~/Cognosis/validators/.env`:
 
 ```env
-BLOCKFROST_API_KEY=preprodCyWBDPxnHFvRweDTTmk1JXktv3IuKpNL
+BLOCKFROST_API_KEY=your_blockfrost_preprod_project_id
 WALLET_SEED_PHRASE=your 24 word seed phrase here
 ```
 

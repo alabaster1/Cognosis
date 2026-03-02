@@ -8,9 +8,12 @@ import { readFileSync } from "fs";
 import { homedir } from "os";
 
 const seedPhrase = readFileSync(`${homedir()}/.eternl-wallet/seed.txt`, 'utf-8').trim();
-const PREPROD_KEY = process.env.BLOCKFROST_API_KEY || "preprodCyWBDPxnHFvRweDTTmk1JXktv3IuKpNL";
+const PREPROD_KEY = process.env.BLOCKFROST_API_KEY;
 
 async function getPreprodAddress() {
+  if (!PREPROD_KEY) {
+    throw new Error("BLOCKFROST_API_KEY is required");
+  }
   console.log("🔑 Deriving preprod address from seed phrase...\n");
 
   const lucid = await Lucid(

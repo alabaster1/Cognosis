@@ -35,7 +35,7 @@ aiken build
 
 3. **Mint PSY Tokens:**
    ```bash
-   export BLOCKFROST_API_KEY=preprodCyWBDPxnHFvRweDTTmk1JXktv3IuKpNL
+   export BLOCKFROST_API_KEY=your_blockfrost_preprod_project_id
    export WALLET_SEED_PHRASE="<24 words>"
    
    npx tsx mint-preprod-psy.ts 10000000000

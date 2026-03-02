@@ -31,7 +31,7 @@
 
 **Option A: Environment Variables**
 ```bash
-export BLOCKFROST_API_KEY="preprodCyWBDPxnHFvRweDTTmk1JXktv3IuKpNL"
+export BLOCKFROST_API_KEY="your_blockfrost_preprod_project_id"
 export WALLET_SEED_PHRASE="your 24 word seed phrase here"
 ```
 
@@ -39,7 +39,7 @@ export WALLET_SEED_PHRASE="your 24 word seed phrase here"
 ```bash
 cd ~/Cognosis/validators
 cat > .env << EOF
-BLOCKFROST_API_KEY=preprodCyWBDPxnHFvRweDTTmk1JXktv3IuKpNL
+BLOCKFROST_API_KEY=your_blockfrost_preprod_project_id
 WALLET_SEED_PHRASE=your 24 word seed phrase here
 EOF
 ```

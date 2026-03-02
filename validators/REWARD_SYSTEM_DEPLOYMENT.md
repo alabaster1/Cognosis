@@ -86,7 +86,7 @@ cat plutus.json | jq -r '.validators[] | select(.title == "psy_lottery.psy_lotte
 cd /home/albert/Cognosis/scripts/cardano
 
 # Set environment
-export BLOCKFROST_API_KEY=preprodCyWBDPxnHFvRweDTTmk1JXktv3IuKpNL
+export BLOCKFROST_API_KEY=your_blockfrost_preprod_project_id
 export WALLET_SEED_PHRASE="<your 24-word seed>"
 
 # Mint 10 billion PSY
