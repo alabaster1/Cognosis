@@ -17,7 +17,10 @@ import {
 // ============================================================================
 
 const BLOCKFROST_URL = "https://cardano-preprod.blockfrost.io/api/v0";
-const BLOCKFROST_API_KEY = process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY || "";
+const BLOCKFROST_API_KEY =
+  process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY ||
+  process.env.NEXT_PUBLIC_BLOCKFROST_PROJECT_ID ||
+  "";
 const GAME_FEE_LOVELACE = 200000n; // 0.2 ADA
 
 // Zener symbols
@@ -67,7 +70,7 @@ class CardanoService {
    */
   async initialize(): Promise<void> {
     if (!BLOCKFROST_API_KEY) {
-      console.warn("Blockfrost API key not set - running in mock mode");
+      console.warn("Blockfrost API key not set (NEXT_PUBLIC_BLOCKFROST_API_KEY or NEXT_PUBLIC_BLOCKFROST_PROJECT_ID) - running in mock mode");
       return;
     }
 

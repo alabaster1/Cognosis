@@ -6,7 +6,11 @@
 
 const BLOCKFROST_URL = "https://cardano-preprod.blockfrost.io/api/v0";
 const BLOCKFROST_API_KEY = typeof process !== "undefined"
-  ? (process.env?.NEXT_PUBLIC_BLOCKFROST_API_KEY || "")
+  ? (
+      process.env?.NEXT_PUBLIC_BLOCKFROST_API_KEY ||
+      process.env?.NEXT_PUBLIC_BLOCKFROST_PROJECT_ID ||
+      ""
+    )
   : "";
 
 export async function blockfrostAwaitTx(

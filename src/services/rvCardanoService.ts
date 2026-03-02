@@ -92,7 +92,10 @@ export interface ContractConfig {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const BLOCKFROST_URL = "https://cardano-preprod.blockfrost.io/api/v0";
-const BLOCKFROST_API_KEY = process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY || "";
+const BLOCKFROST_API_KEY =
+  process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY ||
+  process.env.NEXT_PUBLIC_BLOCKFROST_PROJECT_ID ||
+  "";
 
 class RVCardanoService {
   private lucid: LucidEvolution | null = null;
@@ -114,7 +117,7 @@ class RVCardanoService {
     if (this.lucid) return;
 
     if (!BLOCKFROST_API_KEY) {
-      throw new Error("Blockfrost API key not configured");
+      throw new Error("Blockfrost API key not configured (set NEXT_PUBLIC_BLOCKFROST_API_KEY or NEXT_PUBLIC_BLOCKFROST_PROJECT_ID)");
     }
 
     const { Lucid, Blockfrost } = await lucidMod();
