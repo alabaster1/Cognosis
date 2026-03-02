@@ -251,3 +251,18 @@ jobs:
         echo "AI: ${{ needs.test-ai-scoring.result }}"
         echo "Frontend: ${{ needs.test-frontend.result }}"
         echo "Integration: ${{ needs.integration-test.result }}"
+
+  production-smoke-check:
+    name: Production Smoke Check
+    runs-on: ubuntu-latest
+    needs: [build-summary]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    env:
+      BACKEND_URL: https://cognosis-backend-877651215690.us-central1.run.app
+      FRONTEND_URL: https://cognosispredict.com
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Run production smoke checks
+      run: ./scripts/automation/prod-smoke-check.sh

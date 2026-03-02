@@ -30,6 +30,11 @@ export default function Header() {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const experimentsRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
+  const appVersion =
+    process.env.NEXT_PUBLIC_APP_VERSION ||
+    (process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA
+      ? process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA.slice(0, 7)
+      : null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -55,8 +60,15 @@ export default function Header() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 text-xl font-bold">
           <Brain className="w-6 h-6 text-cyan-400" />
-          <span className="bg-gradient-to-r from-cyan-300 to-teal-300 bg-clip-text text-transparent">
-            Cognosis
+          <span className="flex flex-col leading-none">
+            <span className="bg-gradient-to-r from-cyan-300 to-teal-300 bg-clip-text text-transparent">
+              Cognosis
+            </span>
+            {appVersion && (
+              <span className="mt-1 text-[10px] font-mono text-slate-500">
+                build {appVersion}
+              </span>
+            )}
           </span>
         </Link>
 

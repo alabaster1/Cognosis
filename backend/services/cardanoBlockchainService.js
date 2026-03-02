@@ -133,6 +133,7 @@ class CardanoBlockchainService {
     this.blockfrostUrl = process.env.BLOCKFROST_URL || 'https://cardano-preprod.blockfrost.io/api/v0';
     this.blockfrostApiKey = process.env.BLOCKFROST_API_KEY || '';
     this.network = process.env.CARDANO_NETWORK || 'preprod';
+    this.allowMockMode = process.env.ALLOW_MOCK_BLOCKCHAIN === 'true';
     this.initialized = false;
 
     // Script addresses (derived from validator hashes + network)
@@ -183,8 +184,28 @@ class CardanoBlockchainService {
     // Try to load deployment config
     this.loadDeploymentConfig();
 
+    // Always derive script addresses so frontend can build transactions
+    // even if Blockfrost is unavailable (mock mode).
+    if (this.deployedConfig?.psiExperiment?.address) {
+      this.scriptAddresses = {
+        psiExperiment: this.deployedConfig.psiExperiment.address,
+        researchPool: this.deployedConfig.researchPool.address,
+        rewardVault: this.deployedConfig.rewardVault?.address || '',
+      };
+    } else {
+      this.scriptAddresses = {
+        psiExperiment: this.hashToScriptAddress(CONTRACT_CONFIG.psiExperimentHash),
+        researchPool: this.hashToScriptAddress(CONTRACT_CONFIG.researchPoolHash),
+        rewardVault: this.hashToScriptAddress(CONTRACT_CONFIG.rewardVaultHash),
+      };
+    }
+
     if (!this.blockfrostApiKey) {
+      if (!this.allowMockMode) {
+        throw new Error('BLOCKFROST_API_KEY is required (set ALLOW_MOCK_BLOCKCHAIN=true only for local development)');
+      }
       console.warn('[CardanoService] No Blockfrost API key - running in mock mode');
+      console.log('[CardanoService] Script addresses:', this.scriptAddresses);
       this.mockMode = true;
       this.initialized = true;
       return;
@@ -195,25 +216,13 @@ class CardanoBlockchainService {
       const response = await this.blockfrostRequest('/');
       console.log(`[CardanoService] Connected to Blockfrost (${this.network})`);
 
-      // Use deployed addresses if available, otherwise derive from hashes
-      if (this.deployedConfig?.psiExperiment?.address) {
-        this.scriptAddresses = {
-          psiExperiment: this.deployedConfig.psiExperiment.address,
-          researchPool: this.deployedConfig.researchPool.address,
-          rewardVault: this.deployedConfig.rewardVault?.address || '',
-        };
-      } else {
-        this.scriptAddresses = {
-          psiExperiment: this.hashToScriptAddress(CONTRACT_CONFIG.psiExperimentHash),
-          researchPool: this.hashToScriptAddress(CONTRACT_CONFIG.researchPoolHash),
-          rewardVault: this.hashToScriptAddress(CONTRACT_CONFIG.rewardVaultHash),
-        };
-      }
-
       console.log('[CardanoService] Script addresses:', this.scriptAddresses);
       this.initialized = true;
     } catch (error) {
       console.error('[CardanoService] Initialization error:', error.message);
+      if (!this.allowMockMode) {
+        throw new Error(`Cardano initialization failed: ${error.message}`);
+      }
       this.mockMode = true;
       this.initialized = true;
     }

@@ -5,11 +5,14 @@ const helmet = require('helmet');
 // Load environment variables - try multiple paths for local dev, Cloud Run uses env vars directly
 const dotenv = require('dotenv');
 const path = require('path');
+const { validateEnv } = require('./utils/validateEnv');
 
 // Try loading from various locations (silent fail - Cloud Run sets env vars directly)
 dotenv.config({ path: path.resolve(__dirname, '../config/.env') });
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 dotenv.config(); // default .env
+
+validateEnv();
 
 const { connectDatabase, healthCheck } = require('./db');
 const {
@@ -23,6 +26,9 @@ const socketService = require('./services/socketService');
 
 const app = express();
 const httpServer = http.createServer(app);
+
+// Cloud Run sits behind a proxy and forwards client IP headers.
+app.set('trust proxy', 1);
 
 // Middleware
 app.use(helmet());
