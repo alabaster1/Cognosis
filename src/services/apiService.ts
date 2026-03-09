@@ -3,7 +3,7 @@
  */
 
 import axios from 'axios';
-import type { ExperimentType, ExperimentMetadata, Commitment, Response, AIScore } from '@/types';
+import type { ExperimentType, ExperimentMetadata, Commitment, Response, AIScore, BaselineProfile } from '@/types';
 
 class APIService {
   private baseURL: string;
@@ -628,14 +628,14 @@ class APIService {
       };
       achievements: {
         total: number;
-        recentlyUnlocked: any[];
+        recentlyUnlocked: Record<string, unknown>[];
         totalPoints: number;
       };
       performance: {
-        recentScores: any[];
+        recentScores: Record<string, unknown>[];
         totalExperiments: number;
       };
-      bayesianEstimates: any[];
+      bayesianEstimates: Record<string, unknown>[];
     };
   }> {
     try {
@@ -650,7 +650,7 @@ class APIService {
 
   async getPerformanceHistory(experimentType?: string, limit?: number): Promise<{
     success: boolean;
-    performanceHistory: any[];
+    performanceHistory: Record<string, unknown>[];
   }> {
     try {
       const params = new URLSearchParams();
@@ -696,7 +696,7 @@ class APIService {
     metadata?: Record<string, unknown>;
   }): Promise<{
     success: boolean;
-    performance: any;
+    performance: Record<string, unknown>;
   }> {
     try {
       const response = await axios.post(`${this.baseURL}/api/gamification/record-performance`, data);
@@ -710,7 +710,7 @@ class APIService {
 
   async getAchievements(): Promise<{
     success: boolean;
-    achievements: any[];
+    achievements: Record<string, unknown>[];
     totalUnlocked: number;
     totalPoints: number;
   }> {
@@ -726,7 +726,7 @@ class APIService {
 
   async updateActivity(): Promise<{
     success: boolean;
-    streak: any;
+    streak: Record<string, unknown>;
   }> {
     try {
       const response = await axios.post(`${this.baseURL}/api/gamification/activity`);
@@ -1683,6 +1683,67 @@ class APIService {
       throw new Error(err.response?.data?.error || 'Failed to join matchmaking');
     }
   }
+
+  // ========================================
+  // BASELINE PROFILE
+  // ========================================
+
+  private getAuthHeader(): Record<string, string> {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  getUserIdFromToken(): string | null {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.userId || null;
+    } catch {
+      return null;
+    }
+  }
+
+  async checkBaseline(): Promise<{ needsBaseline: boolean; profile: BaselineProfile | null; daysRemaining: number | null }> {
+    const userId = this.getUserIdFromToken();
+    if (!userId) throw new Error('Not authenticated');
+    try {
+      const response = await axios.get(`${this.baseURL}/api/survey/baseline/check/${userId}`, {
+        headers: this.getAuthHeader(),
+      });
+      const { needsBaseline, profile, expiresAt } = response.data;
+      let daysRemaining: number | null = null;
+      if (expiresAt) {
+        daysRemaining = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      }
+      return { needsBaseline, profile, daysRemaining };
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
+      console.error('[APIService] Check baseline error:', err.response?.data || err.message);
+      throw new Error(err.response?.data?.error || 'Failed to check baseline');
+    }
+  }
+
+  async submitBaseline(data: {
+    ageRange: string;
+    gender?: string;
+    handedness: string;
+    meditationExperience: number;
+    beliefScale: number;
+    psiTraining: string;
+  }): Promise<BaselineProfile> {
+    try {
+      const response = await axios.post(`${this.baseURL}/api/survey/baseline`, data, {
+        headers: this.getAuthHeader(),
+      });
+      return response.data.profile;
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
+      console.error('[APIService] Submit baseline error:', err.response?.data || err.message);
+      throw new Error(err.response?.data?.error || 'Failed to submit baseline');
+    }
+  }
 }
 
-export default new APIService();
+const apiService = new APIService();
+export default apiService;

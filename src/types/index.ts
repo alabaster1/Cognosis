@@ -109,3 +109,22 @@ export interface AIScore {
   explanation: string;
   verified: boolean;
 }
+
+export interface BaselineProfile {
+  id: string;
+  userId: string;
+  ageRange: string;
+  gender: string | null;
+  handedness: string;
+  timezone: string | null;
+  meditationExperience: number;
+  beliefScale: number;
+  psiTraining: string;
+  geomagneticIndex: number | null;
+  lunarPhase: string | null;
+  dataVersion: string;
+  commitmentHash: string | null;
+  createdAt: string;
+  expiresAt: string;
+  updatedAt: string;
+}
